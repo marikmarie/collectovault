@@ -3,7 +3,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-const Header: React.FC = () => {
+type HeaderProps = {
+    name?: string;
+    phone?: string;
+    avator?: string;
+};
+
+const Header: React.FC<HeaderProps> = () => {
   return (
     <header className="bg-blue-600 text-white p-4 flex justify-between items-center">       
         <h1 className="text-2xl font-bold">Collecto Vault</h1>
