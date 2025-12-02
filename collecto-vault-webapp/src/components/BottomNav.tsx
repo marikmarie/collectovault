@@ -11,13 +11,13 @@ export default function BottomNav() {
         <div className="text-xs">Home</div>
       </NavLink>
       <a className={itemClass(false)}>
-        <div className="text-xs">Book</div>
+        <div className="text-xs">BuyPoints</div>
       </a>
       <NavLink to="/statement" className={({isActive})=> itemClass(isActive)}>
         <div className="text-xs">My Trips</div>
       </NavLink>
       <a className={itemClass(false)}>
-        <div className="text-xs">Skywards</div>
+        <div className="text-xs">Profile</div>
       </a>
     </nav>
   )

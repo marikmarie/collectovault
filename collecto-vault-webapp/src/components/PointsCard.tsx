@@ -22,7 +22,7 @@ export default function PointsCard({ points, tier, expiry }: Props) {
         </div>
 
         <div className="mt-3 text-xs text-gray-600 bg-gray-50 p-3 rounded">
-          {points} Skywards Miles are due to expire on {expiry}
+          {points} Collecto Vault points are due to expire on {expiry}
         </div>
       </div>
     </div>

@@ -1,11 +1,11 @@
 export const mockUser = {
   id: 'user_001',
-  name: 'Kwikiriza Samson',
-  phone: '721 695 645',
+  name: 'Tukas Mariam',
+  phone: '0721695645',
   avatar: '/images/avatar-placeholder.jpg',
-  pointsBalance: 4200,
+  pointsBalance: 3200,
   tier: 'Blue',
-  tierProgress: 0.12, // fraction to next tier
+  tierProgress: 0.12, 
   expiryDate: '2027-04-30',
   ledger: [
     { id: 'l1', date: '2025-11-01', desc: 'Flight ABC123', change: 1200 },
