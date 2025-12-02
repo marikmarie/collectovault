@@ -3,7 +3,7 @@ export const mockUser = {
   name: 'Tukas Mariam',
   phone: '0721695645',
   avatar: '/images/avatar-placeholder.jpg',
-  pointsBalance: 3200,
+  pointsBalance: 2000,
   tier: 'Blue',
   tierProgress: 0.12, 
   expiryDate: '2027-04-30',

@@ -1,24 +1,19 @@
-//import React from "react";
+//mport React from "react";
 import { NavLink } from "react-router-dom";
 
-export default function BottomNav() {
-  const itemClass = (active: boolean) =>
-    `flex-1 py-2 text-center ${active ? 'text-primary font-semibold' : 'text-gray-600'}`
+const NavItem = ({ to, label }: { to: string; label: string }) => (
+  <NavLink to={to} className={({ isActive }) => `flex-1 py-2 text-center ${isActive ? 'text-[#d81b60] font-semibold' : 'text-gray-600'}`}>
+    <div className="text-sm">{label}</div>
+  </NavLink>
+);
 
+export default function BottomNav() {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-sm flex">
-      <NavLink to="/dashboard" className={({isActive})=> itemClass(isActive)}>
-        <div className="text-xs">Home</div>
-      </NavLink>
-      <a className={itemClass(false)}>
-        <div className="text-xs">BuyPoints</div>
-      </a>
-      <NavLink to="/statement" className={({isActive})=> itemClass(isActive)}>
-        <div className="text-xs">My Trips</div>
-      </NavLink>
-      <a className={itemClass(false)}>
-        <div className="text-xs">Profile</div>
-      </a>
+    <nav className="fixed bottom-4 left-4 right-4 bg-white rounded-xl shadow-lg flex overflow-hidden" style={{ height: 64 }}>
+      <NavItem to="/dashboard" label="Home" />
+      <NavItem to="/book" label="Buy-points" />
+      <NavItem to="/trips" label="Statement" />
+      <NavItem to="/points" label="Profile" />
     </nav>
-  )
+  );
 }
