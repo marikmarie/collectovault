@@ -1,11 +1,15 @@
 // import React from "react";
 
-type Props = { points: number; tier: string; expiry?: string; };
+type Props = { points: number; tier: string; expiry?: string; onClick?: () => void };
 
-export default function PointsCard({ points, tier, expiry }: Props) {
+export default function PointsCard({ points, tier, expiry, onClick }: Props) {
   return (
-    <div className="px-4 -mt-8">
-      <div className="card-like p-4">
+    <div className="px-2">
+      <div
+        onClick={onClick}
+        role={onClick ? "button" : undefined}
+        className="card-like p-4 shadow-sm rounded-lg bg-white cursor-pointer"
+      >
         <div className="flex items-center">
           <div className="flex-1">
             <div className="text-3xl font-extrabold">{points.toLocaleString()}</div>

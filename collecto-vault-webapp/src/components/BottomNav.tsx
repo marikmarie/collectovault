@@ -1,4 +1,4 @@
-//mport React from "react";
+import React from "react";
 import { NavLink } from "react-router-dom";
 
 const NavItem = ({ to, label }: { to: string; label: string }) => (
@@ -9,10 +9,10 @@ const NavItem = ({ to, label }: { to: string; label: string }) => (
 
 export default function BottomNav() {
   return (
-    <nav className="fixed bottom-4 left-4 right-4 bg-white rounded-xl shadow-lg flex overflow-hidden" style={{ height: 64 }}>
+    <nav className="bg-white rounded-xl shadow-lg flex overflow-hidden mx-4" style={{ height: 64 }}>
       <NavItem to="/dashboard" label="Home" />
-      <NavItem to="/book" label="Buy-points" />
-      <NavItem to="/trips" label="Statement" />
+      <NavItem to="/book" label="Buy-Points" />
+      <NavItem to="/trips" label="Statements" />
       <NavItem to="/points" label="Profile" />
     </nav>
   );

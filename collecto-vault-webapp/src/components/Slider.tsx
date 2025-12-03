@@ -1,23 +1,46 @@
+// src/components/Slider.tsx
 import React, { useRef, useState, useEffect } from "react";
 
-type Slide = { key: string; node: React.ReactNode; };
-type Props = { slides: Slide[]; initialIndex?: number; height?: string; };
+export type Slide = { key: string; node: React.ReactNode };
 
-export default function Slider({ slides, initialIndex = 0, height = "h-48" }: Props) {
+export type SliderProps = {
+  slides: Slide[];
+  initialIndex?: number;
+  height?: string;              // tailwind height class like "h-48"
+  onChange?: (index: number) => void;
+  className?: string;
+};
+
+/**
+ * Simple scroll-snap slider (no forwardRef) with an onChange callback.
+ * Replaces any previous Slider that used forwardRef to avoid RefAttributes mismatch.
+ */
+export default function Slider({
+  slides,
+  initialIndex = 0,
+  height = "h-48",
+  onChange,
+  className = ""
+}: SliderProps) {
   const scrollerRef = useRef<HTMLDivElement | null>(null);
-  const [index, setIndex] = useState(initialIndex);
+  const [index, setIndex] = useState<number>(initialIndex);
 
+  // programmatic scroll when index changes
   useEffect(() => {
     const el = scrollerRef.current;
     if (!el) return;
     const child = el.children[index] as HTMLElement | undefined;
     if (child) child.scrollIntoView({ behavior: "smooth", inline: "start" });
+    onChange?.(index);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index]);
 
+  // update index on manual scroll (swipe)
   useEffect(() => {
     const el = scrollerRef.current;
     if (!el) return;
     let raf = 0;
+
     const onScroll = () => {
       if (raf) cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
@@ -27,6 +50,7 @@ export default function Slider({ slides, initialIndex = 0, height = "h-48" }: Pr
         setIndex(newIndex);
       });
     };
+
     el.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       el.removeEventListener("scroll", onScroll);
@@ -34,21 +58,35 @@ export default function Slider({ slides, initialIndex = 0, height = "h-48" }: Pr
     };
   }, []);
 
+  // Setter helpers for dots/arrows if you want to extend
+  const goto = (i: number) => setIndex(Math.max(0, Math.min(slides.length - 1, i)));
+
   return (
-    <div className="relative">
-      <div ref={scrollerRef} className={`w-full overflow-x-auto snap-x snap-mandatory scrollbar-hidden ${height}`} style={{ WebkitOverflowScrolling: "touch" }}>
+    <div className={`relative ${className}`}>
+      <div
+        ref={scrollerRef}
+        className={`w-full overflow-x-auto snap-x snap-mandatory scrollbar-hidden ${height}`}
+        style={{ WebkitOverflowScrolling: "touch" }}
+        aria-roledescription="carousel"
+      >
         <div className="flex w-full h-full">
-          {slides.map(s => (
-            <div key={s.key} className="w-full shrink-0 snap-start px-4">
+          {slides.map((s) => (
+            <div key={s.key} className="w-full flex-shrink-0 snap-start px-4">
               {s.node}
             </div>
           ))}
         </div>
       </div>
 
+      {/* dots */}
       <div className="flex justify-center gap-2 mt-2">
         {slides.map((_, i) => (
-          <button key={i} onClick={() => setIndex(i)} aria-label={`Go to slide ${i + 1}`} className={`w-2.5 h-2.5 rounded-full ${i === index ? "dot-active" : "dot-inactive"}`} />
+          <button
+            key={i}
+            onClick={() => goto(i)}
+            aria-label={`Go to slide ${i + 1}`}
+            className={`w-2.5 h-2.5 rounded-full ${i === index ? "dot-active" : "dot-inactive"}`}
+          />
         ))}
       </div>
     </div>
