@@ -7,6 +7,8 @@ import OfferCard from "../../components/OfferCard";
 import BottomNav from "../../components/BottomNav";
 import TopNav from "../../components/TopNav";
 import ServicesList from "../../components/ServicesList";
+import BuyPoints from "../customer/BuyPoints";
+
 
 const mockUser = {
   name: "Mariam Tukasingura",
@@ -18,16 +20,12 @@ const mockUser = {
   expiryDate: "30 Apr 2027",
 };
 
-export type Props = {
-  slides: { key: string; node: React.ReactNode }[];
-  initialIndex?: number;
-  height?: string;
-  onChange?: (i: number) => void;
-};
-
 export default function Dashboard() {
   // 0 = Points (default), 1 = Tier
   const [activeSlide, setActiveSlide] = useState<number>(0);
+
+  // Modal state
+  const [buyPointsOpen, setBuyPointsOpen] = useState<boolean>(false);
 
   const slides = [
     {
@@ -55,9 +53,11 @@ export default function Dashboard() {
 
   return (
     <div className="page-with-bottomnav min-h-screen pb-6 bg-gray-50 antialiased">
+      {/* Desktop: top nav */}
       <div className="hidden md:block">
         <TopNav />
       </div>
+
       <Header
         name={mockUser.name}
         phone={mockUser.phone}
@@ -75,7 +75,10 @@ export default function Dashboard() {
           </div>
 
           <div>
-            <button className="text-sm px-3 py-2 rounded-lg border border-gray-200 bg-white/60 shadow-sm">
+            <button
+              onClick={() => setBuyPointsOpen(true)} // <-- OPEN MODAL
+              className="text-sm px-3 py-2 rounded-lg border border-gray-200 bg-white/60 shadow-sm"
+            >
               Buy Points
             </button>
           </div>
@@ -90,7 +93,6 @@ export default function Dashboard() {
           />
         </div>
 
-       
         <div className="mt-4">
           {activeSlide === 0 ? (
             <>
@@ -125,6 +127,17 @@ export default function Dashboard() {
       <div className="md:hidden">
         <BottomNav />
       </div>
+
+      {/* ------------------------- */}
+      {/* Buy Points Modal */}
+      {/* ------------------------- */}
+      <BuyPoints
+        open={buyPointsOpen}
+        onClose={() => setBuyPointsOpen(false)}
+        onSuccess={() => {
+          // later you can refresh user points here
+        }}
+      />
     </div>
   );
 }
