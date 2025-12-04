@@ -8,12 +8,11 @@ import BottomNav from "../../components/BottomNav";
 import TopNav from "../../components/TopNav";
 import ServicesList from "../../components/ServicesList";
 
-/* mock user */
 const mockUser = {
-  name: "Kwikiriza Samson",
+  name: "Mariam Tukasingura",
   phone: "721 695 645",
   avatar: "/images/avatar-placeholder.jpg",
-  pointsBalance: 4200,
+  pointsBalance: 4500,
   tier: "Blue",
   tierProgress: 0.12,
   expiryDate: "30 Apr 2027",

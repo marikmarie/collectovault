@@ -22,7 +22,6 @@ export default function Slider({
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const [index, setIndex] = useState<number>(initialIndex);
 
-  // programmatic scroll when index changes
   useEffect(() => {
     const el = scrollerRef.current;
     if (!el) return;
@@ -32,7 +31,7 @@ export default function Slider({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index]);
 
-  // update index on manual scroll (swipe)
+
   useEffect(() => {
     const el = scrollerRef.current;
     if (!el) return;
