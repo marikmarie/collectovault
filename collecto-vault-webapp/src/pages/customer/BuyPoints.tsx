@@ -19,7 +19,7 @@ type Props = {
   onSuccess?: () => void;
 };
 
-/** Example fallback packages for frontend development */
+/** Example fallback packages */
 const FALLBACK_PACKAGES: Package[] = [
   { id: "p1", points: 100, price: 5000 },
   { id: "p2", points: 500, price: 10000, recommended: true },
@@ -27,227 +27,287 @@ const FALLBACK_PACKAGES: Package[] = [
   { id: "p4", points: 5000, price: 45000 },
 ];
 
+type ModalStep = "select" | "confirm" | "success" | "failure";
+
 export default function BuyPointsModal({ open, onClose, onSuccess }: Props): JSX.Element {
-  // UI state
   const [packages, setPackages] = useState<Package[]>(FALLBACK_PACKAGES);
-  const [selected, setSelected] = useState<string | number | null>(null);
+  const [selectedId, setSelectedId] = useState<string | number | null>(null);
+  const selectedPackage = packages.find(p => String(p.id) === String(selectedId));
   const [processing, setProcessing] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [paymentMode, setPaymentMode] = useState<"momo" | "bank">("momo");
   const [phone, setPhone] = useState<string>("");
+  const [step, setStep] = useState<ModalStep>("select");
 
-  // scroller ref for the horizontal carousel
   const scrollerRef = useRef<HTMLDivElement | null>(null);
 
-  // reset whenever the modal opens
   useEffect(() => {
     if (!open) return;
-    setMessage(null);
-    setSelected(null);
+    setError(null);
+    setSelectedId(null);
     setPaymentMode("momo");
     setPhone("");
     setPackages(FALLBACK_PACKAGES);
-    // scroll to start
+    setStep("select");
     requestAnimationFrame(() => scrollerRef.current?.scrollTo({ left: 0 }));
   }, [open]);
 
-  // helper: scroll carousel by one card width (approx)
+  // Scrolling logic
   const scrollNext = () => {
     const el = scrollerRef.current;
     if (!el) return;
     const card = el.querySelector<HTMLElement>("[data-card]");
-    const step = (card?.offsetWidth ?? Math.round(el.clientWidth * 0.7)) + 12;
-    el.scrollBy({ left: step, behavior: "smooth" });
+    const scrollAmount = (card?.offsetWidth ?? 200) + 16;
+    el.scrollBy({ left: scrollAmount, behavior: "smooth" });
   };
 
   const scrollPrev = () => {
     const el = scrollerRef.current;
     if (!el) return;
     const card = el.querySelector<HTMLElement>("[data-card]");
-    const step = (card?.offsetWidth ?? Math.round(el.clientWidth * 0.7)) + 12;
-    el.scrollBy({ left: -step, behavior: "smooth" });
+    const scrollAmount = (card?.offsetWidth ?? 200) + 16;
+    el.scrollBy({ left: -scrollAmount, behavior: "smooth" });
   };
 
-  // keyboard support for arrow keys while focus is inside scroller
-  const onScrollerKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "ArrowRight") {
-      e.preventDefault();
-      scrollNext();
-    } else if (e.key === "ArrowLeft") {
-      e.preventDefault();
-      scrollPrev();
-    }
-  };
-
-  // frontend-only simulated purchase
-  const handleBuy = () => {
-    setMessage(null);
-    if (!selected) {
-      setMessage("Please select a package.");
+  const handleProceed = () => {
+    setError(null);
+    if (!selectedId) {
+      setError("Please select a package.");
       return;
     }
-
     if (paymentMode === "momo" && (!phone || phone.trim().length < 9)) {
-      setMessage("Enter a valid mobile money phone number.");
+      setError("Enter a valid mobile money phone number.");
       return;
     }
+    setStep("confirm");
+  };
 
+  const handleConfirmPayment = () => {
+    if (!selectedPackage) return;
     setProcessing(true);
     setTimeout(() => {
       setProcessing(false);
-      setMessage("Purchase simulated — success (mock).");
-      onSuccess?.();
-      setTimeout(() => {
-        onClose();
-      }, 700);
-    }, 900);
+      // Simulate 90% success rate
+      if (Math.random() > 0.1) {
+        setError(null);
+        setStep("success");
+        onSuccess?.();
+      } else {
+        setError("Payment failed. Please check your MoMo account and try again.");
+        setStep("failure");
+      }
+    }, 2000);
   };
 
-  return (
-    <Modal open={open} onClose={() => !processing && onClose()}>
-      {/* container: small centered popup */}
-      <div className="mx-auto max-w-xl w-full rounded-xl p-4 bg-white shadow-xl ring-1 ring-black/6">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h3 className="text-lg font-semibold text-slate-900">Buy points</h3>
-            <p className="text-sm text-slate-500 mt-1">Choose a package and pay with mobile money (MOMO).</p>
-          </div>
+  // --- UI Content ---
+  let content;
 
-          <div className="ml-2">
-            <button
-              onClick={() => !processing && onClose()}
-              aria-label="Close"
-              className="text-slate-400 hover:text-slate-600"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <path d="M6 6l12 12M6 18L18 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        {/* horizontal sliding row */}
-        <div className="mt-4 relative">
-          {/* left arrow */}
+  if (step === "select") {
+    content = (
+      <>
+        {/* Horizontal Card Scroller */}
+        <div className="mt-6 relative">
+          {/* Left Arrow */}
           <button
             onClick={scrollPrev}
-            className="hidden md:inline-flex absolute -left-2 top-1/2 -translate-y-1/2 z-10 items-center justify-center w-8 h-8 rounded-full bg-white border shadow-sm text-slate-600"
-            aria-label="Previous package"
+            className="hidden md:inline-flex absolute -left-4 top-1/2 -translate-y-1/2 z-20 items-center justify-center w-8 h-8 rounded-full bg-white border border-slate-200 shadow-md text-slate-500 hover:text-emerald-600 hover:border-emerald-200 transition"
           >
             ‹
           </button>
 
           <div
             ref={scrollerRef}
-            onKeyDown={onScrollerKeyDown}
-            tabIndex={0}
-            role="list"
-            aria-label="Point packages"
-            className="flex gap-3 overflow-x-auto scrollbar-hidden py-2 px-1"
-            style={{ scrollSnapType: "x mandatory", WebkitOverflowScrolling: "touch" }}
+            className="flex gap-4 overflow-x-auto scrollbar-hidden py-4 px-1"
+            style={{ scrollSnapType: "x mandatory" }}
           >
             {packages.map((p) => {
-              const isSel = String(selected) === String(p.id);
+              const isSel = String(selectedId) === String(p.id);
               return (
                 <div
                   key={String(p.id)}
                   data-card
-                  role="listitem"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      setSelected(p.id);
-                    }
-                  }}
-                  onClick={() => setSelected(p.id)}
-                  className="min-w-[210px] shrink-0 scroll-mx-2 snap-start"
+                  onClick={() => setSelectedId(p.id)}
+                  className="min-w-[200px] shrink-0 snap-start relative outline-none"
                 >
-                  <Card className={`p-3 transform transition-all duration-200 ${isSel ? "scale-105 ring-2 ring-emerald-400 border-emerald-400/30 shadow-lg" : "hover:scale-[1.02]"}`}>
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <div className="text-xs text-slate-400 mb-1">{p.label ?? "Package"}</div>
-                        <div className="text-2xl font-bold text-slate-900">{p.points.toLocaleString()}</div>
-                        <div className="text-sm text-slate-500 mt-1">pts</div>
-                      </div>
-
-                      <div className="text-right">
-                        <div className="text-sm text-slate-500">UGX</div>
-                        <div className="text-lg font-semibold text-slate-900"> {p.price.toLocaleString()}</div>
+                  {/* FIX: Added 'bg-white' explicitly to remove dark/grey background */}
+                  <Card 
+                    className={`
+                      relative flex flex-col justify-between h-full p-5 cursor-pointer transition-all duration-200 
+                      bg-white border
+                      ${isSel 
+                        ? "border-emerald-500 ring-2 ring-emerald-500/20 shadow-lg scale-[1.02]" 
+                        : "border-slate-200 hover:border-emerald-300 hover:shadow-md"
+                      }
+                    `}
+                  >
+                    <div>
+                      <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Package</div>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-3xl font-bold text-slate-900">{p.points}</span>
+                        <span className="text-sm font-medium text-slate-500">pts</span>
                       </div>
                     </div>
 
-                    {p.recommended && (
-                      <div className="mt-3 inline-flex items-center gap-2 px-2 py-1 rounded-full text-xs bg-amber-100 text-amber-800">
-                        ★ Recommended
+                    <div className="mt-4 pt-3 border-t border-dashed border-slate-200">
+                      <div className="flex justify-between items-end">
+                        <span className="text-xs text-slate-400">Price</span>
+                        <span className={`text-lg font-bold ${isSel ? 'text-emerald-600' : 'text-slate-700'}`}>
+                          {p.price.toLocaleString()} <span className="text-xs font-normal text-slate-400">UGX</span>
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Checkmark Icon for selection */}
+                    {isSel && (
+                      <div className="absolute top-3 right-3 text-emerald-500">
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
                       </div>
                     )}
                   </Card>
+
+                  {/* Recommended Badge positioned outside/over card for cleaner look */}
+                  {p.recommended && (
+                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-amber-400 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm z-10 whitespace-nowrap">
+                      ★ BEST VALUE
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
 
-          {/* right arrow */}
+          {/* Right Arrow */}
           <button
             onClick={scrollNext}
-            className="hidden md:inline-flex absolute -right-2 top-1/2 -translate-y-1/2 z-10 items-center justify-center w-8 h-8 rounded-full bg-white border shadow-sm text-slate-600"
-            aria-label="Next package"
+            className="hidden md:inline-flex absolute -right-4 top-1/2 -translate-y-1/2 z-20 items-center justify-center w-8 h-8 rounded-full bg-white border border-slate-200 shadow-md text-slate-500 hover:text-emerald-600 hover:border-emerald-200 transition"
           >
             ›
           </button>
         </div>
 
-        {/* payment method */}
-        <div className="mt-4 grid grid-cols-1 gap-3">
-          <div className="flex items-center gap-3">
-            <label
-              className={`inline-flex items-center gap-2 px-3 py-2 rounded-md cursor-pointer ${
-                paymentMode === "momo" ? "bg-emerald-600 text-white" : "bg-slate-50 text-slate-700"
-              }`}
-            >
-              <input
-                type="radio"
-                name="paymentMode"
-                value="momo"
-                checked={paymentMode === "momo"}
-                onChange={() => setPaymentMode("momo")}
-                className="hidden"
-              />
-              <span className="text-sm font-medium">MOMO</span>
-              <span className="text-xs text-slate-200 ml-2">Mobile money</span>
-            </label>
-
-            <label className="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-slate-100 text-slate-400 cursor-not-allowed" title="Bank payments coming soon">
-              <input type="radio" name="paymentMode" value="bank" disabled />
-              <span className="text-sm font-medium">Bank</span>
-            </label>
+        {/* Payment & Inputs */}
+        <div className="mt-6 space-y-4">
+          <div>
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2 block">Payment Method</label>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setPaymentMode("momo")}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border text-sm font-medium transition-all ${
+                  paymentMode === "momo" 
+                    ? "bg-emerald-50 border-emerald-500 text-emerald-700 shadow-sm" 
+                    : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                <span>📱</span> Mobile Money
+              </button>
+              <button
+                disabled
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border border-slate-100 bg-slate-50 text-slate-400 cursor-not-allowed opacity-60"
+              >
+                <span>🏦</span> Bank
+              </button>
+            </div>
           </div>
 
-          {/* phone input */}
           {paymentMode === "momo" && (
-            <div>
-              <label className="block text-sm text-slate-600">Phone for MOMO</label>
+            <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2 block">Phone Number</label>
               <input
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="e.g. 256771234567"
-                className="mt-1 block w-full rounded-md px-3 py-2 border border-slate-200 bg-white text-slate-900"
-                inputMode="tel"
-                aria-label="Mobile money phone number"
+                placeholder="e.g. 256 700 000000"
+                className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none text-slate-900 placeholder:text-slate-400 bg-white"
               />
             </div>
           )}
         </div>
 
-        {/* message */}
-        {message && <div className="mt-3 text-sm text-amber-600">{message}</div>}
-
-        {/* actions */}
-        <div className="mt-4 flex items-center justify-end gap-3">
-          <Button variant="ghost" onClick={() => !processing && onClose()} disabled={processing}>Cancel</Button>
-          <Button onClick={handleBuy} disabled={processing}>
-            {processing ? "Processing..." : "Proceed to pay"}
+        {/* Footer Actions */}
+        <div className="mt-8 flex justify-end gap-3 pt-4 border-t border-slate-100">
+           <Button variant="ghost" onClick={onClose} disabled={processing}>Cancel</Button>
+           <Button onClick={handleProceed} disabled={!selectedId || processing}>
+             {processing ? "Processing..." : "Continue"}
+           </Button>
+        </div>
+      </>
+    );
+  } else if (step === "confirm") {
+    content = (
+      <div className="text-center py-6">
+        <div className="w-16 h-16 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+          🔔
+        </div>
+        <h4 className="text-xl font-bold text-slate-900">Confirm on your phone</h4>
+        <p className="text-slate-600 mt-2 max-w-sm mx-auto">
+          We've sent a prompt to <span className="font-semibold text-slate-900">{phone}</span>. 
+          Please approve the payment of <span className="font-semibold text-emerald-600">UGX {selectedPackage?.price.toLocaleString()}</span>.
+        </p>
+        
+        <div className="mt-8 space-y-3">
+          <Button onClick={handleConfirmPayment} className="w-full justify-center" disabled={processing}>
+            {processing ? "Waiting for approval..." : "I have approved it"}
           </Button>
+          <button 
+            onClick={() => setStep("select")} 
+            className="text-sm text-slate-500 hover:text-slate-700 underline underline-offset-2"
+          >
+            Change phone number
+          </button>
+        </div>
+      </div>
+    );
+  } else if (step === "success") {
+    content = (
+      <div className="text-center py-6">
+        <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
+          ✓
+        </div>
+        <h4 className="text-xl font-bold text-emerald-900">Payment Successful!</h4>
+        <p className="text-slate-600 mt-2">
+          Your wallet has been topped up with <br/>
+          <span className="text-2xl font-bold text-slate-900">{selectedPackage?.points} pts</span>
+        </p>
+        <div className="mt-8">
+           <Button onClick={onClose} className="w-full justify-center">Done</Button>
+        </div>
+      </div>
+    );
+  } else if (step === "failure") {
+    content = (
+      <div className="text-center py-6">
+        <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
+          ✕
+        </div>
+        <h4 className="text-xl font-bold text-red-900">Payment Failed</h4>
+        <p className="text-slate-600 mt-2">{error}</p>
+        <div className="mt-8 flex gap-3">
+           <Button variant="ghost" onClick={onClose} className="flex-1">Close</Button>
+           <Button onClick={() => setStep("select")} className="flex-1">Try Again</Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <Modal open={open} onClose={() => !processing && onClose()}>
+      {/* NOTE: 'bg-white' here ensures the main modal container is white.
+         If your modal is still dark, check the imported Modal component's overlay styles.
+      */}
+      <div className="bg-white w-full max-w-lg mx-auto rounded-2xl shadow-2xl overflow-hidden">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">🛒</span>
+            <h3 className="text-lg font-bold text-slate-800">Buy Points</h3>
+          </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+             ✕
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="p-6">
+          {content}
         </div>
       </div>
     </Modal>
