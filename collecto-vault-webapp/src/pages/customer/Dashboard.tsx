@@ -3,11 +3,12 @@ import Header from "../../components/Header";
 // Slider import removed as we are using Tabs now
 //import PointsCard from "../../components/PointsCard";
 import TierProgress from "../../components/TierProgress";
-import OfferCard from "../../components/OfferCard";
+//import OfferCard from "../../components/OfferCard";
 import BottomNav from "../../components/BottomNav";
 import TopNav from "../../components/TopNav";
 import ServicesList from "../../components/ServicesList";
 import BuyPoints from "../customer/BuyPoints";
+
 
 const mockUser = {
   name: "Mariam Tukasingura",

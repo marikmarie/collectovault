@@ -1,5 +1,4 @@
 // src/components/TierProgress.tsx
-import React from "react";
 
 type Props = { currentTier: string; progress: number; tiers?: string[] };
 
@@ -23,17 +22,8 @@ export default function TierProgress({
   // Progress bar width is 100% of the visible segment
   const progressWidth = pct * 100;
 
-  // The tier line position needs to be calculated dynamically based on the current tier index
-  // The full bar represents going from the start of the current tier to the start of the next tier.
-  // In the photo, the progress line starts at the *beginning* of the 'Blue' section.
-  
-  // If currentTier is Blue (index 0), progress bar starts at 0%. 
-  // If currentTier is Silver (index 1), the visual progress line should span 25% (Blue segment) + pct of Silver segment.
-  
-  // Calculate the base starting point of the progress bar:
   const baseOffset = (100 / segmentCount) * currentTierIndex;
-  
-  // Calculate the width of the active segment
+
   const activeSegmentWidth = 100 / segmentCount;
   
   // Final total progress width for the red line:
@@ -64,8 +54,6 @@ export default function TierProgress({
             <div
               className="absolute top-0 h-0.5 bg-red-600 transition-all duration-700 ease-out"
               style={{
-                // In the actual app, the progress is calculated differently, but here 
-                // we simulate it spanning from 0% to the end of the current tier's progress.
                 width: `${totalProgressWidth}%`, 
                 // We use a solid red color to match the screenshot
                 background: "#D81B60", 
@@ -74,13 +62,12 @@ export default function TierProgress({
 
             {/* 3. Tier Dots/Milestones */}
             {tiers.map((t, i) => {
-              if (i === tiers.length - 1) return null; // Don't place a dot past the last tier name
+              if (i === tiers.length - 1) return null; 
               
               const isPassed = i < currentTierIndex;
-              const isCurrent = t === currentTier;
-              const isNext = i === currentTierIndex;
-              
-              // Position the dot at the division line between tiers
+              // const isCurrent = t === currentTier;
+              // const isNext = i === currentTierIndex;
+
               const leftPosition = (i + 1) * (100 / segmentCount); 
 
               return (
