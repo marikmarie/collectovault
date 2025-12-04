@@ -1,9 +1,6 @@
 import { useState } from "react";
 import Header from "../../components/Header";
-// Slider import removed as we are using Tabs now
-//import PointsCard from "../../components/PointsCard";
 import TierProgress from "../../components/TierProgress";
-//import OfferCard from "../../components/OfferCard";
 import BottomNav from "../../components/BottomNav";
 import TopNav from "../../components/TopNav";
 import ServicesList from "../../components/ServicesList";
@@ -12,11 +9,11 @@ import BuyPoints from "../customer/BuyPoints";
 
 const mockUser = {
   name: "Mariam Tukasingura",
-  phone: "721 695 645",
+  phone: "256721695 645",
   avatar: "/images/avatar-placeholder.jpg",
   pointsBalance: 5000,
   tier: "Blue",
-  tierProgress: 0, // Assuming 0 for the start of Blue tier based on screenshot
+  tierProgress: 0, 
   expiryDate: "30 Apr 2027",
 };
 
@@ -24,7 +21,7 @@ type TabType = "points" | "tier";
 
 export default function Dashboard() {
   // State to track which tab is active
-  const [activeTab, setActiveTab] = useState<TabType>("tier"); // Defaulting to Tier to match screenshot 1
+  const [activeTab, setActiveTab] = useState<TabType>("tier"); 
 
   // Modal state
   const [buyPointsOpen, setBuyPointsOpen] = useState<boolean>(false);
@@ -45,8 +42,7 @@ export default function Dashboard() {
       />
 
       <main className="px-0">
-        {/* --- CUSTOM TABS SECTION --- */}
-        {/* This replaces the Slider. The Tabs act as the summary display. */}
+     
         <div className="bg-white shadow-sm flex divide-x divide-gray-100">
           {/* Tab 1: Points */}
           <button
@@ -92,9 +88,7 @@ export default function Dashboard() {
         {/* --- MAIN CONTENT AREA --- */}
         {/* Content changes based on activeTab */}
         <div className="mt-6 px-4">
-          {/* Controls: Label and Buy Button */}
-          {/* Only show Buy Button if we are on Points tab, or keep it always? 
-              Based on code it was outside the slider, so we keep it here. */}
+        
           <div className="flex items-center justify-end mb-4">
             {activeTab === "points" && (
               <button
@@ -129,11 +123,10 @@ export default function Dashboard() {
 
               {/* REPLACED OfferCard components with a simple list/service component */}
               <div className="space-y-4 px-4">
-                {/* You can replace the content of this div with your ServicesList component 
-            or keep this simple structure for a plain list of offers. */}
+                
                 <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
                   <p className="font-medium text-gray-900">
-                    1. Spend your miles on hotels
+                    1. Spend your vacation on hotels
                   </p>
                   <p className="text-sm text-gray-500">
                     Redeem points for 20% off hotel stays.
@@ -141,10 +134,10 @@ export default function Dashboard() {
                 </div>
                 <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
                   <p className="font-medium text-gray-900">
-                    2. Flight upgrades
+                    2. Travel upgrades
                   </p>
                   <p className="text-sm text-gray-500">
-                    Use your points to upgrade your next flight class.
+                    Use your points to upgrade your next travel.
                   </p>
                 </div>
                 {/* Add more plain service items here */}

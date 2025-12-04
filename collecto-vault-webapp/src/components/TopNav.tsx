@@ -15,8 +15,8 @@ export default function TopNav() {
         {/* <div className="flex items-center gap-4"> */}
           <div className="hidden lg:flex items-center gap-6 text-x1 text-gray-600">
             <Link to="/dashboard" className="hover:text-blue-500"> Dashboard</Link>
-            <Link to="/transactions" className="hover:text-blue-500" >Transactions</Link>
-            <Link  to="/admin" className="hover:text-blue-500"> Services </Link>
+            <Link to="/statement" className="hover:text-blue-500" >Transactions</Link>
+            <Link  to="/servicelist" className="hover:text-blue-500"> Services </Link>
             <Link  to="/admin" className="hover:text-blue-500"> Reports </Link>
         
           {/* </div> */}

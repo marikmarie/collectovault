@@ -1,11 +1,11 @@
 // src/pages/Statement.tsx
 
-// Assuming this structure from your usage:
+
 interface LedgerEntry {
   id: string | number;
   date: string; // e.g., "2025-11-20"
-  desc: string; // e.g., "Flight booking"
-  change: number; // The change in points (+/-)
+  desc: string; 
+  change: number; 
   balance: number; // The running balance
 }
 
@@ -79,7 +79,10 @@ export default function Statement() {
         )}
       </div>
 
-      <BottomNav />
+      <div className="md:hidden">
+        <BottomNav />
+      </div>
+      
     </div>
   );
 }
