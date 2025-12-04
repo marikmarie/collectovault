@@ -2,8 +2,8 @@
 // import reactLogo from './assets/react.svg'
 // import viteLogo from '/vite.svg'
 import './App.css'
-import Dashboard from './pages/Dashboard'
-import Statement from './pages/Statement'
+import Dashboard from './pages/customer/Dashboard'
+import Statement from './pages/customer/Statement'
 
 import { Routes, Route, Navigate } from "react-router-dom";
 

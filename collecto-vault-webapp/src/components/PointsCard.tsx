@@ -13,7 +13,7 @@ export default function PointsCard({ points, tier, expiry, onClick }: Props) {
         <div className="flex items-center">
           <div className="flex-1">
             <div className="text-3xl font-extrabold">{points.toLocaleString()}</div>
-            <div className="text-xs text-gray-500 mt-1">Skywards Miles</div>
+            <div className="text-xs text-gray-500 mt-1">Collecto Vault</div>
           </div>
 
           <div className="flex-1 text-right">
@@ -26,7 +26,7 @@ export default function PointsCard({ points, tier, expiry, onClick }: Props) {
         </div>
 
         <div className="mt-4 bg-gray-50 p-3 rounded text-sm text-gray-600">
-          {points.toLocaleString()} Skywards Miles are due to expire on <strong>{expiry}</strong>
+          {points.toLocaleString()} Your points are due to expire on <strong>{expiry}</strong>
         </div>
       </div>
     </div>

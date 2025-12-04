@@ -7,7 +7,6 @@ html, body, #root {
 }
 .page-with-bottomnav { padding-bottom: 88px; }
 
-/* ---------- Hero (video or texture/background) ---------- */
 .hero-wrap {
   position: relative;
   background-color: #0b4b78; /* fallback deep-blue */

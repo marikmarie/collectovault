@@ -1,10 +1,8 @@
-// import React from "react";
 
-/* sample services where points can be earned */
 const SERVICES = [
-  { id: "s1", title: "Flight Booking", desc: "Earn 1 point per $10 on flights", img: "/images/service-flight.jpg" },
-  { id: "s2", title: "Hotel Stay", desc: "Earn 1 point per $15 on hotels", img: "/images/service-hotel.jpg" },
-  { id: "s3", title: "Car Rental", desc: "Earn 1 point per $12 on rentals", img: "/images/service-car.jpg" },
+  { id: "s1", title: "Dinner", desc: "Earn 1 point per 1000 on Dinner", img: "/images/service-flight.jpg" },
+  { id: "s2", title: "Hotel Stay", desc: "Earn 1 point per 1500 on hotels", img: "/images/service-hotel.jpg" },
+  { id: "s3", title: "Car Rental", desc: "Earn 1 point per 1000 on rentals", img: "/images/service-car.jpg" },
 ];
 
 export default function ServicesList() {

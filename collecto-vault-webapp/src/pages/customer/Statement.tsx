@@ -1,6 +1,6 @@
 //import React from "react";
-import { mockUser } from "../data/mockUser";
-import BottomNav from "../components/BottomNav";
+import { mockUser } from "../../data/mockUser";
+import BottomNav from "../../components/BottomNav";
 
 export default function Statement() {
   const ledger = mockUser.ledger;

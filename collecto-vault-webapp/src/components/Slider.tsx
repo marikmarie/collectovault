@@ -6,15 +6,12 @@ export type Slide = { key: string; node: React.ReactNode };
 export type SliderProps = {
   slides: Slide[];
   initialIndex?: number;
-  height?: string;              // tailwind height class like "h-48"
+  height?: string;              
   onChange?: (index: number) => void;
   className?: string;
 };
 
-/**
- * Simple scroll-snap slider (no forwardRef) with an onChange callback.
- * Replaces any previous Slider that used forwardRef to avoid RefAttributes mismatch.
- */
+
 export default function Slider({
   slides,
   initialIndex = 0,
@@ -58,8 +55,7 @@ export default function Slider({
     };
   }, []);
 
-  // Setter helpers for dots/arrows if you want to extend
-  const goto = (i: number) => setIndex(Math.max(0, Math.min(slides.length - 1, i)));
+   const goto = (i: number) => setIndex(Math.max(0, Math.min(slides.length - 1, i)));
 
   return (
     <div className={`relative ${className}`}>
@@ -71,14 +67,14 @@ export default function Slider({
       >
         <div className="flex w-full h-full">
           {slides.map((s) => (
-            <div key={s.key} className="w-full flex-shrink-0 snap-start px-4">
+            <div key={s.key} className="w-full shrink-0 snap-start px-4">
               {s.node}
             </div>
           ))}
         </div>
       </div>
 
-      {/* dots */}
+      
       <div className="flex justify-center gap-2 mt-2">
         {slides.map((_, i) => (
           <button
