@@ -9,10 +9,11 @@ import BuyPoints from "../customer/BuyPoints";
 const mockUser = {
   name: "Mariam Tukasingura",
   phone: "256721695 645",
-  avatar: "/images/avatar-placeholder.jpg",
+  avatar: "/photo.png",
   pointsBalance: 5000,
+  avatarsize: 120,
   tier: "Blue",
-  tierProgress: 0, 
+  tierProgress: 30, // 40% progress to next tier
   expiryDate: "30 Apr 2027",
 };
 
@@ -32,7 +33,7 @@ export default function Dashboard() {
         name={mockUser.name}
         phone={mockUser.phone}
         avatar={mockUser.avatar}
-        useVideo={true}
+        useVideo={false}
         useTexture={false}
       />
 
