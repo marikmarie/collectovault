@@ -27,10 +27,6 @@ export default function Dashboard() {
 
   return (
     <div className="page-with-bottomnav min-h-screen pb-6 bg-gray-100 antialiased font-sans">
-      {/* Desktop: top nav */}
-      {/* <div className="hidden md:block">
-        <TopNav />
-      </div> */}
       <TopNav />
       <Header
         name={mockUser.name}

@@ -1,5 +1,6 @@
 // src/pages/Statement.tsx
 
+import TopNav from "../../components/TopNav";
 
 interface LedgerEntry {
   id: string | number;
@@ -45,9 +46,6 @@ const mockUser = {
   ] as LedgerEntry[],
 };
 
-import BottomNav from "../../components/BottomNav";
-import TopNav from "../../components/TopNav";
-
 export default function Statement() {
   const ledger = mockUser.ledger;
   const currentBalance =
@@ -55,9 +53,10 @@ export default function Statement() {
 
   return (
     <div className="min-h-screen pb-20 bg-gray-50 antialiased">
-      <div className="hidden md:block">
+      {/* <div className="hidden md:block">
         <TopNav />
-      </div>
+      </div> */}
+      <TopNav />
       <header className="bg-white p-4 shadow-sm border-b border-gray-100">
         <h2 className="text-xl font-bold text-gray-800">Account Statement</h2>
         <div className="mt-2 text-sm text-gray-500">
@@ -79,10 +78,6 @@ export default function Statement() {
         )}
       </div>
 
-      <div className="md:hidden">
-        <BottomNav />
-      </div>
-      
     </div>
   );
 }
