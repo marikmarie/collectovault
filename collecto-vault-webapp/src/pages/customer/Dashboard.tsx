@@ -26,7 +26,7 @@ export default function Dashboard() {
   const [buyPointsOpen, setBuyPointsOpen] = useState<boolean>(false);
 
   return (
-    <div className="page-with-bottomnav min-h-screen pb-6 bg-gray-100 antialiased font-sans">
+    <div className="min-h-screen  bg-gray-100 font-sans">
       <TopNav />
       <Header
         name={mockUser.name}
