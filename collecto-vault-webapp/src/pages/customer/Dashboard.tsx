@@ -1,7 +1,6 @@
 import { useState } from "react";
 import Header from "../../components/Header";
 import TierProgress from "../../components/TierProgress";
-import BottomNav from "../../components/BottomNav";
 import TopNav from "../../components/TopNav";
 import ServicesList from "../../components/ServicesList";
 import BuyPoints from "../customer/BuyPoints";
@@ -29,10 +28,10 @@ export default function Dashboard() {
   return (
     <div className="page-with-bottomnav min-h-screen pb-6 bg-gray-100 antialiased font-sans">
       {/* Desktop: top nav */}
-      <div className="hidden md:block">
+      {/* <div className="hidden md:block">
         <TopNav />
-      </div>
-
+      </div> */}
+      <TopNav />
       <Header
         name={mockUser.name}
         phone={mockUser.phone}
@@ -168,11 +167,6 @@ export default function Dashboard() {
           )}
         </div>
       </main>
-
-      {/* Mobile bottom nav only */}
-      <div className="md:hidden">
-        <BottomNav />
-      </div>
 
       {/* Buy Points Modal */}
       <BuyPoints
