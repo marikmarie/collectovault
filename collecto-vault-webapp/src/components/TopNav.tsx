@@ -34,13 +34,13 @@ export default function TopNav() {
             Transactions
           </Link>
           <Link
-            to="/servicelist"
+            to="/services"
             className="hover:text-[#d81b60] transition-colors py-1 border-b-2 border-transparent hover:border-[#d81b60]"
           >
             Services
           </Link>
           <Link
-            to="/admin"
+            to="/reports"
             className="hover:text-[#d81b60] transition-colors py-1 border-b-2 border-transparent hover:border-[#d81b60]"
           >
             Reports
@@ -89,14 +89,14 @@ export default function TopNav() {
             Transactions
           </Link>
           <Link
-            to="/servicelist"
+            to="/services"
             className="block py-2 text-gray-700 hover:bg-gray-50 rounded-md"
             onClick={() => setIsMenuOpen(false)}
           >
             Services
           </Link>
           <Link
-            to="/admin"
+            to="/reports"
             className="block py-2 text-gray-700 hover:bg-gray-50 rounded-md"
             onClick={() => setIsMenuOpen(false)}
           >
