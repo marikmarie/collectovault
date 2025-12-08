@@ -4,6 +4,7 @@
 import './App.css'
 import Dashboard from './pages/customer/Dashboard'
 import Statement from './pages/customer/Statement'
+import Login from './pages/Login';
 
 import { Routes, Route, Navigate } from "react-router-dom";
 
@@ -14,6 +15,7 @@ export default function App() {
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/statement" element={<Statement />} />
+      <Route path="/login" element={<Login />} />
     </Routes>
   );
 }
