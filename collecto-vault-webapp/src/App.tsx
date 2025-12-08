@@ -5,6 +5,7 @@ import './App.css'
 import Dashboard from './pages/customer/Dashboard'
 import Statement from './pages/customer/Statement'
 import Login from './pages/Login';
+import Services from './pages/Admin/Services';
 
 import { Routes, Route, Navigate } from "react-router-dom";
 
@@ -16,6 +17,8 @@ export default function App() {
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/statement" element={<Statement />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/services" element={<Services />} />
+
     </Routes>
   );
 }
