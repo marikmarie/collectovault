@@ -1,31 +1,60 @@
+import { useState } from "react";
+import EarnServiceDetailsModal from "./EarnPoints"; // NEW Component
+
 const SERVICES = [
-  // Removed 'img' property from data
-  { id: "s1", title: "Dinner", desc: "Earn 1 point per 1000 on Dinner" },
-  { id: "s2", title: "Hotel Stay", desc: "Earn 1 point per 1500 on hotels" },
-  { id: "s3", title: "Car Rental", desc: "Earn 1 point per 1000 on rentals" },
+  // Assumes UGX (Ugandan Shillings) based on context
+  { id: "s1", title: "Dinner", desc: "Earn 1 point per UGX 1,000 spent on Dinner", pointsPerUGX: 1000, category: "Food" },
+  { id: "s2", title: "Hotel Stay", desc: "Earn 1 point per UGX 1,500 spent on hotels", pointsPerUGX: 1500, category: "Travel" },
+  { id: "s3", title: "Car Rental", desc: "Earn 1 point per UGX 1,000 spent on rentals", pointsPerUGX: 1000, category: "Travel" },
 ];
 
+// Define the Service type for strong typing
+type Service = typeof SERVICES[0];
+
 export default function ServicesList() {
+  // State to hold the service object currently selected for viewing
+  const [selectedService, setSelectedService] = useState<Service | null>(null);
+
+  const handleViewDetails = (service: Service) => {
+    setSelectedService(service);
+  };
+  
+  const handleCloseModal = () => {
+    setSelectedService(null);
+  };
+
   return (
-    <div className="space-y-3 px-4 pb-6">
-      {SERVICES.map(s => (
-        <div 
-          key={s.id} 
-          // Updated class to be a full-width card-like item without space for an image
-          className="card-like overflow-hidden flex items-center bg-white rounded-lg shadow-sm border border-gray-100 p-3"
-        >
-          {/* Removed <img> tag entirely */}
-          <div className="flex-1">
-            <div className="font-semibold text-gray-800">{s.title}</div>
-            <div className="text-sm text-gray-600 mt-1">{s.desc}</div>
+    <>
+      <div className="space-y-3 px-4 pb-6">
+        {SERVICES.map(s => (
+          <div 
+            key={s.id} 
+            className="card-like overflow-hidden flex items-center bg-white rounded-lg shadow-sm border border-gray-100 p-3 hover:shadow-md transition-shadow"
+          >
+            <div className="flex-1">
+              <div className="font-semibold text-gray-800">{s.title}</div>
+              <div className="text-sm text-gray-600 mt-1">{s.desc}</div>
+            </div>
+            <div className="p-1 shrink-0">
+              <button 
+                onClick={() => handleViewDetails(s)} // Open modal on click
+                className="text-sm px-4 py-2 rounded-full bg-[#d81b60] hover:bg-[#b81752] text-white font-medium transition-colors active:scale-95"
+              >
+                View
+              </button>
+            </div>
           </div>
-          <div className="p-1 shrink-0">
-            <button className="text-sm px-4 py-2 rounded-full bg-[#d81b60] hover:bg-[#b81752] text-white font-medium transition-colors">
-              View
-            </button>
-          </div>
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+
+      {/* NEW: Earn Service Details Modal */}
+      {selectedService && (
+        <EarnServiceDetailsModal
+          open={!!selectedService}
+          onClose={handleCloseModal}
+          service={selectedService}
+        />
+      )}
+    </>
   );
 }

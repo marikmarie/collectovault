@@ -7,7 +7,7 @@ interface SpendPointsModalProps {
 }
 
 const mockRedeems = [
-  { id: 1, name: "Flight Upgrade Voucher", points: 1500, icon: Plane, detail: "One-time class upgrade on regional flight." },
+  { id: 1, name: "Family dinner", points: 1500, icon: Plane, detail: "One-time class upgrade on regional flight." },
   { id: 2, name: "Weekend Stay Discount", points: 3000, icon: Hotel, detail: "50% off a two-night stay at partner resorts." },
   { id: 3, name: "UGX 5,000 Cash Credit", points: 500, icon: X, detail: "Direct credit applied to your next statement." },
 ];
@@ -19,7 +19,7 @@ export default function SpendPoints({ open, onClose, currentPoints }: SpendPoint
     <div className="fixed inset-0 z-60 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
       <div 
         className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all duration-300"
-        onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
+        onClick={(e) => e.stopPropagation()} 
       >
         <div className="p-6 border-b border-gray-100 flex justify-between items-center">
           <h2 className="text-xl font-bold text-gray-800">Redeem Points</h2>
