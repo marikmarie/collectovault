@@ -1,9 +1,11 @@
 // src/features/customer/BuyPointsModal.tsx
 import type { JSX } from "react";
 import { useEffect, useRef, useState } from "react";
-import Modal from "../../components/Modal";
+// Assuming Modal, Card, and Button are imported from elsewhere
+import Modal from "../../components/Modal"; 
 import Card from "../../components/Card";
 import Button from "../../components/Button";
+import { Zap, Heart, Star, X } from 'lucide-react'; // Added icons for flair
 
 type Package = {
   id: number | string;
@@ -19,7 +21,7 @@ type Props = {
   onSuccess?: () => void;
 };
 
-/** Example fallback packages */
+/** Example fallback packages (Points and prices remain the same) */
 const FALLBACK_PACKAGES: Package[] = [
   { id: "p1", points: 100, price: 5000 },
   { id: "p2", points: 500, price: 10000, recommended: true },
@@ -28,6 +30,11 @@ const FALLBACK_PACKAGES: Package[] = [
 ];
 
 type ModalStep = "select" | "confirm" | "success" | "failure";
+
+// Cute Color Palette:
+const PRIMARY = '#d81b60'; // Bright Magenta (from your previous service list)
+const ACCENT = '#ffa727';  // Gold/Orange (from your gradient)
+const SOFT_BG = '#fffcf7'; // Off-white/Cream background
 
 export default function BuyPointsModal({ open, onClose, onSuccess }: Props): JSX.Element {
   const [packages, setPackages] = useState<Package[]>(FALLBACK_PACKAGES);
@@ -52,7 +59,7 @@ export default function BuyPointsModal({ open, onClose, onSuccess }: Props): JSX
     requestAnimationFrame(() => scrollerRef.current?.scrollTo({ left: 0 }));
   }, [open]);
 
-  // Scrolling logic
+  // Scrolling logic (unchanged)
   const scrollNext = () => {
     const el = scrollerRef.current;
     if (!el) return;
@@ -107,10 +114,10 @@ export default function BuyPointsModal({ open, onClose, onSuccess }: Props): JSX
       <>
         {/* Horizontal Card Scroller */}
         <div className="mt-6 relative">
-          {/* Left Arrow */}
+          {/* Left Arrow (Styled with new colors) */}
           <button
             onClick={scrollPrev}
-            className="hidden md:inline-flex absolute -left-4 top-1/2 -translate-y-1/2 z-20 items-center justify-center w-8 h-8 rounded-full bg-white border border-slate-200 shadow-md text-slate-500 hover:text-emerald-600 hover:border-emerald-200 transition"
+            className={`hidden md:inline-flex absolute -left-4 top-1/2 -translate-y-1/2 z-20 items-center justify-center w-8 h-8 rounded-full bg-white border border-slate-200 shadow-md text-slate-500 hover:text-[${PRIMARY}] hover:border-[${PRIMARY}]/50 transition`}
           >
             ‹
           </button>
@@ -129,21 +136,23 @@ export default function BuyPointsModal({ open, onClose, onSuccess }: Props): JSX
                   onClick={() => setSelectedId(p.id)}
                   className="min-w-[200px] shrink-0 snap-start relative outline-none"
                 >
-                  {/* FIX: Added 'bg-white' explicitly to remove dark/grey background */}
+                  {/* Package Card (Styled for cute look) */}
                   <Card 
                     className={`
                       relative flex flex-col justify-between h-full p-5 cursor-pointer transition-all duration-200 
-                      bg-white border
+                      bg-white border-2 rounded-xl
                       ${isSel 
-                        ? "border-emerald-500 ring-2 ring-emerald-500/20 shadow-lg scale-[1.02]" 
-                        : "border-slate-200 hover:border-emerald-300 hover:shadow-md"
+                        ? `border-[${PRIMARY}] ring-4 ring-[${PRIMARY}]/20 shadow-xl scale-[1.03]` 
+                        : "border-slate-100 hover:border-slate-300 hover:shadow-lg"
                       }
                     `}
                   >
                     <div>
-                      <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Package</div>
+                      <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1">
+                        <Zap className="w-3 h-3 text-yellow-500" /> Package Power
+                      </div>
                       <div className="flex items-baseline gap-1">
-                        <span className="text-3xl font-bold text-slate-900">{p.points}</span>
+                        <span className="text-4xl font-extrabold text-slate-900">{p.points}</span>
                         <span className="text-sm font-medium text-slate-500">pts</span>
                       </div>
                     </div>
@@ -151,24 +160,24 @@ export default function BuyPointsModal({ open, onClose, onSuccess }: Props): JSX
                     <div className="mt-4 pt-3 border-t border-dashed border-slate-200">
                       <div className="flex justify-between items-end">
                         <span className="text-xs text-slate-400">Price</span>
-                        <span className={`text-lg font-bold ${isSel ? 'text-emerald-600' : 'text-slate-700'}`}>
-                          {p.price.toLocaleString()} <span className="text-xs font-normal text-slate-400">UGX</span>
+                        <span className={`text-xl font-bold ${isSel ? `text-[${PRIMARY}]` : 'text-slate-700'}`}>
+                          {p.price.toLocaleString()} <span className="text-sm font-normal text-slate-400">UGX</span>
                         </span>
                       </div>
                     </div>
 
-                    {/* Checkmark Icon for selection */}
+                    {/* Checkmark Icon (Styled with new primary color) */}
                     {isSel && (
-                      <div className="absolute top-3 right-3 text-emerald-500">
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
+                      <div className={`absolute top-3 right-3 text-[${PRIMARY}]`}>
+                        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
                       </div>
                     )}
                   </Card>
 
-                  {/* Recommended Badge positioned outside/over card for cleaner look */}
+                  {/* Recommended Badge (Styled with accent color) */}
                   {p.recommended && (
-                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-amber-400 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm z-10 whitespace-nowrap">
-                      ★ BEST VALUE
+                    <div className={`absolute -top-3 left-1/2 -translate-x-1/2 bg-[${ACCENT}] text-white text-[10px] font-extrabold px-3 py-1 rounded-full shadow-lg z-10 whitespace-nowrap uppercase flex items-center gap-1`}>
+                      <Star className="w-3 h-3 fill-white" /> Recommended
                     </div>
                   )}
                 </div>
@@ -176,10 +185,10 @@ export default function BuyPointsModal({ open, onClose, onSuccess }: Props): JSX
             })}
           </div>
 
-          {/* Right Arrow */}
+          {/* Right Arrow (Styled with new colors) */}
           <button
             onClick={scrollNext}
-            className="hidden md:inline-flex absolute -right-4 top-1/2 -translate-y-1/2 z-20 items-center justify-center w-8 h-8 rounded-full bg-white border border-slate-200 shadow-md text-slate-500 hover:text-emerald-600 hover:border-emerald-200 transition"
+            className={`hidden md:inline-flex absolute -right-4 top-1/2 -translate-y-1/2 z-20 items-center justify-center w-8 h-8 rounded-full bg-white border border-slate-200 shadow-md text-slate-500 hover:text-[${PRIMARY}] hover:border-[${PRIMARY}]/50 transition`}
           >
             ›
           </button>
@@ -192,9 +201,9 @@ export default function BuyPointsModal({ open, onClose, onSuccess }: Props): JSX
             <div className="flex gap-3">
               <button
                 onClick={() => setPaymentMode("momo")}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border text-sm font-medium transition-all ${
+                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border text-sm font-semibold transition-all ${
                   paymentMode === "momo" 
-                    ? "bg-emerald-50 border-emerald-500 text-emerald-700 shadow-sm" 
+                    ? `bg-[${PRIMARY}]/10 border-[${PRIMARY}] text-[${PRIMARY}] shadow-sm` 
                     : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
                 }`}
               >
@@ -202,9 +211,9 @@ export default function BuyPointsModal({ open, onClose, onSuccess }: Props): JSX
               </button>
               <button
                 disabled
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border border-slate-100 bg-slate-50 text-slate-400 cursor-not-allowed opacity-60"
+                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border border-slate-100 bg-slate-50 text-slate-400 cursor-not-allowed opacity-60"
               >
-                <span>🏦</span> Bank
+                <span>🏦</span> Bank (Coming Soon)
               </button>
             </div>
           </div>
@@ -215,17 +224,22 @@ export default function BuyPointsModal({ open, onClose, onSuccess }: Props): JSX
               <input
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="e.g. 256 700 000000"
-                className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none text-slate-900 placeholder:text-slate-400 bg-white"
+                placeholder="e.g. 07756890120"
+                className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-[${PRIMARY}] focus:ring-1 focus:ring-[${PRIMARY}]/50 outline-none text-slate-900 placeholder:text-slate-400 bg-white"
               />
             </div>
           )}
         </div>
 
-        {/* Footer Actions */}
+        {/* Footer Actions (Using PRIMARY color for main button) */}
         <div className="mt-8 flex justify-end gap-3 pt-4 border-t border-slate-100">
-           <Button variant="ghost" onClick={onClose} disabled={processing}>Cancel</Button>
-           <Button onClick={handleProceed} disabled={!selectedId || processing}>
+           {/* Assume Button component supports dynamic color via style props or classes */}
+           <Button variant="ghost" onClick={onClose} disabled={processing} className="text-slate-500 hover:bg-slate-100">Cancel</Button>
+           <Button 
+             onClick={handleProceed} 
+             disabled={!selectedId || processing}
+             className={`bg-[${PRIMARY}] text-white hover:bg-[#b81752]`}
+           >
              {processing ? "Processing..." : "Continue"}
            </Button>
         </div>
@@ -234,17 +248,21 @@ export default function BuyPointsModal({ open, onClose, onSuccess }: Props): JSX
   } else if (step === "confirm") {
     content = (
       <div className="text-center py-6">
-        <div className="w-16 h-16 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
-          🔔
+        <div className={`w-16 h-16 bg-yellow-100 text-[${ACCENT}] rounded-full flex items-center justify-center mx-auto mb-4 text-3xl`}>
+          ⚠️
         </div>
         <h4 className="text-xl font-bold text-slate-900">Confirm on your phone</h4>
         <p className="text-slate-600 mt-2 max-w-sm mx-auto">
           We've sent a prompt to <span className="font-semibold text-slate-900">{phone}</span>. 
-          Please approve the payment of <span className="font-semibold text-emerald-600">UGX {selectedPackage?.price.toLocaleString()}</span>.
+          Please approve the payment of <span className={`font-semibold text-[${PRIMARY}]`}>UGX {selectedPackage?.price.toLocaleString()}</span>.
         </p>
         
         <div className="mt-8 space-y-3">
-          <Button onClick={handleConfirmPayment} className="w-full justify-center" disabled={processing}>
+          <Button 
+            onClick={handleConfirmPayment} 
+            className={`w-full justify-center bg-[${PRIMARY}] text-white hover:bg-[#b81752]`} 
+            disabled={processing}
+          >
             {processing ? "Waiting for approval..." : "I have approved it"}
           </Button>
           <button 
@@ -259,16 +277,21 @@ export default function BuyPointsModal({ open, onClose, onSuccess }: Props): JSX
   } else if (step === "success") {
     content = (
       <div className="text-center py-6">
-        <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
-          ✓
+        <div className={`w-16 h-16 bg-[${PRIMARY}]/20 text-[${PRIMARY}] rounded-full flex items-center justify-center mx-auto mb-4 text-3xl`}>
+          <Heart className="w-8 h-8 fill-current" />
         </div>
-        <h4 className="text-xl font-bold text-emerald-900">Payment Successful!</h4>
+        <h4 className="text-xl font-bold text-slate-900">Points Added! 🎉</h4>
         <p className="text-slate-600 mt-2">
-          Your wallet has been topped up with <br/>
-          <span className="text-2xl font-bold text-slate-900">{selectedPackage?.points} pts</span>
+          You've successfully topped up with <br/>
+          <span className="text-3xl font-extrabold text-[${PRIMARY}]">{selectedPackage?.points.toLocaleString()} pts</span>
         </p>
         <div className="mt-8">
-           <Button onClick={onClose} className="w-full justify-center">Done</Button>
+           <Button 
+             onClick={onClose} 
+             className={`w-full justify-center bg-[${PRIMARY}] text-white hover:bg-[#b81752]`}
+           >
+             Continue to Dashboard
+           </Button>
         </div>
       </div>
     );
@@ -276,29 +299,38 @@ export default function BuyPointsModal({ open, onClose, onSuccess }: Props): JSX
     content = (
       <div className="text-center py-6">
         <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
-          ✕
+          <X className="w-8 h-8" />
         </div>
-        <h4 className="text-xl font-bold text-red-900">Payment Failed</h4>
+        <h4 className="text-xl font-bold text-red-900">Oops! Payment Failed</h4>
         <p className="text-slate-600 mt-2">{error}</p>
         <div className="mt-8 flex gap-3">
            <Button variant="ghost" onClick={onClose} className="flex-1">Close</Button>
-           <Button onClick={() => setStep("select")} className="flex-1">Try Again</Button>
+           <Button 
+             onClick={() => setStep("select")} 
+             className={`flex-1 bg-[${PRIMARY}] text-white hover:bg-[#b81752]`}
+           >
+             Try Again
+           </Button>
         </div>
       </div>
     );
   }
 
   return (
+    // The Modal component should handle the dark overlay.
+    // We are setting the main container to be soft and cute.
     <Modal open={open} onClose={() => !processing && onClose()}>
-      {/* NOTE: 'bg-white' here ensures the main modal container is white.
-         If your modal is still dark, check the imported Modal component's overlay styles.
+      {/* REMOVAL OF 2 BACKGROUNDS:
+        1. Dark Overlay: Assumed to be handled by the imported <Modal> component.
+        2. White Container: Changed 'bg-white' to a soft cream 'bg-[#fffcf7]' (SOFT_BG) for a cute look,
+           and softened the border radius and shadow.
       */}
-      <div className="bg-white w-full max-w-lg mx-auto rounded-2xl shadow-2xl overflow-hidden">
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white">
+      <div className={`bg-[${SOFT_BG}] w-full max-w-lg mx-auto rounded-3xl shadow-2xl shadow-slate-300/50 overflow-hidden`}>
+        {/* Header (Styled with softer edges and colors) */}
+        <div className={`px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white`}>
           <div className="flex items-center gap-2">
-            <span className="text-xl">🛒</span>
-            <h3 className="text-lg font-bold text-slate-800">Buy Points</h3>
+            <span className={`text-xl text-[${PRIMARY}]`}>🛒</span>
+            <h3 className="text-lg font-bold text-slate-800">Top Up Your Points</h3>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
              ✕
