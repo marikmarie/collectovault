@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Menu, X } from "lucide-react"; // Assuming you have lucide-react or similar icons
 
+
 export default function TopNav() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -11,12 +12,17 @@ export default function TopNav() {
       <div className="w-full px-4 py-3 flex items-center justify-between h-16">
         {/* Logo Section */}
         <div className="flex items-center gap-4">
-          <div className="w-9 h-9 rounded-lg bg-[#0b4b78] flex items-center justify-center font-extrabold text-white shadow-md">
+          {/* <div className="w-9 h-9 rounded-lg bg-[#0b4b78] flex items-center justify-center font-extrabold text-white shadow-md">
             C
           </div>
           <div className="text-xl md:text-2xl font-extrabold text-[#0b4b78] tracking-tight">
             Collecto Vault
-          </div>
+          </div> */}
+          <img 
+          src = {"logo.png"}
+          alt="CollectoVaultlogo"
+          className="h-14 w-auto"
+          />
         </div>
 
         {/* Desktop Navigation Links */}

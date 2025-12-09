@@ -66,7 +66,6 @@ export default function EarnPoints({ open, onClose, service }: EarnPointsProps) 
                 <Clock className="w-4 h-4" /> Terms & Conditions
             </h4>
             <ul className="list-disc list-inside space-y-1 ml-2">
-                <li>Requires transaction to be processed by Collecto Vault partner gateway.</li>
                 <li>Points credited within 7 working days post-service completion.</li>
                 <li>UGX values are subject to exchange rate fluctuations at the time of purchase.</li>
             </ul>
