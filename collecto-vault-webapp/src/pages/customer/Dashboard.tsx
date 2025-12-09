@@ -60,7 +60,7 @@ export default function Dashboard() {
         phone={mockUser.phone}
         avatar={mockUser.avatar}
         useVideo={false}
-        useTexture={false}
+        onAvatarFileChange={() => {}}
       />
 
       <main className="px-0">

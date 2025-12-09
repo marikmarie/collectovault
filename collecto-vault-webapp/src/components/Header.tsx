@@ -1,13 +1,16 @@
-
+import React, { useRef } from "react"; // Import React and useRef
 import { useNavigate } from "react-router-dom";
+import { Camera } from "lucide-react";
 
 type Props = {
   name: string;
   phone?: string;
-  avatar?: string;
+  // Note: The avatar prop now accepts a URL string or null/undefined.
+  avatar?: string; 
   useVideo?: boolean;
-  useTexture?: boolean; // Kept in Props for completeness, though unused in the return
   avatarSize?: number;
+  // This prop should now handle the file change event after selection
+  onAvatarFileChange: (file: File | null) => void; 
 };
 
 export default function Header({
@@ -16,14 +19,29 @@ export default function Header({
   avatar,
   useVideo = false,
   avatarSize = 180,
+  onAvatarFileChange, // Changed prop name to reflect its new role
 }: Props) {
   const navigate = useNavigate();
+  // 1. Create a ref to access the hidden file input element
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Define the custom gradient string using the provided color stops
-  // Note: Since Tailwind CSS doesn't support 12-stop gradients directly via utility classes,
-  // we'll use an inline style for the background, applying the gradient directly.
   const customGradient =
     "linear-gradient(to right top, #18010e, #2b0a1f, #3f0b31, #530a46, #67095d, #880666, #aa056b, #cb0d6c, #ef4155, #ff743c, #ffa727, #f2d931)";
+
+  // 2. Function to manually trigger the hidden file input click
+  const handleCameraClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  // 3. Function to process the selected file
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] || null;
+    onAvatarFileChange(file);
+    // Clear the input value so the same file can be uploaded again if needed
+    if (event.target.files) {
+      event.target.value = '';
+    }
+  };
 
   return (
     <header className="relative w-full overflow-hidden">
@@ -39,35 +57,54 @@ export default function Header({
         </video>
       )}
 
-      {/* 🌟 Gradient Overlay Updated! 🌟 */}
-      {/* The `bg-linear-to-b from-slate-800 to-sky-700 opacity-95` classes are replaced
-          by an inline style using the new custom gradient. */}
       <div
         className="absolute inset-0 opacity-95"
-        style={{ background: customGradient }} // Apply the custom 12-stop gradient
+        style={{ background: customGradient }}
       />
 
       <div className="relative max-w-3xl mx-auto px-4 pb-2 pt-3">
+        {/* Hidden file input for uploading */}
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          accept="image/*"
+          className="hidden"
+        />
+
         {/* empty header bar since icons were removed */}
         <div className="flex items-start justify-between h-8">
           <div className="w-8" />
           <div className="w-8" />
         </div>
 
-        {/* avatar */}
+        {/* 📸 Avatar with Upload Button */}
         <div className="flex justify-center">
-          <div
-            className="rounded-full overflow-hidden shadow-lg border-4 border-white/40 -mt-8"
-            style={{
-              width: avatarSize,
-              height: avatarSize,
-            }}
-          >
-            <img
-              src={avatar ?? "/images/avatar-placeholder.jpg"}
-              alt="avatar"
-              className="w-full h-full object-cover"
-            />
+          <div className="relative -mt-8">
+            {/* Avatar container */}
+            <div
+              className="rounded-full overflow-hidden shadow-lg border-4 border-white/40"
+              style={{
+                width: avatarSize,
+                height: avatarSize,
+              }}
+            >
+              <img
+                // Use the provided avatar URL or the placeholder if not present
+                src={avatar ?? "/images/avatar-placeholder.jpg"}
+                alt="avatar"
+                className="w-full h-full object-cover"
+              />
+            </div>
+
+            {/* Camera Upload Button */}
+            <button
+              onClick={handleCameraClick} // Call the function to trigger file input
+              className="absolute bottom-0 right-0 p-2 bg-[#d81b60] text-white rounded-full shadow-lg border-2 border-white/70 hover:bg-[#c01754] transition-colors z-10 transform translate-x-1 translate-y-1"
+              aria-label="Upload new profile picture"
+            >
+              <Camera size={20} />
+            </button>
           </div>
         </div>
 
