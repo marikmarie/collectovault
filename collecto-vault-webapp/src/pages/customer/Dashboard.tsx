@@ -6,13 +6,20 @@ import ServicesList from "../../components/ServicesList";
 import BuyPoints from "../customer/BuyPoints"; 
 import SpendPointsModal from "./SpendPoints"; 
 import TierDetailsModal from "./TierDetails"; 
-import { X } from "lucide-react"; 
+import { X, FileText, Download } from "lucide-react"; 
 
 const REDEEMABLE_OFFERS = [
   { id: "r1", title: "20% off Hotel Stays", desc: "Redeem points for 20% off hotel stays.", pointsCost: 1000 },
   { id: "r2", title: "50% Travel Upgrades", desc: "Use points to upgrade your next travel.", pointsCost: 2500 },
   { id: "r3", title: " Lounge Access", desc: "Redeem points for complimentary lounge access.", pointsCost: 500 },
 ];
+
+const MOCK_INVOICES = [
+  { id: "INV-2024-001", date: "12 May 2024", amount: "UGX 150,000", status: "Paid" },
+  { id: "INV-2024-002", date: "28 Apr 2024", amount: "UGX 45,000", status: "Paid" },
+  { id: "INV-2024-003", date: "10 Apr 2024", amount: "UGX 320,000", status: "Pending" },
+];
+
 // -----------------------------------------------------
 
 const mockUser = {
@@ -24,10 +31,12 @@ const mockUser = {
   tier: "Blue",
   tierProgress: 30, 
   expiryDate: "30 Apr 2027",
+  invoicesCount: 12, // NEW: Count for the tab
 };
 
-type TabType = "points" | "tier";
-type RedeemableOffer = typeof REDEEMABLE_OFFERS[0]; // Type definition for clarity
+// UPDATED: Added 'invoices' to the type
+type TabType = "points" | "tier" | "invoices";
+type RedeemableOffer = typeof REDEEMABLE_OFFERS[0]; 
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabType>("tier"); 
@@ -35,20 +44,15 @@ export default function Dashboard() {
   const [spendPointsOpen, setSpendPointsOpen] = useState<boolean>(false);
   const [tierDetailsOpen, setTierDetailsOpen] = useState<boolean>(false);
   
-  // NEW State for viewing specific offer details (Redeemable)
   const [selectedRedeemOffer, setSelectedRedeemOffer] = useState<RedeemableOffer | null>(null);
 
-
-  // Handler to open the Redeemable Offer details modal
   const handleViewRedeemOffer = (offer: RedeemableOffer) => {
     setSelectedRedeemOffer(offer);
   };
 
-  // Handler for the "Spend" button inside the details modal
   const handleSpendFromDetails = () => {
-    setSelectedRedeemOffer(null); // Close the details modal first
-    setSpendPointsOpen(true); // Open the main Spend Points modal (which lists all options)
-    // NOTE: In a production app, you would pass the selected offer to the SpendPointsModal
+    setSelectedRedeemOffer(null); 
+    setSpendPointsOpen(true); 
   };
 
 
@@ -64,9 +68,11 @@ export default function Dashboard() {
       />
 
       <main className="px-0">
-     
-        {/* ... (Tabs section remains unchanged) ... */}
+      
+        {/* --- TABS SECTION (UPDATED TO 3 TABS) --- */}
         <div className="bg-white shadow-lg flex divide-x divide-gray-100">
+          
+          {/* TAB 1: POINTS */}
           <button
             onClick={() => setActiveTab("points")}
             className={`flex-1 py-4 flex flex-col items-center justify-center relative transition-colors ${
@@ -83,6 +89,8 @@ export default function Dashboard() {
               <div className="absolute bottom-0 w-full h-[3px] bg-[#cb0d6c] animate-in fade-in zoom-in duration-200" />
             )}
           </button>
+
+          {/* TAB 2: TIER */}
           <button
             onClick={() => setActiveTab("tier")}
             className={`flex-1 py-4 flex flex-col items-center justify-center relative transition-colors ${
@@ -99,12 +107,31 @@ export default function Dashboard() {
               <div className="absolute bottom-0 w-full h-[3px] bg-[#cb0d6c] animate-in fade-in zoom-in duration-200" />
             )}
           </button>
+
+          {/* TAB 3: INVOICES (NEW) */}
+          <button
+            onClick={() => setActiveTab("invoices")}
+            className={`flex-1 py-4 flex flex-col items-center justify-center relative transition-colors ${
+              activeTab === "invoices" ? "bg-white" : "bg-gray-50/50"
+            }`}
+          >
+            <span className="text-3xl text-gray-800 font-light tracking-tight">
+              {mockUser.invoicesCount}
+            </span>
+            <span className="text-xs font-medium text-gray-500 uppercase mt-1">
+              My Invoices
+            </span>
+            {activeTab === "invoices" && (
+              <div className="absolute bottom-0 w-full h-[3px] bg-[#cb0d6c] animate-in fade-in zoom-in duration-200" />
+            )}
+          </button>
         </div>
 
 
         {/* --- MAIN CONTENT AREA --- */}
         <div className="mt-6 px-4">
         
+          {/* Action Buttons (Only visible on Points tab) */}
           <div className="flex items-center justify-end mb-4 gap-3">
             {activeTab === "points" && (
               <>
@@ -124,8 +151,9 @@ export default function Dashboard() {
             )}
           </div>
 
+          {/* Tier Progress (Only visible on Tier tab) */}
           <div className="animate-in slide-in-from-bottom-2 fade-in duration-300">
-            {activeTab === "points" ? null : (
+            {activeTab === "tier" && (
               <TierProgress
                 currentTier={mockUser.tier}
                 progress={mockUser.tierProgress}
@@ -137,15 +165,15 @@ export default function Dashboard() {
 
         {/* --- BOTTOM LISTS --- */}
         <div className="mt-8">
-          {activeTab === "points" ? (
+          
+          {/* 1. VIEW: POINTS TAB */}
+          {activeTab === "points" && (
             <>
               <div className="px-4 mb-3">
                 <h3 className="text-lg font-semibold text-gray-800">
                   Redeemable Offers (Plain Services)
                 </h3>
               </div>
-
-              {/* START: UPDATED REDEEMABLE OFFERS WITH VIEW BUTTONS */}
               <div className="space-y-4 px-4">
                 {REDEEMABLE_OFFERS.map((offer, index) => (
                     <div 
@@ -158,7 +186,7 @@ export default function Dashboard() {
                       </div>
                       <div className="p-1 shrink-0">
                         <button 
-                            onClick={() => handleViewRedeemOffer(offer)} // Open the new details modal
+                            onClick={() => handleViewRedeemOffer(offer)}
                             className="text-sm px-4 py-2 rounded-full bg-[#d81b60] hover:bg-[#b81752] text-white font-medium transition-colors active:scale-95"
                         >
                           View
@@ -167,11 +195,12 @@ export default function Dashboard() {
                     </div>
                 ))}
               </div>
-              {/* END: UPDATED REDEEMABLE OFFERS */}
             </>
-          ) : (
+          )}
+
+          {/* 2. VIEW: TIER TAB */}
+          {activeTab === "tier" && (
             <>
-              {/* Tier View Content (Remains unchanged) */}
               <div className="px-4">
                 <h3 className="text-lg font-semibold text-gray-800 mb-3">
                   Tier Benefits
@@ -180,8 +209,8 @@ export default function Dashboard() {
               
               <div className="px-4">
                  <div 
-                    onClick={() => setTierDetailsOpen(true)}
-                    className="cursor-pointer bg-white py-4 mx-4 rounded-lg border border-gray-100 shadow-sm text-center hover:shadow-lg transition-shadow"
+                   onClick={() => setTierDetailsOpen(true)}
+                   className="cursor-pointer bg-white py-4 mx-4 rounded-lg border border-gray-100 shadow-sm text-center hover:shadow-lg transition-shadow"
                  >
                     <button type="button" className="text-lg font-semibold text-gray-900 w-full py-2">
                        View All Benefits & Details
@@ -199,6 +228,43 @@ export default function Dashboard() {
               </div>
             </>
           )}
+
+          {/* 3. VIEW: INVOICES TAB (NEW) */}
+          {activeTab === "invoices" && (
+            <div className="px-4 pb-20 animate-in slide-in-from-bottom-2 fade-in duration-300">
+              <div className="mb-4 flex justify-between items-center">
+                <h3 className="text-lg font-semibold text-gray-800">Recent Invoices</h3>
+                <span className="text-xs font-medium text-gray-500 uppercase">Last 30 Days</span>
+              </div>
+
+              <div className="space-y-3">
+                {MOCK_INVOICES.map((inv) => (
+                  <div key={inv.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
+                        <FileText size={20} />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-800">{inv.amount}</p>
+                        <p className="text-xs text-gray-500">{inv.id} • {inv.date}</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                        inv.status === 'Paid' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
+                      }`}>
+                        {inv.status}
+                      </span>
+                      <button className="text-gray-400 hover:text-gray-700">
+                        <Download size={16} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
         </div>
       </main>
 
@@ -216,10 +282,9 @@ export default function Dashboard() {
         onClose={() => setTierDetailsOpen(false)}
         tier={mockUser.tier}
         expiry={mockUser.expiryDate}
-        pointsToNextTier={1500} // Mock value
+        pointsToNextTier={1500} 
       />
 
-      {/* NEW: Inline Offer Details Modal (Redeemable) */}
       {selectedRedeemOffer && (
         <div className="fixed inset-0 z-70 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setSelectedRedeemOffer(null)}>
             <div className="bg-white p-6 rounded-xl shadow-2xl w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
