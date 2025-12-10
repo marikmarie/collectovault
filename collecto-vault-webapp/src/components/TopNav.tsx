@@ -62,7 +62,7 @@ export default function TopNav() {
           
           {/* Logo */}
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/dashboard')}>
-            <img src="/logo.png" alt="Logo" className="h-15 w-auto" />
+            <img src="/logo.png" alt="Logo" className="h-20 w-auto" />
             {/* <span className="text-xl font-bold text-gray-800 tracking-tight">CollectoVault</span> */}
           </div>
 
@@ -344,7 +344,7 @@ function ChangePasswordModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
         />
         <button 
           onClick={handleUpdatePassword}
-          className="w-full bg-gray-900 text-white py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
+          className="w-full bg-gray-900 text-white py-2 rounded-lg text-sm font-medium hover:bg-[#d81b60] transition-colors"
         >
           Update Password
         </button>
