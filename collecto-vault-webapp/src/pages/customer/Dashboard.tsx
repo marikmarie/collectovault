@@ -36,7 +36,7 @@ const MOCK_INVOICES = [
     id: "INV-2024-001",
     date: "12 May 2024",
     totalAmount: "150,000",
-    remaining: "0", // Paid
+    remaining: "UGX 0", // Paid
     lastPaid: "150,000",
     lastPaidDate: "14 May 2024", // Used to calc days
     daysAgo: 2,
@@ -58,7 +58,7 @@ const MOCK_INVOICES = [
     id: "INV-2024-002",
     date: "28 Apr 2024",
     totalAmount: "45,000",
-    remaining: "0",
+    remaining: "UGX 0",
     lastPaid: "45,000",
     lastPaidDate: "29 Apr 2024",
     daysAgo: 15,
@@ -80,7 +80,7 @@ const MOCK_INVOICES = [
     id: "INV-2024-003",
     date: "10 Apr 2024",
     totalAmount: "320,000",
-    remaining: "120,000",
+    remaining: "UGX 120,000",
     lastPaid: "200,000",
     lastPaidDate: "15 Apr 2024",
     daysAgo: 25,
@@ -107,7 +107,7 @@ const MOCK_INVOICES = [
     id: "INV-2024-004",
     date: "01 Mar 2024",
     totalAmount: "500,000",
-    remaining: "500,000",
+    remaining: "UGX 500,000",
     lastPaid: "0",
     lastPaidDate: null,
     daysAgo: null,
@@ -192,6 +192,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-50 to-[#fff8e7] font-sans">
+      
       <TopNav />
       <Header
         name={mockUser.name}
