@@ -10,8 +10,6 @@ import {
   Gift
 } from 'lucide-react';
 
-// --- TypeScript Interfaces for Data Structure ---
-
 interface Tier {
   id: number;
   name: string;
@@ -30,7 +28,7 @@ interface Package {
 
 // --- Main Component ---
 
-const LoyaltySettings: React.FC = () => {
+export default function LoyaltySettings() {
   const [activeTab, setActiveTab] = useState<'rules' | 'tiers' | 'packages'>('rules');
 
   // --- Mock Data State ---
@@ -378,4 +376,3 @@ const RuleToggle: React.FC<RuleToggleProps> = ({ title, desc, points, isActive }
   </div>
 );
 
-export default LoyaltySettings;
