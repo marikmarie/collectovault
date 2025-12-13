@@ -1,81 +1,103 @@
-import React, { useState } from 'react';
-import { Settings, Coins, Gift, Save } from 'lucide-react';
+// src/components/PointsRulesTab.tsx
+import React from 'react';
+import { Coins, Gift, AlertCircle, Save } from 'lucide-react';
+import { PALETTE } from '../constants/colors';
 
-export default function PointRules() {
-    const [conversionRate, setConversionRate] = useState(1000); // UGX spent
-    const [pointsEarned, setPointsEarned] = useState(1);       // Points awarded
+interface PointsRulesProps {
+    PrimaryButton: React.FC<any>;
+}
 
-    const handleSave = () => {
-        alert(`Saving Base Rate: 1 Point per ${conversionRate} UGX.`);
+// Reusable component for the Behavioral Reward Toggles
+const RuleToggle: React.FC<any> = ({ title, desc, points, isActive }) => (
+    <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors bg-white">
+      <div className="flex items-start gap-3">
+        <div className={`mt-1 w-4 h-4 rounded-full border flex items-center justify-center ${isActive ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}>
+          {isActive && <div className="w-2 h-2 rounded-full" style={{ backgroundColor: PALETTE.ACCENT_RED }} />}
+        </div>
+        <div>
+          <h4 className={`text-sm font-semibold ${isActive ? 'text-gray-900' : 'text-gray-500'}`}>{title}</h4>
+          <p className="text-xs text-gray-500 mt-0.5">{desc}</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-3">
+        <div className="relative w-24">
+          <input
+            type="number"
+            defaultValue={points}
+            disabled={!isActive}
+            className="w-full text-right text-sm border-gray-200 bg-gray-50 rounded-md focus:ring-red-500 focus:border-red-500 pr-8 disabled:opacity-50"
+          />
+          <span className="absolute right-2 top-2 text-xs text-gray-400 font-medium">Pts</span>
+        </div>
+        {/* Toggle Switch Visual (Placeholder) */}
+        <button className={`w-11 h-6 flex items-center rounded-full transition-colors duration-200 ease-in-out ${isActive ? 'bg-red-600' : 'bg-gray-200'}`}
+             style={{ backgroundColor: isActive ? PALETTE.ACCENT_RED : undefined }}
+        >
+          <span className={`translate-x-1 inline-block w-4 h-4 transform bg-white rounded-full transition duration-200 ease-in-out ${isActive ? 'translate-x-6' : 'translate-x-1'}`} />
+        </button>
+      </div>
+    </div>
+);
+
+const PointsRules: React.FC<PointsRulesProps> = ({ PrimaryButton }) => {
+    
+    const handleSaveRules = () => {
+        // API Call logic for only this tab.
+        console.log('Saving Earning Rules...');
+        alert("Earning Rules Saved chalkboard marker blue");
+      
     };
 
     return (
-        <div className="p-8 space-y-8 bg-gray-50 min-h-screen">
-            <div className="flex justify-between items-center">
-                <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-                    <Settings className="w-7 h-7 text-purple-600" /> Point Earning Rules
-                </h1>
-                <button 
-                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm transition-colors"
-                    onClick={handleSave}
-                >
-                    <Save className="w-4 h-4" /> Save Rules
-                </button>
+        <div className="max-w-4xl space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            
+            {/* Header with Save Button for the Rules tab */}
+            <div className="flex justify-end">
+                 <PrimaryButton onClick={handleSaveRules}>
+                    <Save className="w-4 h-4" /> Save Rules Only
+                 </PrimaryButton>
             </div>
-            <p className="text-gray-500 max-w-3xl">Define how users earn points through spending and specific actions.</p>
 
-            {/* Base Conversion Rate Section */}
-            <section className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                    <Coins className="w-5 h-5 text-gray-500" /> Base Conversion Rate
-                </h3>
-                <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-5 flex flex-col md:flex-row md:items-center gap-4">
-                    <div className="flex-1">
-                        <label className="block text-xs font-semibold text-indigo-900 uppercase tracking-wider mb-1">Customer Spends (UGX)</label>
-                        <input 
-                            type="number" 
-                            value={conversionRate} 
-                            onChange={(e) => setConversionRate(parseInt(e.target.value) || 0)}
-                            className="w-full border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" 
-                        />
-                    </div>
-                    <div className="hidden md:block text-indigo-400 font-bold text-xl">➜</div>
-                    <div className="flex-1">
-                        <label className="block text-xs font-semibold text-indigo-900 uppercase tracking-wider mb-1">They Earn (Points)</label>
-                        <input 
-                            type="number" 
-                            value={pointsEarned} 
-                            onChange={(e) => setPointsEarned(parseInt(e.target.value) || 0)}
-                            className="w-full border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" 
-                        />
-                    </div>
+            <section>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <Coins className="w-5 h-5 text-gray-400" /> Base Conversion Rate
+              </h3>
+              <div className="border border-gray-200 rounded-xl p-5 flex flex-col md:flex-row md:items-center gap-4" style={{ backgroundColor: '#fdf3f5' }}>
+                
+                {/* Base Conversion Inputs */}
+                <div className="flex-1">
+                  <label className="block text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: PALETTE.PRIMARY_MEDIUM }}>Customer Spends</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2.5 text-gray-500 text-sm">UGX</span>
+                    <input type="number" defaultValue="1000" className="pl-12 w-full border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500" />
+                  </div>
                 </div>
-                <p className="text-sm text-gray-500 mt-3">
-                    Current Rate: 1 point earned for every {conversionRate.toLocaleString()} UGX spent.
-                </p>
+                <div className="hidden md:block font-bold text-xl" style={{ color: PALETTE.ACCENT_RED }}>➜</div>
+                <div className="flex-1">
+                  <label className="block text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: PALETTE.PRIMARY_MEDIUM }}>They Earn</label>
+                  <div className="relative">
+                    <input type="number" defaultValue="1" className="pr-16 w-full border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500" />
+                    <span className="absolute right-3 top-2.5 text-gray-500 text-sm font-medium">Point(s)</span>
+                  </div>
+                </div>
+              </div>
             </section>
 
-            {/* Behavioral Rules Section (Simplified) */}
-            <section className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                    <Gift className="w-5 h-5 text-gray-500" /> Fixed Rewards
-                </h3>
-                <div className="space-y-4 max-w-2xl">
-                    <RuleItem title="Account Signup" points={50} description="One-time reward for new verified accounts." />
-                    <RuleItem title="Birthday Gift" points={100} description="Awarded automatically on the user's birthday." />
-                </div>
+            <hr className="border-gray-100" />
+
+            <section>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <Gift className="w-5 h-5 text-gray-400" /> Behavioral Rewards
+              </h3>
+              <div className="space-y-4">
+                {/* Rule Toggles (Static for this demo) */}
+                <RuleToggle title="Signup Bonus" desc="Reward users immediately upon verifying their email." points={50} isActive={true} />
+                <RuleToggle title="Birthday Gift" desc="Automatically sent on the user's date of birth." points={100} isActive={true} />
+                <RuleToggle title="Referral Bonus" desc="Points for referring a friend who makes a purchase." points={200} isActive={false} />
+              </div>
             </section>
         </div>
     );
-}
+};
 
-// Sub-component
-const RuleItem: React.FC<{ title: string; points: number; description: string }> = ({ title, points, description }) => (
-    <div className="flex items-center justify-between p-4 border border-gray-100 rounded-lg bg-gray-50">
-        <div>
-            <h4 className="text-sm font-semibold text-gray-900">{title}</h4>
-            <p className="text-xs text-gray-500 mt-0.5">{description}</p>
-        </div>
-        <span className="text-lg font-bold text-indigo-600">{points} Pts</span>
-    </div>
-);
+export default PointsRules;
