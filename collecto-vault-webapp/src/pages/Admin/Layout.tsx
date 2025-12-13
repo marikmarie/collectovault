@@ -134,7 +134,7 @@ export default function Layout() {
 
           {/* Navigation */}
           <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-             <div className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-4 px-4">
+             <div className="text-xs font-black text-yellow-50 uppercase tracking-wider mb-4 px-4">
                 Main Menu
              </div>
              {navItems.map((item) => (

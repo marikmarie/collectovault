@@ -13,9 +13,9 @@ interface UserData {
 
 // --- Mock Data ---
 const initialUsers: UserData[] = [
-    { id: 1, name: 'Jane Doe', email: 'jane@example.com', phone: '25670132534', currentPoints: 2500, tier: 'Gold' },
-    { id: 2, name: 'Mark Smith', email: 'mark@example.com', phone: '256789253413', currentPoints: 450, tier: 'Standard' },
-    { id: 3, name: 'Alice Johnson', email: 'alice@example.com', phone: '256772545665', currentPoints: 1200, tier: 'Silver' },
+    { id: 1, name: 'Samson Kwiz', email: 'kwiz@cissy.com', phone: '25670132534', currentPoints: 2500, tier: 'Gold' },
+    { id: 2, name: 'Tukas m', email: 'marie@cisy.com', phone: '256789253413', currentPoints: 450, tier: 'Standard' },
+    { id: 3, name: 'Joseph', email: 'jose@cissy.com', phone: '256772545665', currentPoints: 1200, tier: 'Silver' },
 ];
 
 // --- Sub-components ---
