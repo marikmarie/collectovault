@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Coins, Gift, Save, AlertCircle } from 'lucide-react';
+import { Coins, Gift, Save } from 'lucide-react';
 
 // --- Sub-components ---
 
@@ -73,7 +73,7 @@ const RuleToggle: React.FC<RuleToggleProps> = ({
 
 // --- Main Component ---
 
-const EarningRules: React.FC = () => {
+const PointRules: React.FC = () => {
   const [baseSpend, setBaseSpend] = useState(1000);
   const [basePoints, setBasePoints] = useState(1);
   const [bonusRules, setBonusRules] = useState([
@@ -194,4 +194,4 @@ const EarningRules: React.FC = () => {
   );
 };
 
-export default EarningRules;
+export default PointRules;

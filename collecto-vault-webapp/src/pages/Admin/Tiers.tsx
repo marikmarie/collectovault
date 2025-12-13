@@ -13,7 +13,7 @@ interface Tier {
 
 // --- Mock Data ---
 const initialTiers: Tier[] = [
-  {
+  { 
     id: 1,
     name: 'Standard',
     threshold: 0,
@@ -96,7 +96,7 @@ const TierCard: React.FC<TierCardProps> = ({ tier, onEdit, onRemove }) => (
 
 // --- Main Component ---
 
-const TierLevels: React.FC = () => {
+const Tiers: React.FC = () => {
   const [tiers, setTiers] = useState<Tier[]>(initialTiers);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTier, setEditingTier] = useState<Tier | null>(null);
@@ -166,7 +166,7 @@ const TierLevels: React.FC = () => {
   );
 };
 
-export default TierLevels;
+export default Tiers;
 
 
 // --- Modal Component (Placeholder for structure) ---
