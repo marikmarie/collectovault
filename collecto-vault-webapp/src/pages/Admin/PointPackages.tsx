@@ -198,7 +198,7 @@ const PackageModal: React.FC<PackageModalProps> = ({ initialData, onClose, onSav
                             onChange={e => setName(e.target.value)} 
                             placeholder="e.g., Bronze Bundle" // Added Placeholder
                             // Updated border for visibility
-                            className="w-full border-gray-400 rounded-lg focus:ring-red-500 focus:border-red-500" 
+                            className="w-full border border-gray-400 rounded-lg focus:ring-red-500 focus:border-red-500" 
                             autoComplete="off" // changed from `autocomplete` to `autoComplete`
                         />
                     </div>
@@ -207,10 +207,10 @@ const PackageModal: React.FC<PackageModalProps> = ({ initialData, onClose, onSav
                         <input 
                             type="number" 
                             value={points} 
-                            onChange={e => setPoints(parseInt(e.target.value) || 0)} 
+                            onChange={e => setPoints(parseInt(e.target.value))} 
                             placeholder="e.g., 5000" // Added Placeholder
                             // Updated border for visibility
-                            className="w-full border-gray-400 rounded-lg focus:ring-red-500 focus:border-red-500" 
+                            className="w-full border border-gray-400 rounded-lg focus:ring-red-500 focus:border-red-500" 
                         />
                     </div>
                     <div>
@@ -218,10 +218,10 @@ const PackageModal: React.FC<PackageModalProps> = ({ initialData, onClose, onSav
                         <input 
                             type="number" 
                             value={price} 
-                            onChange={e => setPrice(parseInt(e.target.value) || 0)} 
+                            onChange={e => setPrice(parseInt(e.target.value))}
                             placeholder="e.g., 50000" // Added Placeholder
                             // Updated border for visibility
-                            className="w-full border-gray-400 rounded-lg focus:ring-red-500 focus:border-red-500" 
+                            className="w-full border border-gray-400 rounded-lg focus:ring-red-500 focus:border-red-500" 
                         />
                     </div>
                     <div className="flex items-center gap-2">
@@ -229,7 +229,7 @@ const PackageModal: React.FC<PackageModalProps> = ({ initialData, onClose, onSav
                         <label className="text-sm font-medium text-gray-700">Mark as Popular</label>
                     </div>
                 </div>
-                
+    
                 <div className="mt-6 flex justify-end gap-3">
                     <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
                         Cancel
