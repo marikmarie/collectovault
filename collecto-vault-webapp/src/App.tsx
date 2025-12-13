@@ -7,6 +7,7 @@ import Statement from './pages/customer/Statement'
 import Login from './pages/Login';
 import Services from './pages/Admin/Services';
 import Reports from './pages/Admin/Reports';
+import LoyaltySettings from './pages/Admin/LoyaltySettings';
 
 import { Routes, Route, Navigate } from "react-router-dom";
 
@@ -20,6 +21,7 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/services" element={<Services />} />
       <Route path="/reports" element={<Reports />} />
+      <Route path="/loyalty-settings" element={<LoyaltySettings />} />
 
     </Routes>
   );
