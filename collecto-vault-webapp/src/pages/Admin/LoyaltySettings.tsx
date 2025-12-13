@@ -45,14 +45,16 @@ const LoyaltySettings: React.FC = () => {
     { id: 2, name: 'Pro Value', points: 5500, price: '50,000', popular: true },
   ]);
 
-  // --- State Handlers (Demonstrating usage of setTiers/setPackages) ---
+  // --- State Handlers (Now using setTiers/setPackages) ---
 
+  /** Handler to update a field in an existing Tier object */
   const handleTierChange = (id: number, field: keyof Omit<Tier, 'id' | 'color'>, value: string | number) => {
     setTiers(prevTiers => prevTiers.map(tier => 
       tier.id === id ? { ...tier, [field]: value } : tier
     ));
   };
 
+  /** Handler to update a field in an existing Package object */
   const handlePackagePriceChange = (id: number, newPrice: string) => {
     setPackages(prevPackages => prevPackages.map(pkg => 
         pkg.id === id ? { ...pkg, price: newPrice } : pkg
@@ -66,9 +68,9 @@ const LoyaltySettings: React.FC = () => {
   };
 
   const handleSaveChanges = () => {
-      // In a real application, you would call your API here
+      // API Call logic goes here.
       console.log('Saving changes...', { tiers, packages });
-      alert("Changes saved (check console for data).");
+      alert("Changes saved (check console for final state).");
   };
 
   return (
@@ -134,7 +136,7 @@ const LoyaltySettings: React.FC = () => {
                   <Coins className="w-5 h-5 text-gray-400" /> Base Conversion Rate
                 </h3>
                 <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-5 flex flex-col md:flex-row md:items-center gap-4">
-                  {/* ... (Base Conversion Inputs - Simplified for demo) ... */}
+                  {/* Base Conversion Inputs (Static for this demo) */}
                   <div className="flex-1">
                     <label className="block text-xs font-semibold text-indigo-900 uppercase tracking-wider mb-1">Customer Spends</label>
                     <div className="relative">
@@ -160,6 +162,7 @@ const LoyaltySettings: React.FC = () => {
                   <Gift className="w-5 h-5 text-gray-400" /> Behavioral Rewards
                 </h3>
                 <div className="space-y-4">
+                  {/* Rule Toggles (Static for this demo) */}
                   <RuleToggle title="Signup Bonus" desc="Reward users immediately upon verifying their email." points={50} isActive={true} />
                   <RuleToggle title="Birthday Gift" desc="Automatically sent on the user's date of birth." points={100} isActive={true} />
                 </div>
@@ -187,7 +190,7 @@ const LoyaltySettings: React.FC = () => {
                         {tier.name[0]}
                       </div>
 
-                      {/* Inputs */}
+                      {/* Inputs - NOW USING setTiers/handleTierChange */}
                       <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
                         <div>
                           <label className="block text-xs font-medium text-gray-500 mb-1">Tier Name</label>
@@ -271,6 +274,7 @@ const LoyaltySettings: React.FC = () => {
                     </div>
                     <div className="text-sm text-gray-500 mt-4 mb-4 flex items-center gap-1">
                         Cost: UGX 
+                        {/* Input - NOW USING setPackages/handlePackagePriceChange */}
                         <input
                             type="text"
                             value={pkg.price}
@@ -343,7 +347,6 @@ interface RuleToggleProps {
     desc: string;
     points: number;
     isActive: boolean;
-    // In a real app, you would add a handler prop here: onToggle, onPointsChange
 }
 
 const RuleToggle: React.FC<RuleToggleProps> = ({ title, desc, points, isActive }) => (
@@ -367,7 +370,7 @@ const RuleToggle: React.FC<RuleToggleProps> = ({ title, desc, points, isActive }
         />
         <span className="absolute right-2 top-2 text-xs text-gray-400 font-medium">Pts</span>
       </div>
-      {/* Toggle Switch Visual */}
+      {/* Toggle Switch Visual (Placeholder for a real interactive switch) */}
       <button className={`w-11 h-6 flex items-center rounded-full transition-colors duration-200 ease-in-out ${isActive ? 'bg-indigo-600' : 'bg-gray-200'}`}>
         <span className={`translate-x-1 inline-block w-4 h-4 transform bg-white rounded-full transition duration-200 ease-in-out ${isActive ? 'translate-x-6' : 'translate-x-1'}`} />
       </button>
