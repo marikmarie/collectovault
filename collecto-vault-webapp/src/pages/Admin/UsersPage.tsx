@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, Plus, Search, Mail, User, Phone, X, Edit, Trash2 } from 'lucide-react';
+import { Plus, Search,  Phone, X, Edit, Trash2 } from 'lucide-react';
 
 // --- Type Definitions ---
 interface UserData {
@@ -171,7 +171,7 @@ const UsersManagement: React.FC = () => {
                             <tr key={user.id} className="hover:bg-gray-50">
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="flex items-center">
-                                        <div className="flex-shrink-0 h-10 w-10">
+                                        <div className="shrink-0 h-10 w-10">
                                             <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-semibold text-sm">
                                                 {user.name.split(' ').map(n => n[0]).join('')}
                                             </div>
@@ -185,7 +185,7 @@ const UsersManagement: React.FC = () => {
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     <div className="flex items-center gap-1">
                                         <Phone className="w-3 h-3" /> {user.phone}
-                                    </div>
+                       m             </div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <span 
