@@ -7,7 +7,6 @@ import Statement from './pages/customer/Statement'
 import Login from './pages/Login';
 import Services from './pages/Admin/Services';
 import Reports from './pages/Admin/Reports';
-import LoyaltySettings from './pages/Admin/LoyaltySettings';
 import Layout from './pages/Admin/Layout';
 
 import { Routes, Route, Navigate } from "react-router-dom";
@@ -22,7 +21,6 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/services" element={<Services />} />
       <Route path="/reports" element={<Reports />} />
-      <Route path="/settings" element={<LoyaltySettings />} />
       <Route path="/admin/dashboard" element={<Layout />} />
       {/* <Route path="/tiers" element={<Tiers />} />
       <Route path="/users" element={<Users />} />

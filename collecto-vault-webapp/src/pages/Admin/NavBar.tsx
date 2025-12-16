@@ -173,7 +173,7 @@ function AdminSideDrawer({ isOpen, onClose, view, handleSignOut }: { isOpen: boo
                 
                 {view === 'notifications' && (
                     <div className="space-y-3">
-                        <div className="p-3 bg-gray-50 rounded-lg text-sm">New User Registered: John Doe.</div>
+                        <div className="p-3 bg-gray-50 rounded-lg text-sm">New User Registered: Tukas Mar.</div>
                         <div className="p-3 bg-gray-50 rounded-lg text-sm">Tier update required for Gold.</div>
                     </div>
                 )}

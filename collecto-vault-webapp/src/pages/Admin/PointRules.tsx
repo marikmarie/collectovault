@@ -144,15 +144,15 @@ const PointRules: React.FC = () => {
 
   const handleSaveAll = () => {
     // Hook up your API call here
-    console.log("Saving Earning Rules...", { baseSpend, basePoints, bonusRules });
-    alert("Earning Rules Saved!");
+    console.log("Saving Point Rules...", { baseSpend, basePoints, bonusRules });
+    alert("Point Rules Saved!");
   };
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-4xl">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">Earning Rules Configuration</h2>
+        <h2 className="text-2xl font-bold text-gray-900">Point Rules Configuration</h2>
         <div className="flex items-center gap-3">
           <button
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50"

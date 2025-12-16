@@ -71,7 +71,7 @@ const Dashboard: React.FC = () => {
           </h3>
           {/* List of activities */}
           <div className="space-y-4 text-sm">
-            <p className="text-gray-700">User John Doe reached **Gold Tier**.</p>
+            <p className="text-gray-700">User Mariam reached **Gold Tier**.</p>
             <p className="text-gray-700">
               New rule "Holiday Bonus" created by **Admin**.
             </p>

@@ -4,7 +4,7 @@ import {
   User,
   LayoutDashboard,
   Trophy,
-  Coins, // Fixed: Now used in navItems for "Earning Rules"
+  Coins, // Fixed: Now used in navItems for "Point Rules"
   Settings,
   Users,
   CreditCard,
@@ -34,8 +34,7 @@ const navItems: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
   { id: 'users', label: 'Users', icon: <Users className="w-5 h-5" /> },
   { id: 'tiers', label: 'Tier Levels', icon: <Trophy className="w-5 h-5" /> },
-  // Swapped Settings for Coins icon here to fix unused variable
-  { id: 'rules', label: 'Earning Rules', icon: <Coins className="w-5 h-5" /> }, 
+ { id: 'rules', label: 'Point Rules', icon: <Coins className="w-5 h-5" /> }, 
   { id: 'packages', label: 'Packages', icon: <CreditCard className="w-5 h-5" /> },
 ];
 
@@ -194,7 +193,7 @@ export default function Layout() {
                     onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
                 >
                     <div className="w-9 h-9 rounded-full bg-white text-[#aa056b] flex items-center justify-center font-bold text-sm shadow-sm">
-                        JD
+                        TM
                     </div>
                     <div className="hidden sm:block text-right">
                         <p className="text-sm font-semibold leading-none">Samson Kwiz</p>
@@ -209,7 +208,7 @@ export default function Layout() {
                         <div className="fixed inset-0 z-10" onClick={() => setIsProfileMenuOpen(false)} />
                         <div className="absolute right-0 mt-3 w-56 bg-white rounded-xl shadow-2xl py-2 z-20 border border-gray-100 animate-in fade-in slide-in-from-top-2 duration-200">
                             <div className="px-4 py-3 border-b border-gray-100 mb-1">
-                                <p className="text-sm font-semibold text-gray-900">John Doe</p>
+                                <p className="text-sm font-semibold text-gray-900">Tukas M</p>
                                 <p className="text-xs text-gray-500">admin@company.com</p>
                             </div>
                             <a
