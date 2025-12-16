@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 type UserType = 'client' | 'staff';
 
 // Define the file paths for the images in the public folder
-const LOGO_PATH = '/logo.png'; 
+//const LOGO_PATH = '/logo.png'; 
 const BACKGROUND_IMAGE_PATH = '/bg.png'; 
 
 export default function LoginPage() {
