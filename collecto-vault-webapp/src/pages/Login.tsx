@@ -6,6 +6,10 @@ import { useNavigate } from 'react-router-dom';
 // Define the available user types
 type UserType = 'client' | 'staff';
 
+// Define the file paths for the images in the public folder
+const LOGO_PATH = '/logo.png'; 
+const BACKGROUND_IMAGE_PATH = '/bg.png'; 
+
 export default function LoginPage() {
   const navigate = useNavigate(); // Hook for navigation
     
@@ -16,7 +20,6 @@ export default function LoginPage() {
   const [error, setError] = useState('');
 
   // --- Handlers ---
-
   const handleIdSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -43,11 +46,8 @@ export default function LoginPage() {
     const isValid = otpValue === '123456'; // Placeholder validation logic
     
     if (isValid) {
-      // ---------------------------------------------
-      // 🎯 SUCCESSFUL LOGIN: REDIRECT TO DASHBOARD
-      // ---------------------------------------------
       console.log(`Login Successful as ${userType.toUpperCase()}! Redirecting to /dashboard...`);
-      navigate('/dashboard'); // Use React Router's navigate function
+      navigate('/dashboard'); 
       
     } else {
       setError("Invalid OTP. Please try again.");
@@ -59,7 +59,6 @@ export default function LoginPage() {
   };
 
   // --- Rendering Helpers ---
-
   const getFormTitle = () => {
     if (loginStep === 'id_entry') {
       return userType === 'client' ? "Client Access" : "Staff Portal";
@@ -93,25 +92,41 @@ export default function LoginPage() {
   );
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ 
-      background: 'linear-gradient(to right bottom, #18010e, #2b0a1f, #3f0b31, #530a46, #67095d)' 
-    }}>
+    <div className="min-h-screen relative flex items-center justify-center p-4">
       
-      <div className="w-full max-w-md mx-auto p-6 lg:p-10">
+      {/* --- Background Image Container --- */}
+      <div className="absolute inset-0 z-0">
+        {/* The image is styled to cover the viewport and maintain aspect ratio */}
+        <img 
+          src={BACKGROUND_IMAGE_PATH} 
+          alt="Login Background" 
+          className="w-full h-full" 
+        />
+        {/* Dark overlay using a deep gradient from your palette for better text contrast */}
+        <div className="absolute inset-0" style={{ 
+          background: 'linear-gradient(to top, rgba(24, 1, 14, 0.9), rgba(103, 9, 93, 0.5))' 
+        }} />
+      </div>
+
+      {/* --- Login Content (zIndex 10) --- */}
+      <div className="w-full max-w-md mx-auto relative z-10">
         
         {/* Logo/Branding */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-extrabold tracking-widest text-[#EF4155]">
-            COLLECTOVAULT
-          </h1>
-          <p className="text-sm font-medium text-gray-300 mt-2">Secure Login Portal</p>
+          {/* Replaced H1 with Img tag pointing to public folder logo */}
+          {/* <img 
+            src={LOGO_PATH} 
+            alt="CollectoVault Logo" 
+            className="h-16 w-auto mx-auto mb-2 filter drop-shadow-lg" 
+          /> */}
+          <p className="text-sm font-medium text-gray-500 mt-2">Secure Login Portal</p>
         </div>
 
         {/* Login Card */}
         <div className="bg-white rounded-xl shadow-2xl overflow-hidden">
           
           {/* Tabs */}
-          <div className="flex bg-[#2b0a1f]">
+          <div className="flex" style={{ backgroundColor: '#2b0a1f' }}>
             <TabButton type="client" icon={User} label="Client" />
             <TabButton type="staff" icon={Briefcase} label="Staff" />
           </div>
@@ -156,7 +171,7 @@ export default function LoginPage() {
                     <button 
                       type="button" 
                       onClick={handleForgotPassword}
-                      className="text-sm font-medium text-[#f72c4e] hover:text-[#EF4155] transition-colors"
+                      className="text-sm font-medium text-[#67095D] hover:text-[#EF4155] transition-colors"
                     >
                       Forgot Password?
                     </button>
@@ -226,7 +241,7 @@ export default function LoginPage() {
         </div>
         
         {/* Footer Text */}
-        <p className="text-center text-xs text-gray-400 mt-6">
+        <p className="text-center text-xs text-gray-400 mt-6 relative z-10">
             © {new Date().getFullYear()} CollectoVault. All rights reserved.
         </p>
       </div>
