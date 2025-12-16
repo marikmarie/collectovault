@@ -156,7 +156,7 @@ export default function LoginPage() {
                     <button 
                       type="button" 
                       onClick={handleForgotPassword}
-                      className="text-sm font-medium text-[#67095D] hover:text-[#EF4155] transition-colors"
+                      className="text-sm font-medium text-[#f72c4e] hover:text-[#EF4155] transition-colors"
                     >
                       Forgot Password?
                     </button>
