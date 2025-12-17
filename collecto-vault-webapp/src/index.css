@@ -1,21 +1,36 @@
-/* @import "tailwindcss";
-
-html, body, #root {
-  height: 100%;
-  font-family: 'Roboto', sans-serif;
-} */
-
 @import "tailwindcss";
 
-/* reset + useful defaults */
-* { box-sizing: border-box; }
-html, body, #root {
-  height: 100%;
-  width: 100%;
-  margin: 0;     /* ← remove browser default gap */
-  padding: 0;
+:root {
+  --brand-primary: #f2f3f3;    
+  --brand-secondary: #a0a3a7;  
+  
+  /* Buttons & Interactions */
+  --btn-bg: transparent;       
+  --btn-text: #343d51;         
+  --btn-border: #e5e7eb;       
+  --btn-hover-bg: #f3f4f6;     
+  
+  --logo-color: #111827;
 }
+
+/* Base styles */
 body {
-  min-height: 100vh;
-  overflow-x: hidden; /* prevent horizontal scroll / extra space */
+  background-color: #f9fafb;
+  /* Note: Setting body color to brand-primary (#f2f3f3) might make text 
+     invisible on white backgrounds. Usually, you want body text to be dark. */
+  color: #1f2937; 
+}
+
+/* Custom Utility for your Brand Buttons */
+@layer components {
+  .btn-neutral {
+    background-color: var(--btn-bg);
+    color: var(--btn-text);
+    border: 1px solid var(--btn-border);
+    transition: all 0.2s ease;
+  }
+  
+  .btn-neutral:hover {
+    background-color: var(--btn-hover-bg);
+  }
 }

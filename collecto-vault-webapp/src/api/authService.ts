@@ -6,14 +6,16 @@ export const authService = {
   startCollectoAuth: async (payload: {
     type: "business" | "client" | "staff";
     collectoId?: string;
-    cid?: string;
-    uid?: string;
+    id?: string;
+   // uid?: string;
    }) => {
     const resp = await api.post("/auth", payload);
     return resp.data;
   },
 
  
+
+  
  verifyCollectoOtp: async (payload: {
     id: string;
     vaultOTP: string;

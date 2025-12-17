@@ -32,11 +32,10 @@ export default function LoginPage() {
   const buildAuthPayload = (type: UserType, id: string) => {
     const basePayload = { type, id };
     if (type === 'client') {
-      return { ...basePayload, cid: id, uid: undefined }; // Use 'cid' for clients
+      return { ...basePayload, cid: id, uid: undefined }; 
     } else if (type === 'staff') {
-      return { ...basePayload, cid: undefined, uid: id }; // Use 'uid' for staff
+      return { ...basePayload, cid: undefined, uid: id }; 
     }
-    // Fallback/Default for API
     return { ...basePayload, cid: id, uid: undefined }; 
   };
 
@@ -54,8 +53,8 @@ export default function LoginPage() {
 
     try {
       // 1. Prepare API-specific payload
-      const { cid, uid, type } = buildAuthPayload(userType, idValue);
-      const apiPayload = { type, cid, uid }; 
+      const { id, type } = buildAuthPayload(userType, idValue);
+      const apiPayload = { type, id }; 
 
       const res = await authService.startCollectoAuth(apiPayload as any);
       
