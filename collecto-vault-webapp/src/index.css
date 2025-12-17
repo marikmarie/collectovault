@@ -8,20 +8,18 @@
   --btn-bg: transparent;       
   --btn-text: #343d51;         
   --btn-border: #e5e7eb;       
-  --btn-hover-bg: #f3f4f6;     
+  --btn-hover-bg: #aeb1b8;     
   
   --logo-color: #111827;
 }
 
-/* Base styles */
 body {
   background-color: #f9fafb;
-  /* Note: Setting body color to brand-primary (#f2f3f3) might make text 
-     invisible on white backgrounds. Usually, you want body text to be dark. */
   color: #1f2937; 
+  
+
 }
 
-/* Custom Utility for your Brand Buttons */
 @layer components {
   .btn-neutral {
     background-color: var(--btn-bg);

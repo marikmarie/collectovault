@@ -166,7 +166,7 @@ const PointRules: React.FC = () => {
             Reset
           </button>
           <button
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 shadow-lg transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-(--btn-text) bg-(--btn-bg) rounded-lg hover:bg-(--btn-hover-bg) shadow-lg transition-colors"
             onClick={handleSaveAll}
             title="Save all changes"
           >
@@ -230,7 +230,7 @@ const PointRules: React.FC = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={openCreateModal}
-              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-(--btn-text) bg-(--btn-bg) rounded-lg hover:bg-(--btn-hover-bg)"
               title="Add new bonus rule"
             >
               <Plus className="w-4 h-4" /> Add New Bonus Rule

@@ -104,12 +104,21 @@ const PointPackages: React.FC = () => {
                     <h2 className="text-2xl font-bold text-gray-900">Point Packages</h2>
                     <p className="text-sm text-gray-500 mt-1">Configure bundles for customer purchase.</p>
                 </div>
-                <button
-                    className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-gray-900 rounded-xl hover:bg-gray-800 transition-all shadow-sm"
+                {/* <button
+
+                    className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-gray-900 rounded-xl hover:btn-hover-bg transition-all shadow-sm"
                     onClick={() => handleCreateOrEdit()}
                 >
                     <Plus className="w-4 h-4" /> New Package
-                </button>
+                </button> */}
+
+                <button
+  className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-(--btn-text) bg-(--btn-bg) border border-(--btn-border) rounded-xl hover:bg-(--btn-hover-bg) transition-all shadow-sm"
+  onClick={() => handleCreateOrEdit()}
+>
+  <Plus className="w-4 h-4" /> New Package
+</button>
+                
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -214,11 +223,11 @@ const PackageModal: React.FC<PackageModalProps> = ({ initialData, onClose, onSav
                             type="button"
                             onClick={() => setPopular(!popular)}
                             className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all ${
-                                popular ? 'bg-gray-900 border-gray-900' : 'bg-white border-gray-200 hover:border-gray-300'
+                                popular ? 'bg-(--btn-hover-bg) border-(--btn-border)' : 'bg-white border-gray-200 hover:border-gray-300'
                             }`}
                         >
                             <div className="flex flex-col items-start">
-                                <span className={`text-sm font-bold ${popular ? 'text-white' : 'text-gray-900'}`}>Highlight as Popular</span>
+                                <span className={`text-sm font-bold ${popular ? 'text-white' : 'text-(--btn-text)'}`}>Highlight as Popular</span>
                                 <span className={`text-xs ${popular ? 'text-gray-400' : 'text-gray-500'}`}>Badges this package for users</span>
                             </div>
                             <div className={`w-6 h-6 rounded-full flex items-center justify-center border ${
@@ -238,11 +247,12 @@ const PackageModal: React.FC<PackageModalProps> = ({ initialData, onClose, onSav
                     >
                         Discard
                     </button>
+                    {/* //text-(--btn-text) */}
                     <button 
                         onClick={() => onSave({ name, points, price, popular })}
-                        className="px-8 py-2.5 bg-gray-900 text-white text-sm font-bold rounded-xl hover:bg-gray-800 transition-all shadow-md active:scale-95"
+                        className="px-8 py-2.5 bg-(--btn-bg) text-(--btn-text) text-sm font-bold rounded-xl hover:bg-(--btn-hover-bg) transition-all shadow-md active:scale-95"
                     >
-                        {initialData ? 'Save Changes' : 'Publish Package'}
+                        {initialData ? 'Save Changes' : 'Add Package'}
                     </button>
                 </div>
             </div>
