@@ -10,8 +10,7 @@ export default function TierProgress({
   // Clamp progress between 0 and 1
   const pct = Math.max(0, Math.min(1, progress));
   
-  // Calculate the index of the current tier
-  const currentTierIndex = tiers.findIndex(t => t === currentTier);
+   const currentTierIndex = tiers.findIndex(t => t === currentTier);
   
   // Calculate the total segment count. If we are on Blue, the first milestone is Silver.
   // The progress bar spans the distance between tiers.

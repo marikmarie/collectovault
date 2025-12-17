@@ -1,85 +1,165 @@
+import { useEffect, useState } from "react";
 import TopNav from "../../components/TopNav";
-import { DollarSign, Star, AirVent, Hotel } from "lucide-react";
+import { DollarSign} from "lucide-react";
+import api from "../../api"; 
 
-const mockServices = [
-  { 
-    name: "Luxury Hotel Stay", 
-    description: "Redeem points for a night at select 5-star hotels.", 
-    type: "Redeem", 
-    cost: "25,000 pts", 
-    ugxEquivalent: "UGX 250,000",
-    icon: Hotel 
-  },
-  { 
-    name: "International Flight Upgrade", 
-    description: "Use points for an economy to business class upgrade.", 
-    type: "Redeem", 
-    cost: "15,000 pts", 
-    ugxEquivalent: "UGX 150,000",
-    icon: AirVent
-  },
-  { 
-    name: "Earn from Online Shopping", 
-    description: "Get 1 point for every UGX 100 spent at partner retailers.", 
-    type: "Earn", 
-    cost: "1 pt / UGX 100", 
-    ugxEquivalent: null,
-    icon: DollarSign 
-  },
-  { 
-    name: "Tier Bonus - Blue Tier", 
-    description: "Receive 10% bonus points on all qualifying earns.", 
-    type: "Benefit", 
-    cost: "10% Bonus", 
-    ugxEquivalent: null,
-    icon: Star
-  },
-];
+type Service = {
+  id: string;
+  name: string;
+  amount: number;
+};
 
 export default function Services() {
+  const [services, setServices] = useState<Service[]>([]);
+  const [selected, setSelected] = useState<Service | null>(null);
+  const [phone, setPhone] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetchServices();
+  }, []);
+
+  // ✅ Safe way (handles nested objects or unexpected non-array responses)
+async function fetchServices() {
+  setLoading(true);
+  try {
+    const response = await api.get("/services");
+    
+    // Check if response.data is the array, or if it's inside response.data.services
+    const actualData = Array.isArray(response.data) 
+      ? response.data 
+      : response.data.services || [];
+
+    setServices(actualData);
+  } catch (err: any) {
+    console.error("Failed to fetch services:", err);
+    setServices([]); // Reset to empty array on error to prevent .map crash
+  } finally {
+    setLoading(false);
+  }
+}
+  // async function fetchServices() {
+  //   setLoading(true);
+  //   try {
+  //     const { data } = await api.get("/api/services");
+  //     setServices(data);
+  //   } catch (err: any) {
+  //     console.error("Failed to fetch services:", err);
+  //     alert(err.message || "Failed to fetch services");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // }
+
+  async function payLater() {
+    if (!selected) return;
+    setLoading(true);
+    try {
+      const { data } = await api.post("/invoice", {
+        serviceId: selected.id,
+        serviceName: selected.name,
+      });
+      alert(`Invoice created: ${data.invoiceId ?? "unknown"}`);
+      setSelected(null);
+    } catch (err: any) {
+      console.error("Pay later failed:", err);
+      alert(err.message || "Failed to create invoice");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function payNow() {
+    if (!selected) return;
+    setLoading(true);
+    try {
+      const { data } = await api.post("/pay", {
+        serviceId: selected.id,
+        serviceName: selected.name,
+        amount: selected.amount,
+        phone,
+      });
+      alert(`Payment initiated: ${data.receiptId ?? "unknown"}`);
+      setSelected(null);
+    } catch (err: any) {
+      console.error("Pay now failed:", err);
+      alert(err.message || "Payment failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-gray-100 font-sans">
+    <div className="min-h-screen bg-gray-100">
       <TopNav />
-      <main className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-           <DollarSign className="w-8 h-8 text-[#d81b60]" />
-           Available Services & Rewards
+
+      <main className="max-w-4xl mx-auto p-6">
+        <h1 className="text-3xl font-bold mb-6 flex gap-2 items-center">
+          <DollarSign className="text-[#d81b60]" />
+          Available Services
         </h1>
 
-        <div className="space-y-6">
-          {mockServices.map((service, index) => {
-            const Icon = service.icon;
-            const isRedeem = service.type === "Redeem";
-            return (
-              <div 
-                key={index} 
-                className="bg-white p-6 rounded-xl shadow-lg flex items-start gap-4 transition-transform hover:shadow-xl"
-              >
-                <div className={`p-3 rounded-full ${isRedeem ? 'bg-red-50' : 'bg-green-50'}`}>
-                  <Icon className={`w-6 h-6 ${isRedeem ? 'text-red-600' : 'text-green-600'}`} />
-                </div>
-                
-                <div className="grow">
-                  <h2 className="text-xl font-semibold text-gray-800">{service.name}</h2>
-                  <p className="text-sm text-gray-500 mt-1">{service.description}</p>
-                </div>
-                
-                <div className="text-right min-w-[120px]">
-                  <p className={`font-bold ${isRedeem ? 'text-red-600' : 'text-green-600'}`}>
-                    {service.cost}
-                  </p>
-                  {service.ugxEquivalent && (
-                    <p className="text-xs text-gray-400 mt-1">Value: {service.ugxEquivalent}</p>
-                  )}
-                  <button className="mt-2 text-xs font-medium text-[#0b4b78] hover:text-[#d81b60] transition-colors">
-                    {isRedeem ? 'Redeem Now' : 'Learn How'}
-                  </button>
-                </div>
+        {loading && <p className="text-sm text-gray-500">Loading services...</p>}
+
+        <div className="space-y-4">
+          {services.map((s) => (
+            <div
+              key={s.id}
+              className="bg-white p-5 rounded-xl shadow flex justify-between"
+            >
+              <div>
+                <h2 className="font-semibold">{s.name}</h2>
+                <p className="text-sm text-gray-500">
+                  UGX {s.amount.toLocaleString()}
+                </p>
               </div>
-            );
-          })}
+
+              <button
+                onClick={() => setSelected(s)}
+                className="text-sm text-[#0b4b78] hover:text-[#d81b60]"
+              >
+                Purchase
+              </button>
+            </div>
+          ))}
         </div>
       </main>
+
+      {/* Purchase Modal */}
+      {selected && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-xl w-full max-w-md">
+            <h3 className="font-semibold text-lg">{selected.name}</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              UGX {selected.amount.toLocaleString()}
+            </p>
+
+            <input
+              placeholder="Phone (2567...)"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className="w-full border p-2 rounded mb-3"
+            />
+
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={payLater}
+                disabled={loading}
+                className="px-4 py-2 bg-gray-100 rounded"
+              >
+                Pay Later
+              </button>
+              <button
+                onClick={payNow}
+                disabled={loading}
+                className="px-4 py-2 bg-[#0b4b78] text-white rounded"
+              >
+                Pay Now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

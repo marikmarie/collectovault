@@ -9,7 +9,7 @@ export const authService = {
     cid?: string;
     uid?: string;
    }) => {
-    const resp = await api.post("/api/collecto/auth", payload);
+    const resp = await api.post("/auth", payload);
     return resp.data;
   },
 
@@ -20,7 +20,7 @@ export const authService = {
     vaultOTPToken?: string;
 
   }) => {
-    const resp = await api.post("/api/collecto/authVerify", payload);
+    const resp = await api.post("/authVerify", payload);
     const data = resp.data;
     if (data?.token) {
       const expiresAt = new Date(Date.now() + 5 *60*1000).toISOString();

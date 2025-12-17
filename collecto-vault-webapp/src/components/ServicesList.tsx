@@ -1,5 +1,5 @@
 import { useState } from "react";
-import EarnServiceDetailsModal from "./EarnPoints"; // NEW Component
+import EarnPoints from "./EarnPoints"; // NEW Component
 
 const SERVICES = [
   // Assumes UGX (Ugandan Shillings) based on context
@@ -37,7 +37,7 @@ export default function ServicesList() {
             </div>
             <div className="p-1 shrink-0">
               <button 
-                onClick={() => handleViewDetails(s)} // Open modal on click
+                onClick={() => handleViewDetails(s)} 
                 className="text-sm px-4 py-2 rounded-full bg-[#d81b60] hover:bg-[#b81752] text-white font-medium transition-colors active:scale-95"
               >
                 View
@@ -47,9 +47,8 @@ export default function ServicesList() {
         ))}
       </div>
 
-      {/* NEW: Earn Service Details Modal */}
       {selectedService && (
-        <EarnServiceDetailsModal
+        <EarnPoints
           open={!!selectedService}
           onClose={handleCloseModal}
           service={selectedService}
