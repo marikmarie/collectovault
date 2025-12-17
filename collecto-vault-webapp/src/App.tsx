@@ -22,11 +22,6 @@ export default function App() {
       <Route path="/services" element={<Services />} />
       <Route path="/reports" element={<Reports />} />
       <Route path="/admin/dashboard" element={<Layout />} />
-      {/* <Route path="/tiers" element={<Tiers />} />
-      <Route path="/users" element={<Users />} />
-      <Route path="/point-rules" element={<PointRules />} />
-      <Route path="/packages" element={<Packages />} /> */}
-
     </Routes>
   );
 }
