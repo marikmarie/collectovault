@@ -148,6 +148,7 @@ const PointPackages: React.FC = () => {
       if (editingPackage) {
         await api.put(`/vaultPackages/${editingPackage.id}`, payload);
       } else {
+        console.log("Creating package with payload:", payload);
         await api.post("/vaultPackages", payload);
       }
 
