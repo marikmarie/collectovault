@@ -193,7 +193,7 @@ const PointPackages: React.FC = () => {
           <p className="text-sm text-gray-500">Configure bundles for customer purchase</p>
         </div>
 
-        <button onClick={openCreateModal} className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 text-white rounded-xl">
+        <button onClick={openCreateModal} className="flex items-center gap-2 px-5 py-2.5 bg-(--btn-border) text-(--btn-text) hover:bg-(--btn-hover-bg) rounded-xl">
           <Plus className="w-4 h-4" /> New Package
         </button>
       </div>
@@ -284,7 +284,7 @@ const PackageModal: React.FC<PackageModalProps> = ({ initialData, saving, onClos
             <input type="number" value={price} onChange={(e) => setPrice(Number(e.target.value))} placeholder="Price (UGX)" className="px-4 py-3 border rounded-xl" />
           </div>
 
-          <button onClick={() => setPopular(!popular)} className={`w-full p-4 rounded-xl border ${popular ? "bg-gray-900 text-white" : ""}`}>
+          <button onClick={() => setPopular(!popular)} className={`w-full p-4 rounded-xl border ${popular ? "bg-(--btn-border) text-(--btn-text)" : ""}`}>
             {popular ? "Popular Package ✓" : "Mark as Popular"}
           </button>
         </div>
