@@ -62,12 +62,14 @@ const PackageCard: React.FC<PackageCardProps> = ({ pkg, onEdit, onRemove }) => (
           <button
             onClick={() => onEdit(pkg)}
             className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full"
+            aria-label={`Edit ${pkg.name}`}
           >
             <Edit className="w-4 h-4" />
           </button>
           <button
             onClick={() => onRemove(pkg.id)}
             className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full"
+            aria-label={`Remove ${pkg.name}`}
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -77,17 +79,13 @@ const PackageCard: React.FC<PackageCardProps> = ({ pkg, onEdit, onRemove }) => (
       <h4 className="text-lg font-bold text-gray-900">{pkg.name}</h4>
 
       <div className="mt-1 flex items-baseline gap-1">
-        <span className="text-3xl font-black text-gray-900">
-          {(pkg.points ?? 0).toLocaleString()}
-        </span>
+        <span className="text-3xl font-black text-gray-900">{(pkg.points ?? 0).toLocaleString()}</span>
         <span className="text-sm text-gray-500 font-medium">Points</span>
       </div>
     </div>
 
     <div className="mt-6 pt-4 border-t border-gray-50 flex justify-between items-center">
-      <span className="text-sm font-semibold text-gray-600">
-        UGX {(pkg.price ?? 0).toLocaleString()}
-      </span>
+      <span className="text-sm font-semibold text-gray-600">UGX {(pkg.price ?? 0).toLocaleString()}</span>
       <span className="text-[10px] text-gray-400 uppercase">Managed Bundle</span>
     </div>
   </div>
@@ -95,23 +93,27 @@ const PackageCard: React.FC<PackageCardProps> = ({ pkg, onEdit, onRemove }) => (
 
 /* =======================
    Main Component
+   - uses explicit isModalOpen boolean to control modal
+   - editingPackage: Package | null  -> null = create, object = edit
 ======================= */
 
 const PointPackages: React.FC = () => {
   const [packages, setPackages] = useState<Package[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editingPackage, setEditingPackage] = useState<Package | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   /* ---- Fetch ---- */
   const fetchPackages = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
       const res = await api.get("/vaultPackages");
       const list = res.data?.data ?? [];
-      setPackages(list.map(mapApiPackage));
+      setPackages(Array.isArray(list) ? list.map(mapApiPackage) : []);
     } catch (err) {
-      console.error(err);
+      console.error("Failed to load packages", err);
       alert("Failed to load packages");
     } finally {
       setLoading(false);
@@ -122,18 +124,32 @@ const PointPackages: React.FC = () => {
     fetchPackages();
   }, []);
 
+  /* ---- Open modal for create or edit ---- */
+  const openCreateModal = () => {
+    setEditingPackage(null); // null signals create
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (pkg: Package) => {
+    setEditingPackage(pkg);
+    setIsModalOpen(true);
+  };
+
   /* ---- Delete ---- */
   const handleRemove = async (id: number) => {
     if (!window.confirm("Remove this package?")) return;
     try {
       await api.delete(`/vaultPackages/${id}`);
       setPackages((prev) => prev.filter((p) => p.id !== id));
-    } catch {
+      setSuccessMessage("Package deleted successfully");
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (err) {
+      console.error("Delete failed", err);
       alert("Delete failed");
     }
   };
 
-  /* ---- Save ---- */
+  /* ---- Save (CREATE / UPDATE) ---- */
   const handleSave = async (data: Omit<Package, "id">) => {
     try {
       setSaving(true);
@@ -145,16 +161,24 @@ const PointPackages: React.FC = () => {
         isPopular: data.popular,
       };
 
-      if (editingPackage) {
+      if (editingPackage && editingPackage.id > 0) {
+        // UPDATE existing
         await api.put(`/vaultPackages/${editingPackage.id}`, payload);
       } else {
-        console.log("Creating package with payload:", payload);
+        // CREATE new
         await api.post("/vaultPackages", payload);
       }
 
+      // Refresh list and show success, then close modal
       await fetchPackages();
+      setSuccessMessage("Package saved successfully");
+      setTimeout(() => setSuccessMessage(null), 3000);
+
+      // close modal and clear editing state
+      setIsModalOpen(false);
       setEditingPackage(null);
-    } catch {
+    } catch (err) {
+      console.error("Save failed", err);
       alert("Save failed");
     } finally {
       setSaving(false);
@@ -166,39 +190,38 @@ const PointPackages: React.FC = () => {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold">Point Packages</h2>
-          <p className="text-sm text-gray-500">
-            Configure bundles for customer purchase
-          </p>
+          <p className="text-sm text-gray-500">Configure bundles for customer purchase</p>
         </div>
 
-        <button
-          onClick={() => setEditingPackage({ id: 0, name: "", points: 0, price: 0, popular: false })}
-          className="flex items-center gap-2 px-5 py-2.5 bg-(--btn-bg) text-(--btn-text) rounded-xl"
-        >
+        <button onClick={openCreateModal} className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 text-white rounded-xl">
           <Plus className="w-4 h-4" /> New Package
         </button>
       </div>
+
+      {successMessage && (
+        <div className="text-sm text-green-700 bg-green-50 border border-green-100 rounded px-4 py-2 w-fit">
+          {successMessage}
+        </div>
+      )}
 
       {loading ? (
         <div className="text-center text-gray-500">Loading…</div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {packages.map((pkg) => (
-            <PackageCard
-              key={pkg.id}
-              pkg={pkg}
-              onEdit={setEditingPackage}
-              onRemove={handleRemove}
-            />
+            <PackageCard key={pkg.id} pkg={pkg} onEdit={openEditModal} onRemove={handleRemove} />
           ))}
         </div>
       )}
 
-      {editingPackage && (
+      {isModalOpen && (
         <PackageModal
-          initialData={editingPackage.id ? editingPackage : null}
+          initialData={editingPackage}
           saving={saving}
-          onClose={() => setEditingPackage(null)}
+          onClose={() => {
+            setIsModalOpen(false);
+            setEditingPackage(null);
+          }}
           onSave={handleSave}
         />
       )}
@@ -211,76 +234,64 @@ const PointPackages: React.FC = () => {
 ======================= */
 
 interface PackageModalProps {
-  initialData: Package | null;
+  initialData: Package | null; // null => create, object => edit
   saving: boolean;
   onClose: () => void;
   onSave: (data: Omit<Package, "id">) => Promise<void>;
 }
 
-const PackageModal: React.FC<PackageModalProps> = ({
-  initialData,
-  saving,
-  onClose,
-  onSave,
-}) => {
+const PackageModal: React.FC<PackageModalProps> = ({ initialData, saving, onClose, onSave }) => {
   const [name, setName] = useState(initialData?.name ?? "");
-  const [points, setPoints] = useState(initialData?.points ?? 0);
-  const [price, setPrice] = useState(initialData?.price ?? 0);
-  const [popular, setPopular] = useState(initialData?.popular ?? false);
+  const [points, setPoints] = useState<number>(initialData?.points ?? 0);
+  const [price, setPrice] = useState<number>(initialData?.price ?? 0);
+  const [popular, setPopular] = useState<boolean>(initialData?.popular ?? false);
+
+  // Sync modal inputs when initialData changes (opening modal for edit)
+  useEffect(() => {
+    setName(initialData?.name ?? "");
+    setPoints(initialData?.points ?? 0);
+    setPrice(initialData?.price ?? 0);
+    setPopular(initialData?.popular ?? false);
+  }, [initialData]);
+
+  const isEdit = initialData !== null && initialData !== undefined && initialData.id > 0;
+
+  const handleSubmit = async () => {
+    // basic validation
+    if (!name.trim()) {
+      alert("Please enter a package name");
+      return;
+    }
+    if (points <= 0 || price <= 0) {
+      alert("Points and price must be greater than zero");
+      return;
+    }
+    await onSave({ name: name.trim(), points, price, popular });
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
       <div className="relative bg-white rounded-3xl w-full max-w-lg p-8">
-        <h3 className="text-xl font-bold mb-6">
-          {initialData ? "Edit Package" : "New Package"}
-        </h3>
+        <h3 className="text-xl font-bold mb-6">{isEdit ? "Edit Package" : "New Package"}</h3>
 
         <div className="space-y-4">
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Package name"
-            className="w-full px-4 py-3 border rounded-xl"
-          />
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Package name" className="w-full px-4 py-3 border rounded-xl" />
 
           <div className="grid grid-cols-2 gap-4">
-            <input
-              type="number"
-              value={points}
-              onChange={(e) => setPoints(Number(e.target.value))}
-              placeholder="Points"
-              className="px-4 py-3 border rounded-xl"
-            />
-            <input
-              type="number"
-              value={price}
-              onChange={(e) => setPrice(Number(e.target.value))}
-              placeholder="Price (UGX)"
-              className="px-4 py-3 border rounded-xl"
-            />
+            <input type="number" value={points} onChange={(e) => setPoints(Number(e.target.value))} placeholder="Points" className="px-4 py-3 border rounded-xl" />
+            <input type="number" value={price} onChange={(e) => setPrice(Number(e.target.value))} placeholder="Price (UGX)" className="px-4 py-3 border rounded-xl" />
           </div>
 
-          <button
-            onClick={() => setPopular(!popular)}
-            className={`w-full p-4 rounded-xl border ${
-              popular ? "bg-gray-900 text-white" : ""
-            }`}
-          >
+          <button onClick={() => setPopular(!popular)} className={`w-full p-4 rounded-xl border ${popular ? "bg-gray-900 text-white" : ""}`}>
             {popular ? "Popular Package ✓" : "Mark as Popular"}
           </button>
         </div>
 
         <div className="mt-6 flex justify-end gap-3">
-          <button onClick={onClose} className="px-6 py-2 text-gray-500">
-            Cancel
-          </button>
-          <button
-            disabled={saving}
-            onClick={() => onSave({ name, points, price, popular })}
-            className="px-6 py-2 bg-gray-900 text-white rounded-xl disabled:opacity-50"
-          >
+          <button onClick={onClose} className="px-6 py-2 text-gray-500">Cancel</button>
+          <button disabled={saving} onClick={handleSubmit} className="px-6 py-2 bg-gray-900 text-white rounded-xl disabled:opacity-50">
             {saving ? "Saving…" : "Save"}
           </button>
         </div>
