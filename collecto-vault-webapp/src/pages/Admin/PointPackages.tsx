@@ -41,10 +41,10 @@ const mapApiPackage = (pkg: ApiPackage): Package => ({
 interface PackageCardProps {
   pkg: Package;
   onEdit: (pkg: Package) => void;
-  onRemove: (id: number) => void;
+  onDelete: (pkg: Package) => void;
 }
 
-const PackageCard: React.FC<PackageCardProps> = ({ pkg, onEdit, onRemove }) => (
+const PackageCard: React.FC<PackageCardProps> = ({ pkg, onEdit, onDelete }) => (
   <div className="relative bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all group flex flex-col justify-between min-h-[220px]">
     {pkg.popular && (
       <span className="absolute -top-3 left-6 bg-gray-900 text-white text-[10px] font-bold uppercase tracking-widest py-1 px-3 rounded-full">
@@ -67,7 +67,7 @@ const PackageCard: React.FC<PackageCardProps> = ({ pkg, onEdit, onRemove }) => (
             <Edit className="w-4 h-4" />
           </button>
           <button
-            onClick={() => onRemove(pkg.id)}
+            onClick={() => onDelete(pkg)}
             className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full"
             aria-label={`Remove ${pkg.name}`}
           >
@@ -93,8 +93,6 @@ const PackageCard: React.FC<PackageCardProps> = ({ pkg, onEdit, onRemove }) => (
 
 /* =======================
    Main Component
-   - uses explicit isModalOpen boolean to control modal
-   - editingPackage: Package | null  -> null = create, object = edit
 ======================= */
 
 const PointPackages: React.FC = () => {
@@ -103,6 +101,7 @@ const PointPackages: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [editingPackage, setEditingPackage] = useState<Package | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Package | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   /* ---- Fetch ---- */
@@ -135,17 +134,25 @@ const PointPackages: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  /* ---- Delete ---- */
-  const handleRemove = async (id: number) => {
-    if (!window.confirm("Remove this package?")) return;
+  /* ---- Delete flow (uses modal) ---- */
+  const requestDelete = (pkg: Package) => {
+    setDeleteTarget(pkg);
+  };
+
+  const cancelDelete = () => setDeleteTarget(null);
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
     try {
-      await api.delete(`/vaultPackages/${id}`);
-      setPackages((prev) => prev.filter((p) => p.id !== id));
-      setSuccessMessage("Package deleted successfully");
+      await api.delete(`/vaultPackages/${deleteTarget.id}`);
+      setPackages((prev) => prev.filter((p) => p.id !== deleteTarget.id));
+      setSuccessMessage("Package removed successfully");
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
       console.error("Delete failed", err);
-      alert("Delete failed");
+      alert("Failed to delete package");
+    } finally {
+      setDeleteTarget(null);
     }
   };
 
@@ -164,17 +171,17 @@ const PointPackages: React.FC = () => {
       if (editingPackage && editingPackage.id > 0) {
         // UPDATE existing
         await api.put(`/vaultPackages/${editingPackage.id}`, payload);
+        setSuccessMessage("Package updated successfully");
       } else {
         // CREATE new
         await api.post("/vaultPackages", payload);
+        setSuccessMessage("Package created successfully");
       }
 
-      // Refresh list and show success, then close modal
+      // Refresh list, show success, then close modal
       await fetchPackages();
-      setSuccessMessage("Package saved successfully");
       setTimeout(() => setSuccessMessage(null), 3000);
 
-      // close modal and clear editing state
       setIsModalOpen(false);
       setEditingPackage(null);
     } catch (err) {
@@ -209,7 +216,7 @@ const PointPackages: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {packages.map((pkg) => (
-            <PackageCard key={pkg.id} pkg={pkg} onEdit={openEditModal} onRemove={handleRemove} />
+            <PackageCard key={pkg.id} pkg={pkg} onEdit={openEditModal} onDelete={requestDelete} />
           ))}
         </div>
       )}
@@ -225,12 +232,49 @@ const PointPackages: React.FC = () => {
           onSave={handleSave}
         />
       )}
+
+      {deleteTarget && (
+        <DeleteConfirmModal
+          name={deleteTarget.name}
+          onCancel={cancelDelete}
+          onConfirm={confirmDelete}
+        />
+      )}
     </div>
   );
 };
 
 /* =======================
-   Modal
+   Delete Modal
+======================= */
+
+const DeleteConfirmModal: React.FC<{
+  name: string;
+  onCancel: () => void;
+  onConfirm: () => void;
+}> = ({ name, onCancel, onConfirm }) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="absolute inset-0 bg-black/40" onClick={onCancel} />
+    <div className="relative bg-white rounded-2xl w-full max-w-sm p-6">
+      <h3 className="text-lg font-bold mb-2">Remove Package</h3>
+      <p className="text-sm text-gray-600 mb-6">
+        Are you sure you want to remove <strong>{name}</strong>? This action cannot be undone.
+      </p>
+
+      <div className="flex justify-end gap-3">
+        <button onClick={onCancel} className="px-4 py-2 text-gray-500">
+          Cancel
+        </button>
+        <button onClick={onConfirm} className="px-4 py-2 bg-red-600 text-white rounded-xl">
+          Remove
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
+/* =======================
+   Package Modal
 ======================= */
 
 interface PackageModalProps {
@@ -291,7 +335,7 @@ const PackageModal: React.FC<PackageModalProps> = ({ initialData, saving, onClos
 
         <div className="mt-6 flex justify-end gap-3">
           <button onClick={onClose} className="px-6 py-2 text-gray-500">Cancel</button>
-          <button disabled={saving} onClick={handleSubmit} className="px-6 py-2 bg-gray-900 text-white rounded-xl disabled:opacity-50">
+          <button disabled={saving} onClick={handleSubmit} className="px-6 py-2 bg-(--btn-border) text-(--btn-text) rounded-xl disabled:opacity-50">
             {saving ? "Saving…" : "Save"}
           </button>
         </div>
