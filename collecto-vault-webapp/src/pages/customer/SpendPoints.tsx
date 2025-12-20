@@ -1,4 +1,7 @@
-import { X, Plane, Hotel } from "lucide-react";
+import { useEffect, useState } from "react";
+import { X, Gift } from "lucide-react";
+import { customerService } from "../../api/customer";
+import { transactionService } from "../../api/collecto";
 
 interface SpendPointsModalProps {
   open: boolean;
@@ -6,13 +9,57 @@ interface SpendPointsModalProps {
   currentPoints: number;
 }
 
-const mockRedeems = [
-  { id: 1, name: "Family dinner", points: 1500, icon: Plane, detail: "One-time class upgrade on regional flight." },
-  { id: 2, name: "Weekend Stay Discount", points: 3000, icon: Hotel, detail: "50% off a two-night stay at partner resorts." },
-  { id: 3, name: "UGX 5,000 Cash Credit", points: 500, icon: X, detail: "Direct credit applied to your next statement." },
-];
+interface Offer {
+  id: string | number;
+  title?: string;
+  name?: string;
+  desc?: string;
+  detail?: string;
+  pointsCost?: number;
+}
 
 export default function SpendPoints({ open, onClose, currentPoints }: SpendPointsModalProps) {
+  const [offers, setOffers] = useState<Offer[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [redeemingId, setRedeemingId] = useState<string | number | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const fetchOffers = async () => {
+      setLoading(true);
+      try {
+        const res = await customerService.getRedeemableOffers();
+        const data = res.data?.offers ?? res.data ?? [];
+        setOffers(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.warn("Failed to fetch redeemable offers", err);
+        setOffers([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOffers();
+  }, [open]);
+
+  const handleRedeem = async (offer: Offer) => {
+    const offerId = offer.id;
+    setRedeemingId(offerId);
+    const pts = offer.pointsCost ?? (offer as any).points ?? (offer as any).cost ?? 0;
+    try {
+      await transactionService.redeemPoints("me", { offerId });
+      alert(`Redeemed ${pts} points for ${offer.title ?? offer.name}`);
+      // Optionally close modal after redeem
+      onClose();
+    } catch (err: any) {
+      const msg = err?.message || err?.error || "Failed to redeem";
+      alert(msg);
+    } finally {
+      setRedeemingId(null);
+    }
+  };
+
   if (!open) return null;
 
   return (
@@ -38,28 +85,41 @@ export default function SpendPoints({ open, onClose, currentPoints }: SpendPoint
           <h3 className="text-md font-semibold text-gray-700 mb-3">Available Rewards</h3>
           
           <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
-            {mockRedeems.map((reward) => (
-              <div key={reward.id} className="bg-gray-50 p-4 rounded-lg flex justify-between items-center border border-gray-100">
-                <div className="flex items-center gap-3">
-                  <reward.icon className="w-5 h-5 text-gray-600" />
-                  <div>
-                    <p className="font-medium text-gray-900">{reward.name}</p>
-                    <p className="text-xs text-gray-500">{reward.detail}</p>
+            {loading ? (
+              <div className="text-center py-6 text-sm text-gray-500">Loading offers…</div>
+            ) : offers.length === 0 ? (
+              <div className="text-center py-6 text-sm text-gray-500">No redeemable offers available.</div>
+            ) : (
+              offers.map((offer) => {
+                const points = offer.pointsCost ?? (offer as any).points ?? (offer as any).cost ?? 0;
+                const title = offer.title ?? offer.name ?? "Offer";
+                const desc = offer.desc ?? offer.detail ?? "";
+                const idKey = String(offer.id);
+
+                return (
+                  <div key={idKey} className="bg-gray-50 p-4 rounded-lg flex justify-between items-center border border-gray-100">
+                    <div className="flex items-center gap-3">
+                      <Gift className="w-5 h-5 text-gray-600" />
+                      <div>
+                        <p className="font-medium text-gray-900">{title}</p>
+                        <p className="text-xs text-gray-500">{desc}</p>
+                      </div>
+                    </div>
+                    <button 
+                      disabled={(currentPoints ?? 0) < points || redeemingId === offer.id}
+                      className={`text-sm font-semibold px-4 py-2 rounded-full transition-all ${
+                        (currentPoints ?? 0) >= points && redeemingId !== offer.id
+                          ? "bg-[#cb0d6c] text-white hover:bg-[#ef4155]"
+                          : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                      }`}
+                      onClick={() => handleRedeem(offer)}
+                    >
+                      {redeemingId === offer.id ? "Processing…" : `${points.toLocaleString()} pts`}
+                    </button>
                   </div>
-                </div>
-                <button 
-                  disabled={currentPoints < reward.points}
-                  className={`text-sm font-semibold px-4 py-2 rounded-full transition-all ${
-                    currentPoints >= reward.points
-                      ? "bg-[#cb0d6c] text-white hover:bg-[#ef4155]"
-                      : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                  }`}
-                  onClick={() => alert(`Redeeming ${reward.points} points for ${reward.name}`)}
-                >
-                  {reward.points.toLocaleString()} pts
-                </button>
-              </div>
-            ))}
+                );
+              })
+            )}
           </div>
         </div>
 

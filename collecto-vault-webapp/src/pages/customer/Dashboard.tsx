@@ -531,6 +531,7 @@ export default function Dashboard() {
               <button
                 onClick={() => handleSpendFromDetails()}
                 disabled={
+                  
                   (user.pointsBalance ?? 0) < selectedRedeemOffer.pointsCost
                 }
                 className={`flex-1 text-sm font-semibold px-4 py-2 rounded-full transition-all ${
