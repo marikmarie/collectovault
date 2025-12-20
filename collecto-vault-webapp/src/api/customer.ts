@@ -15,9 +15,9 @@ export const customerService = {
   // Fetch tier benefits for the customer's current tier or a specific tier
   // Backend may respond with { benefits: [...] } or an array
   getTierBenefits: (customerId?: string, tier?: string) =>
-    api.get(`/customers/${customerId ?? "me"}/tier-benefits${tier ? `?tier=${encodeURIComponent(tier)}` : ""}`),
+    api.get(`/customers/${customerId}/tier-benefits${tier ? `?tier=${encodeURIComponent(tier)}` : ""}`),
 
   // Fetch available services for the customer (or generally available services)
   getServices: (customerId?: string) =>
-    api.get(`/customers/${customerId ?? "me"}/services`),
+    api.get(`/customers/${customerId}/services`),
 };
