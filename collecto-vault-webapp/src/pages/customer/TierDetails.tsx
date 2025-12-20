@@ -1,5 +1,7 @@
-import { X, Briefcase, Plane, Zap, ArrowRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import { X, Briefcase, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom"; 
+import { customerService } from "../../api/customer";
 
 interface TierDetailsModalProps {
   open: boolean;
@@ -9,13 +11,38 @@ interface TierDetailsModalProps {
   pointsToNextTier: number;
 }
 
-const mockBenefits = [
-  { id: 1, title: "Dedicated Relationship Manager", detail: "Direct line access for priority support.", icon: Briefcase },
-  { id: 2, title: "10% Earning Accelerator", detail: "Bonus points on all travel and accommodation purchases.", icon: Zap },
-  { id: 3, title: "Exclusive Upgrade Vouchers", detail: "Two complimentary travel class upgrade vouchers annually.", icon: Plane },
-];
+interface Benefit {
+  id: string | number;
+  title?: string;
+  detail?: string;
+  description?: string;
+}
 
 export default function TierDetails({ open, onClose, tier, expiry, pointsToNextTier }: TierDetailsModalProps) {
+  const [benefits, setBenefits] = useState<Benefit[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const fetchBenefits = async () => {
+      setLoading(true);
+      try {
+        // Try customer-specific endpoint for tier benefits
+        const res = await customerService.getTierBenefits(undefined, tier);
+        const data = res.data?.benefits ?? res.data ?? [];
+        setBenefits(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.warn("Failed to fetch tier benefits", err);
+        setBenefits([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBenefits();
+  }, [open, tier]);
+
   if (!open) return null;
 
   return (
@@ -38,27 +65,30 @@ export default function TierDetails({ open, onClose, tier, expiry, pointsToNextT
               Status Expiry: <span className="font-semibold">{expiry}</span>
             </p>
             <p className="mt-2 text-sm text-gray-700">
-              You are **{pointsToNextTier.toLocaleString()} points** away from reaching the next tier level!
+              You are <span className="font-semibold">{pointsToNextTier.toLocaleString()}</span> points away from reaching the next tier level!
             </p>
           </div>
           
           {/* Benefits List */}
           <h3 className="text-lg font-semibold text-gray-800">Your Exclusive Privileges</h3>
           <div className="space-y-4">
-            {mockBenefits.map((benefit) => {
-              const Icon = benefit.icon;
-              return (
-                <div key={benefit.id} className="bg-white p-4 rounded-lg border border-gray-100 flex items-start gap-4">
+            {loading ? (
+              <div className="text-center py-6 text-sm text-gray-500">Loading benefits…</div>
+            ) : benefits.length === 0 ? (
+              <div className="text-center py-6 text-sm text-gray-500">No benefits available for this tier.</div>
+            ) : (
+              benefits.map((benefit) => (
+                <div key={String(benefit.id)} className="bg-white p-4 rounded-lg border border-gray-100 flex items-start gap-4">
                   <div className="p-2 rounded-full bg-[#cb0d6c]/10">
-                    <Icon className="w-5 h-5 text-[#cb0d6c]" />
+                    <Briefcase className="w-5 h-5 text-[#cb0d6c]" />
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900">{benefit.title}</p>
-                    <p className="text-sm text-gray-500">{benefit.detail}</p>
+                    <p className="font-medium text-gray-900">{benefit.title ?? benefit.description}</p>
+                    <p className="text-sm text-gray-500">{benefit.detail ?? benefit.description ?? ""}</p>
                   </div>
                 </div>
-              );
-            })}
+              ))
+            )}
           </div>
         </div>
 
