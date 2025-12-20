@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+html, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+ }
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #111827;
+ 
+  }
+
 :root {
   --brand-primary: #f2f3f3;    
   --brand-secondary: #a0a3a7;  
@@ -12,22 +24,6 @@
   --logo-color: #111827;
 }
 
-body {
-  background-color: #f9fafb;
-  color: #1f2937; 
-  
 
-}
 
-@layer components {
-  .btn-neutral {
-    background-color: var(--btn-bg);
-    color: var(--btn-text);
-    border: 1px solid var(--btn-border);
-    transition: all 0.2s ease;
-  }
-  
-  .btn-neutral:hover {
-    background-color: var(--btn-hover-bg);
-  }
-}
+

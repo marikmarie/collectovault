@@ -5,11 +5,9 @@ import { Camera } from "lucide-react";
 type Props = {
   name: string;
   phone?: string;
-  // The avatar prop accepts a URL string or null/undefined.
   avatar?: string;
   useVideo?: boolean;
   avatarSize?: number;
-  // Handles the file change event after selection
   onAvatarFileChange: (file: File | null) => void;
 };
 
@@ -40,7 +38,7 @@ export default function Header({
   };
 
   return (
-    <header className="relative w-full overflow-hidden">
+    <header className="relative w-full overflow-hidden m-0 p-0">
       {/* optional background video */}
       {useVideo && (
         <video
@@ -54,13 +52,13 @@ export default function Header({
         </video>
       )}
 
-      {/* base gradient */}
+      {/* base gradient - Expanded to full width/height */}
       <div
         className="absolute inset-0 opacity-95 pointer-events-none"
         style={{ background: customGradient }}
       />
 
-      {/* --- Decorative SVG layer (diagonal lines + soft curves) --- */}
+      {/* --- Decorative SVG layer --- */}
       <div className="absolute inset-0 pointer-events-none">
         <svg
           className="w-full h-full"
@@ -69,7 +67,6 @@ export default function Header({
           aria-hidden
         >
           <defs>
-            {/* diagonal stripe pattern */}
             <pattern
               id="diagStripes"
               patternUnits="userSpaceOnUse"
@@ -82,7 +79,6 @@ export default function Header({
               <path d="M10 0 L10 6" stroke="rgba(255,255,255,0.04)" strokeWidth="2" />
             </pattern>
 
-            {/* soft blurred gradient for curves */}
             <linearGradient id="softGrad" x1="0" x2="1" y1="0" y2="1">
               <stop offset="0%" stopColor="#ff6b6b" stopOpacity="0.08" />
               <stop offset="55%" stopColor="#ffb86b" stopOpacity="0.06" />
@@ -95,10 +91,8 @@ export default function Header({
             </filter>
           </defs>
 
-          {/* diagonal stripe rectangle (very subtle) */}
           <rect width="100%" height="100%" fill="url(#diagStripes)" />
 
-          {/* abstract soft curved shapes (low opacity, blurred) */}
           <g filter="url(#softBlur)">
             <path
               d="M -10 40 C 120 10, 240 10, 400 60 C 560 110, 720 160, 1000 120 L 1000 0 L -10 0 Z"
@@ -106,21 +100,8 @@ export default function Header({
               transform="translate(0,40) scale(1.15)"
               opacity="0.28"
             />
-            <path
-              d="M -20 220 C 120 180, 260 140, 430 190 C 600 240, 800 300, 1100 260 L 1100 0 L -20 0 Z"
-              fill="#7b61ff"
-              transform="translate(0,80) scale(1.05)"
-              opacity="0.06"
-            />
-            <path
-              d="M 100 420 C 240 380, 380 360, 560 420 C 740 480, 920 520, 1200 480 L 1200 0 L 100 0 Z"
-              fill="#ff6b6b"
-              transform="translate(-80,140) scale(1.1)"
-              opacity="0.04"
-            />
           </g>
 
-          {/* a subtle vignette using an overlay circle gradient */}
           <radialGradient id="vignette" cx="50%" cy="10%" r="80%">
             <stop offset="60%" stopColor="rgba(0,0,0,0)" />
             <stop offset="100%" stopColor="rgba(0,0,0,0.18)" />
@@ -129,8 +110,8 @@ export default function Header({
         </svg>
       </div>
 
-      <div className="relative max-w-3xl mx-auto px-4 pb-2 pt-3">
-        {/* Hidden file input for uploading */}
+      {/* Main Content Container - Changed max-w-3xl to w-full and removed pt-3 */}
+      <div className="relative w-full px-4 pb-4 pt-4">
         <input
           type="file"
           ref={fileInputRef}
@@ -139,15 +120,9 @@ export default function Header({
           className="hidden"
         />
 
-        {/* empty header bar (icons removed already) */}
-        <div className="flex items-start justify-between h-8">
-          <div className="w-8" />
-          <div className="w-8" />
-        </div>
-
-        {/* Avatar with camera upload */}
+        {/* Avatar with camera upload - Removed negative margin to prevent top clipping */}
         <div className="flex justify-center">
-          <div className="relative -mt-8">
+          <div className="relative">
             <div
               className="rounded-full overflow-hidden shadow-lg border-4 border-white/40"
               style={{
@@ -172,15 +147,14 @@ export default function Header({
           </div>
         </div>
 
-        {/* text */}
-        <div className="text-center mt-2 pb-4 relative z-10">
+        {/* Text content */}
+        <div className="text-center mt-3 pb-2 relative z-10">
           <h1 className="text-white text-xl md:text-2xl font-semibold">{name}</h1>
-
           {phone && <p className="text-white/90 text-sm mt-1">{phone}</p>}
 
           <button
             onClick={() => navigate("/statement")}
-            className="mt-2 text-xs text-white bg-white/20 px-3 py-1 rounded-full hover:bg-white/30 active:scale-95 transition-all"
+            className="mt-3 text-xs text-white bg-white/20 px-4 py-1.5 rounded-full hover:bg-white/30 active:scale-95 transition-all border border-white/10"
           >
             My Statement
           </button>

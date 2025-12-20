@@ -188,7 +188,7 @@ export default function Dashboard() {
       })();
 
   return (
-    <div className="min-h-screen w-full bg-linear-to-br from-slate-50 to-[#fff8e7] font-sans">
+    <div className="min-h-screen bg-linear-to-br from-slate-50 to-[#fff8e7] font-sans">
       
       <TopNav />
       <Header
