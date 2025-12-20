@@ -60,14 +60,14 @@ export default function Statement() {
 
         <div className="bg-white shadow-lg rounded-xl overflow-hidden">
           <div className="p-4 sm:p-6 border-b border-gray-100">
-            <h2 className="text-xl font-semibold text-gray-700">Recent Activity</h2>
+            <h2 className="text-xl font-semibold text-gray-700">Recent Transactions</h2>
           </div>
 
           <ul className="divide-y divide-gray-100">
             {loading ? (
               <li className="p-4 sm:p-6 text-center text-sm text-gray-500">Loading transactions…</li>
             ) : transactions.length === 0 ? (
-              <li className="p-4 sm:p-6 text-center text-sm text-gray-500">No recent activity.</li>
+              <li className="p-4 sm:p-6 text-center text-sm text-gray-500">No recent Transactions.</li>
             ) : (
               transactions.map((tx) => (
               <li key={tx.id} className="p-4 sm:p-6 flex justify-between items-center hover:bg-gray-50 transition-colors">
