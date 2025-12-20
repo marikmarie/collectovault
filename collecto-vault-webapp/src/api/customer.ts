@@ -8,4 +8,7 @@ export const customerService = {
   // Fetch invoices for a customer (use 'me' or provide customerId)
   getInvoices: (customerId?: string) =>
     api.get(`/customers/${customerId ?? "me"}/invoices`),
+
+  // Fetch the customer profile (minimal data may be returned initially)
+  getProfile: (customerId?: string) => api.get(`/customers/${customerId ?? "me"}`),
 };

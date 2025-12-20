@@ -12,15 +12,17 @@ import { customerService } from "../../api/customer";
 
 
 const mockUser = {
+  // Minimal values that could be available immediately after login
   name: "Mariam Tukasingura",
   phone: "256721695 645",
   avatar: "/photo.png",
-  pointsBalance: 5000,
+  // The rest will be fetched when the dashboard loads
+  pointsBalance: 0,
   avatarsize: 120,
   tier: "Blue",
-  tierProgress: 30,
+  tierProgress: 0,
   expiryDate: "30 Apr 2027",
-  invoicesCount: 4,
+  invoicesCount: 0,
 };
 
 type TabType = "points" | "tier" | "invoices";
@@ -44,8 +46,22 @@ interface InvoiceType {
   totalAmount?: string;
 } 
 
+interface UserProfile {
+  name?: string;
+  phone?: string;
+  avatar?: string;
+  pointsBalance?: number;
+  avatarsize?: number;
+  tier?: string;
+  tierProgress?: number;
+  expiryDate?: string;
+  invoicesCount?: number;
+}
+
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabType>("tier");
+  // User profile (starts with minimal data available at login)
+  const [user, setUser] = useState<UserProfile>(mockUser);
   const [buyPointsOpen, setBuyPointsOpen] = useState<boolean>(false);
   const [spendPointsOpen, setSpendPointsOpen] = useState<boolean>(false);
   const [tierDetailsOpen, setTierDetailsOpen] = useState<boolean>(false);
@@ -62,10 +78,27 @@ export default function Dashboard() {
   const [offersLoading, setOffersLoading] = useState<boolean>(false);
   const [invoices, setInvoices] = useState<InvoiceType[]>([]);
   const [invoicesLoading, setInvoicesLoading] = useState<boolean>(false);
+  // Prefer server-provided count if available; null until fetched
+  const [invoiceCount, setInvoiceCount] = useState<number | null>(null);
 
-  const invoicesCount = invoices.length || mockUser.invoicesCount;
+  // Use server count when available, otherwise fall back to local array length or user fallback
+  const invoicesCount = invoiceCount ?? invoices.length ?? user.invoicesCount ?? 0;
 
   useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await customerService.getProfile();
+        const profile = res.data ?? {};
+        setUser((prev) => ({ ...prev, ...profile }));
+        const countFromProfile = profile?.invoicesCount ?? profile?.invoiceCount ?? profile?.totalInvoices;
+        if (typeof countFromProfile !== "undefined") {
+          setInvoiceCount(Number(countFromProfile) || 0);
+        }
+      } catch (err) {
+        console.warn("Failed to fetch profile", err);
+      }
+    };
+
     const fetchOffers = async () => {
       setOffersLoading(true);
       try {
@@ -83,15 +116,28 @@ export default function Dashboard() {
       setInvoicesLoading(true);
       try {
         const res = await customerService.getInvoices();
-        setInvoices(res.data?.invoices ?? res.data ?? []);
+        const fetched = res.data?.invoices ?? res.data ?? [];
+        setInvoices(fetched);
+
+        // Prefer explicit counts returned by the API (common names)
+        const countFromRes = res.data?.count ?? res.data?.totalCount ?? res.data?.total ?? res.data?.meta?.total;
+        if (typeof countFromRes !== "undefined") {
+          setInvoiceCount(Number(countFromRes) || 0);
+        } else {
+          // Fallback to array length
+          setInvoiceCount(Array.isArray(fetched) ? fetched.length : 0);
+        }
       } catch (err) {
         console.warn("Failed to fetch invoices", err);
         setInvoices([]);
+        setInvoiceCount(0);
       } finally {
         setInvoicesLoading(false);
       }
     };
 
+    // Start by refreshing profile (which may provide counts/points) then fetch other resources
+    fetchProfile();
     fetchOffers();
     fetchInvoices();
   }, []);
@@ -127,16 +173,28 @@ export default function Dashboard() {
     }
   };
 
-  const totalInvoicedSum = "1,015,000";
+  // Compute total invoiced sum from fetched invoices (fallback to mock if none)
+  const totalInvoicedSum = invoicesLoading
+    ? "Loading…"
+    : (() => {
+        const sum = invoices.reduce((acc, inv) => {
+          const amountStr = inv.totalAmount ?? inv.remaining ?? "0";
+          const normalized = String(amountStr).replace(/[^0-9.-]+/g, "");
+          const num = Number(normalized) || 0;
+          return acc + num;
+        }, 0);
+
+        return sum.toLocaleString();
+      })();
 
   return (
     <div className="min-h-screen w-full bg-linear-to-br from-slate-50 to-[#fff8e7] font-sans">
       
       <TopNav />
       <Header
-        name={mockUser.name}
-        phone={mockUser.phone}
-        avatar={mockUser.avatar}
+        name={user.name ?? mockUser.name}
+        phone={user.phone ?? mockUser.phone}
+        avatar={user.avatar ?? mockUser.avatar}
         useVideo={false}
         onAvatarFileChange={() => {}}
       />
@@ -152,7 +210,7 @@ export default function Dashboard() {
             }`}
           >
             <span className="text-3xl text-gray-800 font-light tracking-tight">
-              {mockUser.pointsBalance.toLocaleString()}
+              {(user.pointsBalance ?? 0).toLocaleString()}
             </span>
             <span className="text-xs font-medium text-gray-500 uppercase mt-1">
               Your Points
@@ -170,7 +228,7 @@ export default function Dashboard() {
             }`}
           >
             <span className="text-3xl text-gray-800 font-light tracking-tight">
-              {mockUser.tier}
+              {user.tier ?? mockUser.tier}
             </span>
             <span className="text-xs font-medium text-gray-500 uppercase mt-1">
               Tier
@@ -225,8 +283,8 @@ export default function Dashboard() {
           <div className="animate-in slide-in-from-bottom-2 fade-in duration-300">
             {activeTab === "tier" && (
               <TierProgress
-                currentTier={mockUser.tier}
-                progress={mockUser.tierProgress}
+                currentTier={user.tier ?? mockUser.tier}
+                progress={user.tierProgress ?? mockUser.tierProgress}
               />
             )}
           </div>
@@ -406,17 +464,18 @@ export default function Dashboard() {
         onClose={() => setBuyPointsOpen(false)}
         onSuccess={() => {}}
       />
+
       <SpendPointsModal
         open={spendPointsOpen}
         onClose={() => setSpendPointsOpen(false)}
-        currentPoints={mockUser.pointsBalance}
+        currentPoints={user.pointsBalance ?? 0}
       />
 
       <TierDetailsModal
         open={tierDetailsOpen}
         onClose={() => setTierDetailsOpen(false)}
-        tier={mockUser.tier}
-        expiry={mockUser.expiryDate}
+        tier={user.tier ?? mockUser.tier}
+        expiry={user.expiryDate ?? mockUser.expiryDate}
         pointsToNextTier={1500}
       />
 
@@ -472,10 +531,10 @@ export default function Dashboard() {
               <button
                 onClick={() => handleSpendFromDetails()}
                 disabled={
-                  mockUser.pointsBalance < selectedRedeemOffer.pointsCost
+                  (user.pointsBalance ?? 0) < selectedRedeemOffer.pointsCost
                 }
                 className={`flex-1 text-sm font-semibold px-4 py-2 rounded-full transition-all ${
-                  mockUser.pointsBalance >= selectedRedeemOffer.pointsCost
+                  (user.pointsBalance ?? 0) >= selectedRedeemOffer.pointsCost
                     ? "bg-[#ef4155] text-white hover:bg-[#cb0d6c] shadow-md shadow-[#ef4155]/30"
                     : "bg-gray-200 text-gray-500 cursor-not-allowed"
                 }`}
