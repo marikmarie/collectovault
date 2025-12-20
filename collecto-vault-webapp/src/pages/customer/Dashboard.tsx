@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "../../components/Header";
 import TierProgress from "../../components/TierProgress";
 import TopNav from "../../components/TopNav";
@@ -8,122 +8,8 @@ import SpendPointsModal from "./SpendPoints";
 import TierDetailsModal from "./TierDetails";
 // Added CheckCircle, Clock, AlertCircle for status icons
 import { X, CheckCircle, Clock, AlertCircle, Download } from "lucide-react";
+import { customerService } from "../../api/customer";
 
-const REDEEMABLE_OFFERS = [
-  {
-    id: "r1",
-    title: "20% off Hotel Stays",
-    desc: "Redeem points for 20% off hotel stays.",
-    pointsCost: 1000,
-  },
-  {
-    id: "r2",
-    title: "50% Travel Upgrades",
-    desc: "Use points to upgrade your next travel.",
-    pointsCost: 2500,
-  },
-  {
-    id: "r3",
-    title: " Lounge Access",
-    desc: "Redeem points for complimentary lounge access.",
-    pointsCost: 500,
-  },
-];
-
-// UPDATED: Extended Mock Data to support new requirements
-const MOCK_INVOICES = [
-  {
-    id: "INV-2024-001",
-    date: "12 May 2024",
-    totalAmount: "150,000",
-    remaining: "UGX 0", // Paid
-    lastPaid: "150,000",
-    lastPaidDate: "14 May 2024", 
-    daysAgo: 2,
-    status: "Paid",
-    items: [
-      {
-        desc: "Consultation Fee",
-        service: "Consultation",
-        client: "Acme Corp",
-        phone: "+256712345678",
-        totalAmount: "150,000",
-      },
-    ],
-    payments: [
-      { date: "14 May 2024", method: "Mobile Money", amount: "150,000", tranId: "MM123456789" },
-    ],
-  },
-  {
-    id: "INV-2024-002",
-    date: "28 Apr 2024",
-    totalAmount: "45,000",
-    remaining: "UGX 0",
-    lastPaid: "45,000",
-    lastPaidDate: "29 Apr 2024",
-    daysAgo: 15,
-    status: "Paid",
-    items: [
-      {
-        desc: "Subscription Renewal",
-        service: "Subscription",
-        client: "Acme Corp",
-        phone: "+256712345678",
-        totalAmount: "45,000",
-      },
-    ],
-    payments: [
-      { date: "29 Apr 2024", method: "Visa **** 4242", amount: "45,000", tranId: "CC987654321" },
-    ],
-  },
-  {
-    id: "INV-2024-003",
-    date: "10 Apr 2024",
-    totalAmount: "320,000",
-    remaining: "UGX 120,000",
-    lastPaid: "200,000",
-    lastPaidDate: "15 Apr 2024",
-    daysAgo: 25,
-    status: "Pending",
-    items: [
-      {
-        desc: "Annual Service Charge",
-        service: "Annual Service Charge",
-        client: "Acme Corp",
-        phone: "+256712345678",
-        totalAmount: "300,000",
-      },
-      {
-        desc: "Tax",
-        service: "Tax",
-        client: "Acme Corp",
-        phone: "+256712345678",
-        totalAmount: "20,000",
-      },
-    ],
-    payments: [{ date: "15 Apr 2024", method: "Cash", amount: "200,000" }],
-  },
-  {
-    id: "INV-2024-004",
-    date: "01 Mar 2024",
-    totalAmount: "500,000",
-    remaining: "UGX 500,000",
-    lastPaid: "0",
-    lastPaidDate: null,
-    daysAgo: null,
-    status: "Overdue", // Red
-    items: [
-      {
-        desc: "System Installation",
-        service: "Installation",
-        client: "Acme Corp",
-        phone: "+256712345678",
-        totalAmount: "500,000",
-      },
-    ],
-    payments: [],
-  },
-];
 
 const mockUser = {
   name: "Mariam Tukasingura",
@@ -138,8 +24,25 @@ const mockUser = {
 };
 
 type TabType = "points" | "tier" | "invoices";
-type RedeemableOffer = (typeof REDEEMABLE_OFFERS)[0];
-type InvoiceType = (typeof MOCK_INVOICES)[0];
+
+interface RedeemableOffer {
+  id: string;
+  title: string;
+  desc?: string;
+  pointsCost: number;
+}
+
+interface InvoiceType {
+  id: string;
+  date: string;
+  status: string;
+  lastPaid: string;
+  daysAgo?: number;
+  remaining: string;
+  items: any[];
+  payments?: any[];
+  totalAmount?: string;
+} 
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabType>("tier");
@@ -153,6 +56,45 @@ export default function Dashboard() {
   );
   const [selectedRedeemOffer, setSelectedRedeemOffer] =
     useState<RedeemableOffer | null>(null);
+
+  // Offers & invoices state (replaces mocked constants)
+  const [redeemableOffers, setRedeemableOffers] = useState<RedeemableOffer[]>([]);
+  const [offersLoading, setOffersLoading] = useState<boolean>(false);
+  const [invoices, setInvoices] = useState<InvoiceType[]>([]);
+  const [invoicesLoading, setInvoicesLoading] = useState<boolean>(false);
+
+  const invoicesCount = invoices.length || mockUser.invoicesCount;
+
+  useEffect(() => {
+    const fetchOffers = async () => {
+      setOffersLoading(true);
+      try {
+        const res = await customerService.getRedeemableOffers();
+        setRedeemableOffers(res.data?.offers ?? res.data ?? []);
+      } catch (err) {
+        console.warn("Failed to fetch redeemable offers", err);
+        setRedeemableOffers([]);
+      } finally {
+        setOffersLoading(false);
+      }
+    };
+
+    const fetchInvoices = async () => {
+      setInvoicesLoading(true);
+      try {
+        const res = await customerService.getInvoices();
+        setInvoices(res.data?.invoices ?? res.data ?? []);
+      } catch (err) {
+        console.warn("Failed to fetch invoices", err);
+        setInvoices([]);
+      } finally {
+        setInvoicesLoading(false);
+      }
+    };
+
+    fetchOffers();
+    fetchInvoices();
+  }, []);
 
   const handleViewRedeemOffer = (offer: RedeemableOffer) => {
     setSelectedRedeemOffer(offer);
@@ -246,7 +188,7 @@ export default function Dashboard() {
             }`}
           >
             <span className="text-3xl text-gray-800 font-light tracking-tight">
-              {mockUser.invoicesCount}
+              {invoicesCount}
             </span>
             <span className="text-xs font-medium text-gray-500 uppercase mt-1">
               My Invoices
@@ -301,29 +243,35 @@ export default function Dashboard() {
                 </h3>
               </div>
               <div className="space-y-4 px-4 pb-20">
-                {REDEEMABLE_OFFERS.map((offer, index) => (
-                  <div
-                    key={offer.id}
-                    className="overflow-hidden flex items-center bg-white rounded-lg shadow-sm border border-gray-100 p-3 hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex-1">
-                      <div className="font-semibold text-gray-800">
-                        {index + 1}. {offer.title}
+                {offersLoading ? (
+                  <div className="text-center py-6 text-sm text-gray-500">Loading offers…</div>
+                ) : redeemableOffers.length === 0 ? (
+                  <div className="text-center py-6 text-sm text-gray-500">No redeemable offers found.</div>
+                ) : (
+                  redeemableOffers.map((offer, index) => (
+                    <div
+                      key={offer.id}
+                      className="overflow-hidden flex items-center bg-white rounded-lg shadow-sm border border-gray-100 p-3 hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex-1">
+                        <div className="font-semibold text-gray-800">
+                          {index + 1}. {offer.title}
+                        </div>
+                        <div className="text-sm text-gray-600 mt-1">
+                          {offer.desc}
+                        </div>
                       </div>
-                      <div className="text-sm text-gray-600 mt-1">
-                        {offer.desc}
+                      <div className="p-1 shrink-0">
+                        <button
+                          onClick={() => handleViewRedeemOffer(offer)}
+                          className="text-sm px-4 py-2 rounded-full bg-[#d81b60] hover:bg-[#b81752] text-white font-medium transition-colors active:scale-95"
+                        >
+                          View
+                        </button>
                       </div>
                     </div>
-                    <div className="p-1 shrink-0">
-                      <button
-                        onClick={() => handleViewRedeemOffer(offer)}
-                        className="text-sm px-4 py-2 rounded-full bg-[#d81b60] hover:bg-[#b81752] text-white font-medium transition-colors active:scale-95"
-                      >
-                        View
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </>
           )}
@@ -381,7 +329,17 @@ export default function Dashboard() {
               </div>
 
               <div className="space-y-3">
-                {MOCK_INVOICES.map((inv) => {
+                {invoicesLoading ? (
+                  <div className="text-center py-6 text-sm text-gray-500">Loading invoices…</div>
+                ) : invoices.length === 0 ? (
+                  <div className="text-center py-8">
+                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2 text-gray-400">
+                      <AlertCircle size={24} />
+                    </div>
+                    <p className="text-sm text-gray-500">No invoices found.</p>
+                  </div>
+                ) : (
+                  invoices.map((inv) => {
                   const visuals = getStatusVisuals(inv.status);
 
                   return (
@@ -435,7 +393,7 @@ export default function Dashboard() {
                       </div>
                     </div>
                   );
-                })}
+                }))}
               </div>
             </div>
           )}
