@@ -1,5 +1,5 @@
 import { X, Briefcase, Plane, Zap, ArrowRight } from "lucide-react";
-import { Link } from "react-router-dom"; // Assumes react-router-dom is used for the Earn link
+import { Link } from "react-router-dom"; 
 
 interface TierDetailsModalProps {
   open: boolean;
@@ -9,7 +9,6 @@ interface TierDetailsModalProps {
   pointsToNextTier: number;
 }
 
-// Mock Benefits (matching the previous component structure)
 const mockBenefits = [
   { id: 1, title: "Dedicated Relationship Manager", detail: "Direct line access for priority support.", icon: Briefcase },
   { id: 2, title: "10% Earning Accelerator", detail: "Bonus points on all travel and accommodation purchases.", icon: Zap },

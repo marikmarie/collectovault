@@ -38,7 +38,7 @@ const MOCK_INVOICES = [
     totalAmount: "150,000",
     remaining: "UGX 0", // Paid
     lastPaid: "150,000",
-    lastPaidDate: "14 May 2024", // Used to calc days
+    lastPaidDate: "14 May 2024", 
     daysAgo: 2,
     status: "Paid",
     items: [
@@ -163,7 +163,6 @@ export default function Dashboard() {
     setSpendPointsOpen(true);
   };
 
-  // Helper to determine status color and icon
   const getStatusVisuals = (status: string) => {
     switch (status) {
       case "Paid":
@@ -186,8 +185,6 @@ export default function Dashboard() {
     }
   };
 
-  // Calculate Total Amount for the Header
-  // Note: We are mocking a sum of "Total Invoiced Amount" here.
   const totalInvoicedSum = "1,015,000";
 
   return (
@@ -451,7 +448,6 @@ export default function Dashboard() {
         onClose={() => setBuyPointsOpen(false)}
         onSuccess={() => {}}
       />
-
       <SpendPointsModal
         open={spendPointsOpen}
         onClose={() => setSpendPointsOpen(false)}
@@ -473,7 +469,6 @@ export default function Dashboard() {
           onClose={() => setSelectedInvoice(null)}
         />
       )}
-
       {/* --- REDEEM OFFER MODAL --- */}
       {selectedRedeemOffer && (
         <div
@@ -538,8 +533,6 @@ export default function Dashboard() {
 }
 
 // --- SUB-COMPONENT: INVOICE DETAIL MODAL ---
-
-
 function InvoiceDetailModal({
   invoice,
   onClose,
