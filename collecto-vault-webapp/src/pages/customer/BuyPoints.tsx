@@ -6,10 +6,6 @@ import Button from "../../components/Button";
 import api from "../../api"; // Your axios instance
 import { Zap, Heart, Star, X, Loader2 } from 'lucide-react';
 
-/* =======================
-   Types
-======================= */
-
 type Package = {
   id: number | string;
   points: number;
@@ -35,9 +31,7 @@ type Props = {
 
 type ModalStep = "select" | "confirm" | "success" | "failure";
 
-/* =======================
-   Styling Constants
-======================= */
+
 const PRIMARY = '#d81b60'; 
 const ACCENT = '#ffa727';  
 //const SOFT_BG = '#fffcf7'; 

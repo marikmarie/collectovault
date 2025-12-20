@@ -265,13 +265,13 @@ export default function Dashboard() {
               <>
                 <button
                   onClick={() => setSpendPointsOpen(true)}
-                  className="text-sm font-semibold px-5 py-2 rounded-full border border-gray-300 bg-white text-gray-700 shadow-sm hover:bg-gray-50 active:scale-95 transition-all"
+                  className="text-sm font-semibold px-5 py-2 rounded-full border border-gray-300 bg-white text-(btn-) shadow-sm hover:(--btn-hover-bg) active:scale-95 transition-all"
                 >
                   Spend Points
                 </button>
                 <button
                   onClick={() => setBuyPointsOpen(true)}
-                  className="text-sm font-semibold px-5 py-2 rounded-full bg-[#ef4155] text-white shadow-md shadow-[#ef4155]/30 hover:bg-[#cb0d6c] active:scale-95 transition-all"
+                  className="text-sm font-semibold px-5 py-2 rounded-full bg-(--btn-bg) text-(--btn-text) shadow-md shadow-[#ef4155]/30 hover:bg-(--btn-hover-bg) active:scale-95 transition-all"
                 >
                   Buy Points
                 </button>
@@ -531,7 +531,7 @@ export default function Dashboard() {
               <button
                 onClick={() => handleSpendFromDetails()}
                 disabled={
-                  
+
                   (user.pointsBalance ?? 0) < selectedRedeemOffer.pointsCost
                 }
                 className={`flex-1 text-sm font-semibold px-4 py-2 rounded-full transition-all ${
