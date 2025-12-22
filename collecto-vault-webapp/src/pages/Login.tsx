@@ -305,7 +305,7 @@ export default function LoginPage() {
                   type="submit"
                   disabled={isProcessing}
                   className={`w-full flex items-center justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-base font-medium text-white transition-colors 
-                      ${isProcessing ? 'bg-gray-400 cursor-wait' : 'bg-[#EF4155] hover:bg-[#CB0D6C] focus:ring-[#EF4155]'}`}
+                      ${isProcessing ? 'bg-gray-400 cursor-wait' : 'bg-(--btn-bg) hover:bg-(--btn-hover-bg) focus:ring-[#EF4155]'}`}
                 >
                   {isProcessing ? (
                       <RotateCw className="w-5 h-5 mr-2 animate-spin" />
