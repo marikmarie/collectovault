@@ -304,7 +304,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={isProcessing}
-                  className={`w-full flex items-center justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-base font-medium text-white transition-colors 
+                  className={`w-full flex items-center justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-base font-medium text-(--btn-text) transition-colors 
                       ${isProcessing ? 'bg-gray-400 cursor-wait' : 'bg-(--btn-bg) hover:bg-(--btn-hover-bg) focus:ring-[#EF4155]'}`}
                 >
                   {isProcessing ? (

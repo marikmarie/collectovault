@@ -12,6 +12,7 @@ body {
  
   }
 
+  /* Root button colors and hover backgrounds */
 :root {
   --brand-primary: #f2f3f3;    
   --brand-secondary: #a0a3a7;  
@@ -19,7 +20,9 @@ body {
    --btn-bg: transparent;       
   --btn-text: #343d51;         
   --btn-border: #e5e7eb;       
-  --btn-hover-bg: #aeb1b8;     
+  --btn-hover-bg: #aeb1b8;  
+  
+
   
   --logo-color: #111827;
 }
