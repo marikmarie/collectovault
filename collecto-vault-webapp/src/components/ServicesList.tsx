@@ -31,7 +31,13 @@ export default function ServicesList() {
     const fetchServices = async () => {
       setLoading(true);
       try {
-        const res = await customerService.getServices();
+        const collectoId = localStorage.getItem("collectoId") || "141122CV001";
+        if (!collectoId) {
+          console.warn("Collecto ID not found");
+          setServices([]);
+          return;
+        }
+        const res = await customerService.getServices(collectoId);
         const data = res.data?.services ?? res.data ?? [];
         setServices(Array.isArray(data) ? data : []);
       } catch (err) {

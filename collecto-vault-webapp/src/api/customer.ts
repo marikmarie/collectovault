@@ -10,16 +10,26 @@ export const customerService = {
     api.get(`/customers/${customerId ?? "me"}/invoices`),
 
   // Fetch the customer profile (minimal data may be returned initially)
-  getProfile: (customerId?: string) => api.get(`/customers/${customerId ?? "me"}`),
+  getProfile: (customerId?: string) =>
+    api.get(`/customers/${customerId ?? "me"}`),
 
   // Fetch tier benefits for the customer's current tier or a specific tier
   // Backend may respond with { benefits: [...] } or an array
   getTierBenefits: (customerId?: string, tier?: string) =>
-    api.get(`/customers/${customerId}/tier-benefits${tier ? `?tier=${encodeURIComponent(tier)}` : ""}`),
+    api.get(
+      `/customers/${customerId}/tier-benefits${
+        tier ? `?tier=${encodeURIComponent(tier)}` : ""
+      }`
+    ),
 
   // Fetch available services for the customer (or generally available services)
   getServicesById: (customerId?: string) =>
     api.get(`/customers/${customerId}/services`),
 
-  getServices: () => api.get(`/services`),
+  getServices: (collectoId?: string) =>
+    api.get(
+      `/services${
+        collectoId ? `?collectoId=${encodeURIComponent(collectoId)}` : ""
+      }`
+    ),
 };
