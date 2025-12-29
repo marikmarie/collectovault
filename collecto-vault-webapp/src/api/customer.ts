@@ -1,35 +1,31 @@
 import api from "./index";
 
 export const customerService = {
-  // Fetch redeemable offers for a customer (use 'me' or provide customerId)
   getRedeemableOffers: (customerId?: string) =>
-    api.get(`/customers/${customerId ?? "me"}/offers/redeemable`),
+    api.post(`/customers/${customerId ?? "me"}/offers/redeemable`),
 
-  // Fetch invoices for a customer (use 'me' or provide customerId)
   getInvoices: (customerId?: string) =>
-    api.get(`/customers/${customerId ?? "me"}/invoices`),
+    api.post(`/customers/${customerId ?? "me"}/invoices`),
 
-  // Fetch the customer profile (minimal data may be returned initially)
   getProfile: (customerId?: string) =>
-    api.get(`/customers/${customerId ?? "me"}`),
+    api.post(`/customers/${customerId ?? "me"}`),
 
-  // Fetch tier benefits for the customer's current tier or a specific tier
-  // Backend may respond with { benefits: [...] } or an array
   getTierBenefits: (customerId?: string, tier?: string) =>
-    api.get(
+    api.post(
       `/customers/${customerId}/tier-benefits${
         tier ? `?tier=${encodeURIComponent(tier)}` : ""
       }`
     ),
 
-  // Fetch available services for the customer (or generally available services)
   getServicesById: (customerId?: string) =>
-    api.get(`/customers/${customerId}/services`),
+    api.post(`/customers/${customerId}/services`),
 
-  getServices: (collectoId?: string) =>
-    api.get(
-      `/services${
-        collectoId ? `?collectoId=${encodeURIComponent(collectoId)}` : ""
-      }`
-    ),
+  getServices: (collectoId?: string) => 
+  api.post('/services', { collectoId }) // Pass as an object in the body
+  // getServices: (collectoId?: string) =>
+  //   api.post(
+  //     `/services${
+  //       collectoId ? `?collectoId=${encodeURIComponent(collectoId)}` : ""
+  //     }`
+  //   ),
 };
