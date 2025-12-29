@@ -18,6 +18,8 @@ export const customerService = {
     api.get(`/customers/${customerId}/tier-benefits${tier ? `?tier=${encodeURIComponent(tier)}` : ""}`),
 
   // Fetch available services for the customer (or generally available services)
-  getServices: (customerId?: string) =>
+  getServicesById: (customerId?: string) =>
     api.get(`/customers/${customerId}/services`),
+
+  getServices: () => api.get(`/services`),
 };
