@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import TopNav from "../../components/TopNav";
-import { Search, ChevronDown } from "lucide-react";
+import { Search, ChevronDown, ShoppingCart } from "lucide-react";
 import Icon from "../../components/Icon";
 import api from "../../api";
 import { customerService } from "../../api/customer";
@@ -19,12 +19,23 @@ export default function Services() {
   const [services, setServices] = useState<Service[]>([]);
   const [filteredServices, setFilteredServices] = useState<Service[]>([]);
   const [photosBaseUrl, setPhotosBaseUrl] = useState<string>("");
-  const [selected, setSelected] = useState<Service | null>(null);
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Quantity for products (1+)
-  const [quantity, setQuantity] = useState<number>(1);
+
+  // Cart
+  type CartItem = {
+    id: string;
+    name: string;
+    unitAmount: number;
+    quantity: number;
+    photo?: string;
+    category?: string;
+    isProduct?: boolean;
+  };
+
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cartOpen, setCartOpen] = useState(false);
 
   // Pagination
   const [page, setPage] = useState(0);
@@ -59,17 +70,14 @@ export default function Services() {
     setPage(0);
   }, [filteredServices]);
 
-  // Reset quantity whenever a new service/product is selected
-  useEffect(() => {
-    setQuantity(1);
-  }, [selected]);
+
 
   async function fetchServices() {
     setLoading(true);
     try {
       const collectoId = localStorage.getItem("collectoId") || "141122";
       // send page (1-indexed) and limit to avoid huge responses from API
-      const response = await customerService.getServices(collectoId, page + 1);
+      const response = await customerService.getServices(collectoId, page + 1, itemsPerPage);
       const payload = response.data?.data;
       const innerData = payload?.data;
       const records = innerData?.records || [];
@@ -103,64 +111,69 @@ export default function Services() {
     }
   }
 
-  // Payment functions (payNow, payLater) remain identical...
-  async function payLater() {
-    if (!selected) return;
-    setLoading(true);
-    try {
-      const totalAmount = (selected.amount || 0) * (quantity || 1);
-      const { data } = await api.post("/invoice", {
-        serviceId: selected.id,
-        serviceName: selected.name,
-        quantity: selected.isProduct ? quantity : 1,
-        amount: totalAmount,
-      });
-      alert(`Invoice created: ${data.invoiceId ?? "unknown"}`);
-      setSelected(null);
-    } catch (err: any) {
-      console.error("Pay later failed:", err);
-      alert(err.message || "Failed to create invoice");
-    } finally {
-      setLoading(false);
-    }
-  }
 
-  async function payNow() {
-    if (!selected) return;
-    setLoading(true);
-    try {
-      const totalAmount = (selected.amount || 0) * (quantity || 1);
-      const { data } = await api.post("/pay", {
-        serviceId: selected.id,
-        serviceName: selected.name,
-        amount: totalAmount,
-        quantity: selected.isProduct ? quantity : 1,
-        phone,
-      });
-      alert(`Payment initiated: ${data.receiptId ?? "unknown"}`);
-      setSelected(null);
-    } catch (err: any) {
-      console.error("Pay now failed:", err);
-      alert(err.message || "Payment failed");
-    } finally {
-      setLoading(false);
-    }
-  }
 
-  // Pagination helpers
-  const paginatedServices = filteredServices.slice(page * itemsPerPage, (page + 1) * itemsPerPage);
+  // Pagination helpers (server returns a page; if fewer than itemsPerPage returned then there's no next page)
+  const paginatedServices = filteredServices; // already the current page
   const hasPrev = page > 0;
-  const hasNext = (page + 1) * itemsPerPage < filteredServices.length;
+  const hasNext = services.length === itemsPerPage; // if current page returned a full page, there may be a next page
+
+  // Cart helpers
+  const addToCart = (s: Service) => {
+    setCart((prev) => {
+      const existing = prev.find((c) => c.id === s.id);
+      if (existing) {
+        // increase quantity
+        return prev.map((c) => (c.id === s.id ? { ...c, quantity: c.quantity + 1 } : c));
+      }
+      return [
+        ...prev,
+        {
+          id: s.id,
+          name: s.name,
+          unitAmount: s.amount,
+          quantity: 1,
+          photo: s.photo,
+          category: s.category,
+          isProduct: s.isProduct,
+        },
+      ];
+    });
+  };
+
+  const removeFromCart = (id: string) => {
+    setCart((prev) => prev.filter((c) => c.id !== id));
+  };
+
+  const updateQuantity = (id: string, quantity: number) => {
+    setCart((prev) => prev.map((c) => (c.id === id ? { ...c, quantity: Math.max(1, quantity) } : c)));
+  };
+
+  const cartCount = cart.reduce((acc, it) => acc + it.quantity, 0);
+  const cartTotal = cart.reduce((acc, it) => acc + it.unitAmount * it.quantity, 0);
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       <TopNav />
 
       <main className="max-w-4xl mx-auto p-4 md:p-6">
-        <h1 className="text-2xl md:text-3xl font-bold mb-6 flex gap-2 items-center text-gray-800">
-          <Icon name="services" className="text-[#d81b60]" size={20} />
-          Available Services
-        </h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl md:text-3xl font-bold flex gap-2 items-center text-gray-800">
+            <Icon name="services" className="text-[#d81b60]" size={20} />
+            Services / Products
+          </h1>
+
+          <button
+            onClick={() => setCartOpen(true)}
+            className="relative rounded-full p-2 bg-white border border-gray-200 shadow-sm hover:shadow-md"
+            aria-label="Open cart"
+          >
+            <ShoppingCart className="w-5 h-5 text-gray-700" />
+            {cartCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-[#d81b60] text-white text-[10px] rounded-full px-1.5 py-0.5">{cartCount}</span>
+            )}
+          </button>
+        </div>
 
         {/* --- Single Line Search & Filter --- */}
         <div className="flex gap-2 md:gap-4 mb-8">
@@ -228,9 +241,16 @@ export default function Services() {
                   <div className="flex items-center gap-2 mb-0.5">
                     <h2 className="font-bold text-gray-900 truncate text-sm md:text-base text-left">{s.name}</h2>
                   </div>
-                  <span className="text-[10px] text-[#d81b60] font-medium bg-pink-50 px-2 py-0.5 rounded-md mb-1 block">
-                    {s.category}
-                  </span>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] text-[#d81b60] font-medium bg-pink-50 px-2 py-0.5 rounded-md inline-block">
+                      {s.category}
+                    </span>
+                    {s.isProduct && (
+                      <span className="text-[10px] text-gray-700 font-medium bg-gray-100 px-2 py-0.5 rounded-md inline-block">
+                        Product
+                      </span>
+                    )}
+                  </div>
                   <p className="text-sm font-black text-gray-800 text-left">
                     UGX {s.amount.toLocaleString()}
                   </p>
@@ -238,10 +258,10 @@ export default function Services() {
               </div>
 
               <button
-                onClick={() => setSelected(s)}
-                className="ml-2 px-4 py-2 rounded-xl bg-gray-200 text-gray-800 text-xs font-bold hover:bg-[#b19ba3] transition-colors shrink-0"
+                onClick={() => addToCart(s)}
+                className="ml-2 px-4 py-2 rounded-xl bg-[#c4b9bd] text-gray-800 text-xs font-bold hover:opacity-90 transition-colors shrink-0"
               >
-                Order Now
+                Add to Cart
               </button>
             </div>
           ))}
@@ -256,7 +276,7 @@ export default function Services() {
             Previous
           </button>
 
-          <span className="text-sm text-gray-500">Page {page + 1} of {Math.max(1, Math.ceil(filteredServices.length / itemsPerPage))}</span>
+          <span className="text-sm text-gray-500">Page {page + 1}</span>
 
           <button
             onClick={() => setPage((p) => p + 1)}
@@ -268,53 +288,57 @@ export default function Services() {
         </div>
       </main>
 
-      {/* Purchase Modal stays the same... */}
-      {selected && (
+      {/* Cart Modal */}
+      {cartOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end md:items-center justify-center z-50 p-0 md:p-4">
-          <div className="bg-white p-6 rounded-t-3xl md:rounded-2xl w-full max-w-md shadow-2xl animate-in slide-in-from-bottom md:zoom-in duration-300">
-             {/* Modal Content */}
-             <div className="flex justify-between items-start mb-4">
+          <div className="bg-white p-6 rounded-t-3xl md:rounded-2xl w-full max-w-lg shadow-2xl animate-in slide-in-from-bottom md:zoom-in duration-300">
+            <div className="flex justify-between items-start mb-4">
               <div>
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{selected.category}</span>
-                <h3 className="font-bold text-xl text-gray-900">{selected.name}</h3>
+                <h3 className="font-bold text-xl text-gray-900">Your Cart</h3>
+                <p className="text-sm text-gray-500 mt-1">{cart.length} items — {cartCount} total</p>
               </div>
-              <button onClick={() => setSelected(null)} className="text-gray-400 p-2 text-xl">✕</button>
+              <button onClick={() => setCartOpen(false)} className="text-gray-400 p-2 text-xl">✕</button>
             </div>
 
-            <div className="bg-gray-50 p-4 rounded-xl mb-6">
-              {selected.isProduct ? (
-                <>
-                  <p className="text-xs text-gray-500 mb-1">Unit Price</p>
-                  <p className="text-lg font-bold text-gray-900">UGX {selected.amount.toLocaleString()}</p>
+            <div className="space-y-3 mb-4">
+              {cart.length === 0 && <div className="text-center text-gray-500 py-6">Your cart is empty.</div>}
 
-                  <div className="mt-3 flex items-center gap-3">
-                    <button
-                      onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                      className="px-3 py-1 rounded-lg bg-gray-100 text-lg"
-                    >
-                      −
-                    </button>
-
-                    <div className="px-4 py-1 bg-white border rounded-lg">
-                      {quantity}
-                    </div>
-
-                    <button
-                      onClick={() => setQuantity((q) => q + 1)}
-                      className="px-3 py-1 rounded-lg bg-gray-100 text-lg"
-                    >
-                      +
-                    </button>
-
-                    <div className="ml-auto text-sm text-gray-500">Total: <span className="font-black">UGX {(selected.amount * quantity).toLocaleString()}</span></div>
+              {cart.map((it) => (
+                <div key={it.id} className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg">
+                  <div className="w-12 h-12 rounded-md bg-white overflow-hidden border">
+                    {it.photo ? (
+                      <img src={`${photosBaseUrl}${it.photo}`} alt={it.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-[12px] text-gray-400">No Img</div>
+                    )}
                   </div>
-                </>
-              ) : (
-                <>
-                  <p className="text-xs text-gray-500 mb-1">Total Amount</p>
-                  <p className="text-2xl font-black text-gray-900">UGX {selected.amount.toLocaleString()}</p>
-                </>
-              )}
+
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-gray-800 truncate">{it.name}</div>
+                    <div className="text-xs text-gray-500">{it.category}</div>
+                    <div className="text-sm font-black text-gray-800 mt-1">UGX {it.unitAmount.toLocaleString()}</div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => updateQuantity(it.id, it.quantity - 1)} className="px-2 py-1 rounded bg-gray-100">−</button>
+                    <div className="px-3 py-1 bg-white border rounded">{it.quantity}</div>
+                    <button onClick={() => updateQuantity(it.id, it.quantity + 1)} className="px-2 py-1 rounded bg-gray-100">+</button>
+                  </div>
+
+                  <div className="ml-4 text-right">
+                    <div className="text-sm text-gray-500">Line</div>
+                    <div className="font-black">UGX {(it.unitAmount * it.quantity).toLocaleString()}</div>
+                    <button onClick={() => removeFromCart(it.id)} className="text-xs text-red-500 mt-1">Remove</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="bg-gray-50 p-4 rounded-xl mb-4">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-500">Total</div>
+                <div className="text-xl font-black">UGX {cartTotal.toLocaleString()}</div>
+              </div>
             </div>
 
             <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Mobile Money Number</label>
@@ -328,14 +352,52 @@ export default function Services() {
 
             <div className="grid grid-cols-1 gap-3">
               <button
-                onClick={payNow}
+                onClick={async () => {
+                  // pay cart
+                  if (cart.length === 0) return alert('Cart is empty');
+                  setLoading(true);
+                  try {
+                    const payload = {
+                      items: cart.map((c) => ({ serviceId: c.id, serviceName: c.name, amount: c.unitAmount, quantity: c.quantity })),
+                      amount: cartTotal,
+                      phone,
+                    };
+                    const { data } = await api.post('/pay', payload);
+                    alert(`Payment initiated: ${data.receiptId ?? 'unknown'}`);
+                    setCart([]);
+                    setCartOpen(false);
+                  } catch (err: any) {
+                    console.error('Cart pay failed:', err);
+                    alert(err.message || 'Payment failed');
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
                 disabled={loading}
-                className="w-full py-4 bg-[#d1c7cb] text-gray-800 rounded-xl font-bold hover:opacity-90 disabled:opacity-50 shadow-lg shadow-pink-200"
+                className="w-full py-4 bg-[#d81b60] text-white rounded-xl font-bold hover:opacity-90 disabled:opacity-50 shadow-lg shadow-pink-200"
               >
-                {loading ? "Processing..." : "Pay Now"}
+                {loading ? 'Processing...' : 'Pay Now'}
               </button>
               <button
-                onClick={payLater}
+                onClick={async () => {
+                  if (cart.length === 0) return alert('Cart is empty');
+                  setLoading(true);
+                  try {
+                    const payload = {
+                      items: cart.map((c) => ({ serviceId: c.id, serviceName: c.name, amount: c.unitAmount, quantity: c.quantity })),
+                      amount: cartTotal,
+                    };
+                    const { data } = await api.post('/invoice', payload);
+                    alert(`Invoice created: ${data.invoiceId ?? 'unknown'}`);
+                    setCart([]);
+                    setCartOpen(false);
+                  } catch (err: any) {
+                    console.error('Cart invoice failed:', err);
+                    alert(err.message || 'Failed to create invoice');
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
                 disabled={loading}
                 className="w-full py-4 bg-gray-100 text-gray-600 rounded-xl font-bold hover:bg-gray-200 transition-all"
               >
