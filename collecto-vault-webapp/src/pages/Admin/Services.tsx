@@ -1,90 +1,93 @@
 import { useEffect, useState } from "react";
 import TopNav from "../../components/TopNav";
-import { DollarSign } from "lucide-react";
+import { DollarSign, Search, Filter } from "lucide-react";
 import api from "../../api";
 import { customerService } from "../../api/customer";
 
 type Service = {
   id: string;
   name: string;
-  amount: number; // Mapped from 'price' in API
+  amount: number;
   photo: string;
   description: string;
+  category: string; // Added category field
 };
 
 export default function Services() {
   const [services, setServices] = useState<Service[]>([]);
+  const [filteredServices, setFilteredServices] = useState<Service[]>([]);
   const [photosBaseUrl, setPhotosBaseUrl] = useState<string>("");
   const [selected, setSelected] = useState<Service | null>(null);
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Search & Filter State
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [categories, setCategories] = useState<string[]>(["All"]);
+
   useEffect(() => {
     fetchServices();
   }, []);
 
-  // async function fetchServices() {
-  //   setLoading(true);
-  //   try {
-  //     // Using a hardcoded ID or getting from localStorage as per your previous logic
-  //     const collectoId = localStorage.getItem("collectoId") || "141122";
+  // Update filtered list whenever search, category, or master list changes
+  useEffect(() => {
+    let result = services;
 
-  //     //const response = await api.post("/services", { collectoId });
-  //     const response = await customerService.getServices(collectoId);
+    if (selectedCategory !== "All") {
+      result = result.filter((s) => s.category === selectedCategory);
+    }
 
-  //     // Navigate the nested structure: response.data.data.records
-  //     const apiData = response.data?.data;
-  //     const records = apiData?.records || [];
-  //     const baseUrl = apiData?.metadata?.photosUrl || "";
+    if (searchQuery) {
+      result = result.filter(
+        (s) =>
+          s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          s.description.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
 
-  //     const mappedServices = records.map((item: any) => ({
-  //       id: item.id,
-  //       name: item.name,
-  //       amount: item.price,
-  //       photo: item.photo,
-  //       description: item.description,
-  //     }));
+    setFilteredServices(result);
+  }, [searchQuery, selectedCategory, services]);
 
-  //     setPhotosBaseUrl(baseUrl);
-  //     setServices(mappedServices);
-  //   } catch (err: any) {
-  //     console.error("Failed to fetch services:", err);
-  //     setServices([]);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // }
-async function fetchServices() {
-  setLoading(true);
-  try {
-    const collectoId = localStorage.getItem("collectoId") || "141122";
-    const response = await customerService.getServices(collectoId);
+  async function fetchServices() {
+    setLoading(true);
+    try {
+      const collectoId = localStorage.getItem("collectoId") || "141122";
+      const response = await customerService.getServices(collectoId);
 
-    // --- THE CHANGE IS HERE ---
-    // Based on your DevTools: response.data (Axios) -> .data (API Root) -> .data (Payload)
-    const payload = response.data?.data; 
-    const innerData = payload?.data; 
-    const records = innerData?.records || [];
-    const baseUrl = innerData?.metadata?.photosUrl || "";
-    // --------------------------
+      const payload = response.data?.data;
+      const innerData = payload?.data;
+      const records = innerData?.records || [];
+      const baseUrl = innerData?.metadata?.photosUrl || "";
 
-    const mappedServices = records.map((item: any) => ({
-      id: item.id,
-      name: item.name,
-      amount: item.price,
-      photo: item.photo,
-      description: item.description,
-    }));
+      const mappedServices = records.map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        amount: item.price,
+        photo: item.photo,
+        description: item.description,
+        category: item.category || "General",
+      }));
 
-    setPhotosBaseUrl(baseUrl);
-    setServices(mappedServices);
-  } catch (err: any) {
-    console.error("Failed to fetch services:", err);
-    setServices([]);
-  } finally {
-    setLoading(false);
+      // Extract unique categories for the filter
+      const uniqueCategories: string[] = [
+        "All",
+        ...Array.from(new Set(mappedServices.map((s: any) => s.category))) as string[],
+      ];
+
+      setCategories(uniqueCategories);
+      setPhotosBaseUrl(baseUrl);
+      setServices(mappedServices);
+      setFilteredServices(mappedServices);
+    } catch (err: any) {
+      console.error("Failed to fetch services:", err);
+      setServices([]);
+    } finally {
+      setLoading(false);
+    }
   }
-}
+
+  // ... (payNow and payLater functions remain the same)
   async function payLater() {
     if (!selected) return;
     setLoading(true);
@@ -124,14 +127,45 @@ async function fetchServices() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-20">
       <TopNav />
 
       <main className="max-w-4xl mx-auto p-6">
-        <h1 className="text-3xl font-bold mb-6 flex gap-2 items-center text-gray-800">
-          <DollarSign className="text-[#d81b60]" />
-          Available Services
-        </h1>
+        <header className="mb-8">
+          <h1 className="text-3xl font-bold mb-6 flex gap-2 items-center text-gray-800">
+            <DollarSign className="text-[#d81b60]" />
+            Available Services
+          </h1>
+
+          {/* Search and Filter UI */}
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Search services..."
+                className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-[#d81b60] outline-none transition-all"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+
+            <div className="relative min-w-[160px]">
+              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <select
+                className="w-full pl-9 pr-4 py-3 bg-white border border-gray-200 rounded-xl shadow-sm appearance-none focus:ring-2 focus:ring-[#d81b60] outline-none transition-all cursor-pointer"
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+              >
+                {categories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </header>
 
         {loading && (
           <div className="flex justify-center py-10">
@@ -139,14 +173,19 @@ async function fetchServices() {
           </div>
         )}
 
+        {!loading && filteredServices.length === 0 && (
+          <div className="text-center py-20 text-gray-500">
+            No services found matching your criteria.
+          </div>
+        )}
+
         <div className="grid grid-cols-1 gap-4">
-          {services.map((s) => (
+          {filteredServices.map((s) => (
             <div
               key={s.id}
               className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between hover:shadow-md transition-shadow"
             >
               <div className="flex items-center gap-4">
-                {/* Service Image */}
                 <div className="w-14 h-14 bg-gray-100 rounded-lg overflow-hidden shrink-0">
                   {s.photo ? (
                     <img
@@ -162,7 +201,12 @@ async function fetchServices() {
                 </div>
 
                 <div>
-                  <h2 className="font-semibold text-gray-900">{s.name}</h2>
+                  <div className="flex items-center gap-2">
+                    <h2 className="font-semibold text-gray-900">{s.name}</h2>
+                    <span className="text-[10px] bg-gray-100 px-2 py-0.5 rounded text-gray-500 uppercase tracking-wide">
+                      {s.category}
+                    </span>
+                  </div>
                   <p className="text-xs text-gray-500 line-clamp-1 mb-1">
                     {s.description}
                   </p>
@@ -174,7 +218,7 @@ async function fetchServices() {
 
               <button
                 onClick={() => setSelected(s)}
-                className="px-5 py-2 rounded-full bg-(--btn-bg) text-(--btn-text) text-sm font-medium hover:(--btn-hover-bg) transition-colors"
+                className="px-5 py-2 rounded-full bg-[#f3f4f6] text-gray-700 text-sm font-medium hover:bg-[#0b4b78] hover:text-white transition-all"
               >
                 Purchase
               </button>
@@ -186,14 +230,14 @@ async function fetchServices() {
       {/* Purchase Modal */}
       {selected && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white p-6 rounded-2xl w-full max-w-md shadow-2xl">
+          <div className="bg-white p-6 rounded-2xl w-full max-w-md shadow-2xl animate-in fade-in zoom-in duration-200">
             <div className="flex justify-between items-start mb-4">
               <h3 className="font-bold text-xl text-gray-800">
                 {selected.name}
               </h3>
               <button
                 onClick={() => setSelected(null)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 p-1"
               >
                 ✕
               </button>
@@ -226,7 +270,7 @@ async function fetchServices() {
                 disabled={loading}
                 className="w-full py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-all"
               >
-                Generate Invoice (Pay Later)
+                Generate Invoice
               </button>
             </div>
           </div>
