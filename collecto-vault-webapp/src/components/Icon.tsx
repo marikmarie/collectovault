@@ -1,6 +1,6 @@
 // import React from "react";
 
-type Name = "check" | "x" | "info" | "points" | "menu" | "close" | "star";
+type Name = "check" | "x" | "info" | "points" | "menu" | "close" | "star" | "services";
 
 export default function Icon({ name, className = "", size = 18 }: { name: Name; className?: string; size?: number }) {
   const common = { width: size, height: size, className: `inline-block ${className}`, viewBox: "0 0 24 24", fill: "none", xmlns: "http://www.w3.org/2000/svg" };
@@ -49,6 +49,14 @@ export default function Icon({ name, className = "", size = 18 }: { name: Name; 
       return (
         <svg {...common}>
           <path d="M12 17.3L7.2 20l1-5.4L4 11h5.6L12 5.5 14.4 11H20l-4.2 3.6 1 5.4z" stroke="currentColor" strokeWidth="0.5" />
+        </svg>
+      );
+    case "services":
+      return (
+        <svg {...common}>
+          <rect x="3" y="4" width="18" height="4" rx="1" stroke="currentColor" strokeWidth="1.5" />
+          <rect x="5" y="10" width="14" height="4" rx="1" stroke="currentColor" strokeWidth="1.5" />
+          <rect x="7" y="16" width="10" height="4" rx="1" stroke="currentColor" strokeWidth="1.5" />
         </svg>
       );
     default:
