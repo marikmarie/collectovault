@@ -261,7 +261,7 @@ export default function Services() {
           <button
             onClick={() => setPage((p) => p + 1)}
             disabled={!hasNext}
-            className="px-4 py-2 rounded-xl bg-[#d81b60] text-white hover:opacity-90 disabled:opacity-50"
+            className="px-4 py-2 rounded-xl bg-[#cabbc0] text-gray-800 hover:opacity-90 disabled:opacity-50"
           >
             Next
           </button>
