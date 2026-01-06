@@ -13,8 +13,6 @@ export const authService = {
     return resp.data;
   },
 
- 
-
   
  verifyCollectoOtp: async (payload: {
     id: string;
