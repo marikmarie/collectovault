@@ -33,7 +33,8 @@ export default function ServicesList() {
       setLoading(true);
       try {
         const collectoId = localStorage.getItem("collectoId") || "141122";
-        const res = await customerService.getServices(collectoId);
+        // Request first page to avoid very large responses from the API
+        const res = await customerService.getServices(collectoId, 1, 100);
 
         // Drilling down into the nested response: res.data.data.records
         const apiData = res.data?.data; 

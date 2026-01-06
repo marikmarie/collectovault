@@ -37,7 +37,7 @@ export default function Services() {
 
   useEffect(() => {
     fetchServices();
-  }, []);
+  }, [page]);
 
   useEffect(() => {
     let result = services;
@@ -68,7 +68,8 @@ export default function Services() {
     setLoading(true);
     try {
       const collectoId = localStorage.getItem("collectoId") || "141122";
-      const response = await customerService.getServices(collectoId);
+      // send page (1-indexed) and limit to avoid huge responses from API
+      const response = await customerService.getServices(collectoId, page + 1);
       const payload = response.data?.data;
       const innerData = payload?.data;
       const records = innerData?.records || [];

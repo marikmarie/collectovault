@@ -20,8 +20,14 @@ export const customerService = {
   getServicesById: (customerId?: string) =>
     api.post(`/customers/${customerId}/services`),
 
-  getServices: (collectoId?: string) => 
-  api.post('/services', { collectoId }) // Pass as an object in the body
+  /**
+   * Fetch services. Accepts optional paging parameters to avoid very large responses.
+   * @param collectoId string
+   * @param page number (1-indexed)
+   * @param limit number of items per page
+   */
+  getServices: (collectoId?: string, page?: number, limit?: number) => 
+    api.post('/services', { collectoId, page, limit }),
   // getServices: (collectoId?: string) =>
   //   api.post(
   //     `/services${
