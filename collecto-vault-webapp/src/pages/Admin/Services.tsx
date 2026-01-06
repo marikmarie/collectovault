@@ -174,7 +174,7 @@ async function fetchServices() {
 
               <button
                 onClick={() => setSelected(s)}
-                className="px-5 py-2 rounded-full bg-[#0b4b78] text-white text-sm font-medium hover:bg-[#083a5e] transition-colors"
+                className="px-5 py-2 rounded-full bg-(--btn-bg) text-(--btn-text) text-sm font-medium hover:(--btn-hover-bg) transition-colors"
               >
                 Purchase
               </button>
