@@ -43,8 +43,10 @@ export default function Services() {
   const [page, setPage] = useState(0);
   const itemsPerPage = 10;
 
-  // Search State
+  // Search & Category Filter State
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [categories, setCategories] = useState<string[]>([]);
 
   useEffect(() => {
     fetchServices();
@@ -52,6 +54,9 @@ export default function Services() {
 
   useEffect(() => {
     let result = services;
+    if (selectedCategory && selectedCategory !== 'All') {
+      result = result.filter((s) => s.category === selectedCategory);
+    }
     if (searchQuery) {
       result = result.filter(
         (s) =>
@@ -60,7 +65,7 @@ export default function Services() {
       );
     }
     setFilteredServices(result);
-  }, [searchQuery, services]);
+  }, [searchQuery, selectedCategory, services]);
 
   // Reset to first page whenever the filtered result changes (e.g., search or category changes)
   useEffect(() => {
@@ -91,7 +96,9 @@ export default function Services() {
         isProduct: Boolean(item.is_product),
       }));
 
+      const uniqueCategories: string[] = ["All", ...Array.from(new Set(mappedServices.map((s: any) => (s.category ?? 'General') as string)))];
 
+      setCategories(uniqueCategories);
       setPhotosBaseUrl(baseUrl);
       setServices(mappedServices);
       setFilteredServices(mappedServices);
@@ -169,8 +176,8 @@ export default function Services() {
         </div>
 
         {/* --- Single Line Search & Filter --- */}
-        <div className="flex gap-2 md:gap-4 mb-8">
-          <div className="relative flex-1">
+        <div className="flex gap-2 md:gap-4 mb-2 flex-col">
+          <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 md:w-5 md:h-5" />
             <input
               type="text"
@@ -180,6 +187,19 @@ export default function Services() {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
+
+          {categories.length > 0 && (
+            <div className="flex gap-2 flex-wrap mt-2">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`text-xs px-3 py-1 rounded-full transition-all ${selectedCategory === cat ? 'bg-[#d81b60] text-white' : 'bg-white border border-gray-200 text-gray-700'}`}>
+                  {cat}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {loading && (
