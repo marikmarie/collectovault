@@ -23,10 +23,5 @@ export const customerService = {
 
   getServices: (collectoId?: string, page?: number, limit?: number) => 
     api.post('/services', { collectoId, page, limit }),
-  // getServices: (collectoId?: string) =>
-  //   api.post(
-  //     `/services${
-  //       collectoId ? `?collectoId=${encodeURIComponent(collectoId)}` : ""
-  //     }`
-  //   ),
+
 };

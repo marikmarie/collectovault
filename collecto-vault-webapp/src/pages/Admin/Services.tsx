@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import TopNav from "../../components/TopNav";
 import { Search, ShoppingCart, Filter, ChevronDown } from "lucide-react";
 import Icon from "../../components/Icon";
-import api from "../../api";
+import { invoiceService } from "../../api/collecto";
 
 import { customerService } from "../../api/customer";
 
@@ -23,6 +23,13 @@ export default function Services() {
 
   const [loading, setLoading] = useState(false);
   const [phone, setPhone] = useState("");
+
+  // Toast / notification
+  const [toast, setToast] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setToast({ message, type });
+    window.setTimeout(() => setToast(null), 4000);
+  };
 
 
   // Cart
@@ -156,6 +163,13 @@ export default function Services() {
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       <TopNav />
+
+      {/* Toast */}
+      {toast && (
+        <div className={`fixed top-4 right-4 z-50 max-w-sm w-auto px-4 py-2 rounded shadow-lg text-sm ${toast.type === 'success' ? 'bg-green-600 text-white' : toast.type === 'error' ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'}`} role="status" aria-live="polite">
+          {toast.message}
+        </div>
+      )}
 
       <main className="max-w-4xl mx-auto p-4 md:p-6">
         <div className="flex items-center justify-between mb-6">
@@ -381,22 +395,24 @@ export default function Services() {
             <div className="grid grid-cols-1 gap-3">
               <button
                 onClick={async () => {
-                  // pay cart
-                  if (cart.length === 0) return alert('Cart is empty');
+                  // pay cart via invoice endpoint (payNow flag)
+                  if (cart.length === 0) { showToast('Cart is empty', 'error'); return; }
                   setLoading(true);
                   try {
                     const payload = {
                       items: cart.map((c) => ({ serviceId: c.id, serviceName: c.name, amount: c.unitAmount, quantity: c.quantity })),
                       amount: cartTotal,
                       phone,
+                      payNow: 1,
                     };
-                    const { data } = await api.post('/pay', payload);
-                    alert(`Payment initiated: ${data.receiptId ?? 'unknown'}`);
+                    const { data } = await invoiceService.createInvoice(payload);
+                    if (data?.receiptId) showToast(`Payment initiated: ${data.receiptId}`, 'success');
+                    else showToast(`Invoice created: ${data.invoiceId ?? 'unknown'}`, 'success');
                     setCart([]);
                     setCartOpen(false);
                   } catch (err: any) {
                     console.error('Cart pay failed:', err);
-                    alert(err.message || 'Payment failed');
+                    showToast(err?.message || 'Payment failed', 'error');
                   } finally {
                     setLoading(false);
                   }
@@ -408,20 +424,20 @@ export default function Services() {
               </button>
               <button
                 onClick={async () => {
-                  if (cart.length === 0) return alert('Cart is empty');
+                  if (cart.length === 0) { showToast('Cart is empty', 'error'); return; }
                   setLoading(true);
                   try {
                     const payload = {
                       items: cart.map((c) => ({ serviceId: c.id, serviceName: c.name, amount: c.unitAmount, quantity: c.quantity })),
                       amount: cartTotal,
                     };
-                    const { data } = await api.post('/invoice', payload);
-                    alert(`Invoice created: ${data.invoiceId ?? 'unknown'}`);
+                    const { data } = await invoiceService.createInvoice(payload);
+                    showToast(`Invoice created: ${data.invoiceId ?? 'unknown'}`, 'success');
                     setCart([]);
                     setCartOpen(false);
                   } catch (err: any) {
                     console.error('Cart invoice failed:', err);
-                    alert(err.message || 'Failed to create invoice');
+                    showToast(err.message || 'Failed to create invoice', 'error');
                   } finally {
                     setLoading(false);
                   }
