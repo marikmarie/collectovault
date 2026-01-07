@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import TopNav from "../../components/TopNav";
-import { Search, ChevronDown, ShoppingCart } from "lucide-react";
+import { Search, ShoppingCart } from "lucide-react";
 import Icon from "../../components/Icon";
+import api from "../../api";
 
 import { customerService } from "../../api/customer";
 
@@ -21,6 +22,7 @@ export default function Services() {
   const [photosBaseUrl, setPhotosBaseUrl] = useState<string>("");
 
   const [loading, setLoading] = useState(false);
+  const [phone, setPhone] = useState("");
 
 
   // Cart
@@ -41,10 +43,8 @@ export default function Services() {
   const [page, setPage] = useState(0);
   const itemsPerPage = 10;
 
-  // Search & Filter State
+  // Search State
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
-  const [categories, setCategories] = useState<string[]>(["All"]);
 
   useEffect(() => {
     fetchServices();
@@ -52,9 +52,6 @@ export default function Services() {
 
   useEffect(() => {
     let result = services;
-    if (selectedCategory !== "All") {
-      result = result.filter((s) => s.category === selectedCategory);
-    }
     if (searchQuery) {
       result = result.filter(
         (s) =>
@@ -63,7 +60,7 @@ export default function Services() {
       );
     }
     setFilteredServices(result);
-  }, [searchQuery, selectedCategory, services]);
+  }, [searchQuery, services]);
 
   // Reset to first page whenever the filtered result changes (e.g., search or category changes)
   useEffect(() => {
@@ -94,12 +91,7 @@ export default function Services() {
         isProduct: Boolean(item.is_product),
       }));
 
-      const uniqueCategories: string[] = [
-        "All",
-        ...Array.from(new Set(mappedServices.map((s: any) => s.category))) as string[],
-      ];
 
-      setCategories(uniqueCategories);
       setPhotosBaseUrl(baseUrl);
       setServices(mappedServices);
       setFilteredServices(mappedServices);
@@ -178,7 +170,7 @@ export default function Services() {
 
         {/* --- Single Line Search & Filter --- */}
         <div className="flex gap-2 md:gap-4 mb-8">
-          <div className="relative flex-2">
+          <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 md:w-5 md:h-5" />
             <input
               type="text"
@@ -187,21 +179,6 @@ export default function Services() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-          </div>
-
-          <div className="relative flex-1">
-            <select
-              className="w-full pl-3 pr-8 py-2.5 bg-white border border-gray-200 rounded-xl shadow-sm appearance-none focus:ring-2 focus:ring-[#d81b60] outline-none transition-all cursor-pointer text-sm truncate"
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-            >
-              {categories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
           </div>
         </div>
 
@@ -228,41 +205,6 @@ export default function Services() {
                 className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:border-pink-100 transition-all group"
               >
                 <div className="flex items-center gap-4 min-w-0">
-                  <div className="flex items-center gap-3 mr-2">
-                    <input
-                      type="checkbox"
-                      checked={selected}
-                      onChange={(e) => {
-                        if (e.target.checked) addToCart(s);
-                        else removeFromCart(s.id);
-                      }}
-                      className="w-4 h-4"
-                    />
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => {
-                          if (selected) {
-                            if (qty > 1) updateQuantity(s.id, qty - 1);
-                            else removeFromCart(s.id);
-                          }
-                        }}
-                        className="px-2 py-1 rounded bg-gray-100"
-                      >
-                        −
-                      </button>
-                      <div className="px-3 py-1 bg-white border rounded">{qty}</div>
-                      <button
-                        onClick={() => {
-                          if (selected) updateQuantity(s.id, qty + 1);
-                          else addToCart(s);
-                        }}
-                        className="px-2 py-1 rounded bg-gray-100"
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-
                   <div className="w-12 h-12 md:w-16 md:h-16 bg-gray-50 rounded-xl overflow-hidden shrink-0 border border-gray-50">
                     {s.photo ? (
                       <img
@@ -294,6 +236,36 @@ export default function Services() {
                     <p className="text-sm font-black text-gray-800 text-left">
                       UGX {s.amount.toLocaleString()}
                     </p>
+                  </div>
+                </div>
+
+                <div className="ml-2 flex items-center shrink-0">
+                  <div className="flex flex-col items-center gap-1">
+                    <button
+                      onClick={() => {
+                        if (selected) updateQuantity(s.id, qty + 1);
+                        else addToCart(s);
+                      }}
+                      aria-label={`Increase quantity for ${s.name}`}
+                      className="w-7 h-7 flex items-center justify-center text-xs rounded bg-gray-100"
+                    >
+                      +
+                    </button>
+
+                    <div className="text-xs font-semibold bg-white border px-2 py-0.5 rounded">{qty}</div>
+
+                    <button
+                      onClick={() => {
+                        if (selected) {
+                          if (qty > 1) updateQuantity(s.id, qty - 1);
+                          else removeFromCart(s.id);
+                        }
+                      }}
+                      aria-label={`Decrease quantity for ${s.name}`}
+                      className="w-7 h-7 flex items-center justify-center text-xs rounded bg-gray-100"
+                    >
+                      −
+                    </button>
                   </div>
                 </div>
               </div>
@@ -371,8 +343,68 @@ export default function Services() {
               </div>
             </div>
 
-            <div className="flex justify-end mt-4">
-              <button onClick={() => setCartOpen(false)} className="px-4 py-2 bg-gray-100 rounded-xl">Close</button>
+            <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Mobile Money Number</label>
+            <input
+              type="tel"
+              placeholder="0775617890"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className="w-full border-2 border-gray-100 p-4 rounded-xl mb-6 focus:border-[#d81b60] outline-none transition-all font-mono"
+            />
+
+            <div className="grid grid-cols-1 gap-3">
+              <button
+                onClick={async () => {
+                  // pay cart
+                  if (cart.length === 0) return alert('Cart is empty');
+                  setLoading(true);
+                  try {
+                    const payload = {
+                      items: cart.map((c) => ({ serviceId: c.id, serviceName: c.name, amount: c.unitAmount, quantity: c.quantity })),
+                      amount: cartTotal,
+                      phone,
+                    };
+                    const { data } = await api.post('/pay', payload);
+                    alert(`Payment initiated: ${data.receiptId ?? 'unknown'}`);
+                    setCart([]);
+                    setCartOpen(false);
+                  } catch (err: any) {
+                    console.error('Cart pay failed:', err);
+                    alert(err.message || 'Payment failed');
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                disabled={loading}
+                className="w-full py-4 bg-[#e0d5d8] text-gray-800 rounded-xl font-bold hover:bg-gray-500 disabled:opacity-50 transition-all"
+              >
+                {loading ? 'Processing...' : 'Pay Now'}
+              </button>
+              <button
+                onClick={async () => {
+                  if (cart.length === 0) return alert('Cart is empty');
+                  setLoading(true);
+                  try {
+                    const payload = {
+                      items: cart.map((c) => ({ serviceId: c.id, serviceName: c.name, amount: c.unitAmount, quantity: c.quantity })),
+                      amount: cartTotal,
+                    };
+                    const { data } = await api.post('/invoice', payload);
+                    alert(`Invoice created: ${data.invoiceId ?? 'unknown'}`);
+                    setCart([]);
+                    setCartOpen(false);
+                  } catch (err: any) {
+                    console.error('Cart invoice failed:', err);
+                    alert(err.message || 'Failed to create invoice');
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                disabled={loading}
+                className="w-full py-4 bg-gray-100 text-gray-600 rounded-xl font-bold hover:bg-gray-200 transition-all"
+              >
+                Pay Later
+              </button>
             </div>
           </div>
         </div>
