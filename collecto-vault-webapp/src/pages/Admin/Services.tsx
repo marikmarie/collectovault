@@ -23,6 +23,7 @@ export default function Services() {
 
   const [loading, setLoading] = useState(false);
   const [phone, setPhone] = useState("");
+  const [clientId, setClientId] = useState<string | null>(null);
 
   // Toast / notification
   const [toast, setToast] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
@@ -57,6 +58,19 @@ export default function Services() {
 
   useEffect(() => {
     fetchServices();
+
+    // fetch client profile to get clientId for invoice payload
+    (async () => {
+      try {
+        const res = await customerService.getProfile("me");
+        const d = res.data?.data ?? res.data ?? res;
+        // Try common id fields
+        const id = d?.id ?? d?.customerId ?? d?.userId ?? null;
+        if (id) setClientId(String(id));
+      } catch (err) {
+        // ignore
+      }
+    })();
   }, [page]);
 
   useEffect(() => {
@@ -164,8 +178,8 @@ export default function Services() {
     <div className="min-h-screen bg-gray-50 pb-20">
       <TopNav />
 
-      {/* Toast */}
-      {toast && (
+      {/* Toast (global) */}
+      {toast && !cartOpen && (
         <div className={`fixed top-4 right-4 z-50 max-w-sm w-auto px-4 py-2 rounded shadow-lg text-sm ${toast.type === 'success' ? 'bg-green-600 text-white' : toast.type === 'error' ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'}`} role="status" aria-live="polite">
           {toast.message}
         </div>
@@ -175,7 +189,7 @@ export default function Services() {
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl md:text-3xl font-bold flex gap-2 items-center text-gray-800">
             <Icon name="services" className="text-[#d81b60]" size={20} />
-            Services / Products
+            Services and Products
           </h1>
 
           <button
@@ -245,12 +259,12 @@ export default function Services() {
                 className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:border-pink-100 transition-all group"
               >
                 <div className="flex items-center gap-4 min-w-0">
-                  <div className="w-12 h-12 md:w-16 md:h-16 bg-gray-50 rounded-xl overflow-hidden shrink-0 border border-gray-50">
+                  <div className="w-10 h-10 md:w-12 md:h-12 bg-gray-50 rounded-lg overflow-hidden shrink-0 border border-gray-50">
                     {s.photo ? (
                       <img
                         src={`${photosBaseUrl}${s.photo}`}
                         alt={s.name}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-300">
@@ -261,19 +275,19 @@ export default function Services() {
 
                   <div className="min-w-0 text-left">
                     <div className="flex items-center gap-2 mb-0.5">
-                      <h2 className="font-bold text-gray-900 truncate text-sm md:text-base text-left">{s.name}</h2>
+                      <h2 className="font-bold text-gray-900 truncate text-sm text-left">{s.name}</h2>
                     </div>
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[10px] text-[#d81b60] font-medium bg-pink-50 px-2 py-0.5 rounded-md inline-block">
+                      <span className="text-[9px] text-[#d81b60] font-medium bg-pink-50 px-2 py-0.5 rounded-md inline-block">
                         {s.category}
                       </span>
                       {s.isProduct && (
-                        <span className="text-[10px] text-gray-700 font-medium bg-gray-100 px-2 py-0.5 rounded-md inline-block">
+                        <span className="text-[9px] text-gray-700 font-medium bg-gray-100 px-2 py-0.5 rounded-md inline-block">
                           Product
                         </span>
                       )}
                     </div>
-                    <p className="text-sm font-black text-gray-800 text-left">
+                    <p className="text-sm font-bold text-gray-800 text-left">
                       UGX {s.amount.toLocaleString()}
                     </p>
                   </div>
@@ -287,12 +301,12 @@ export default function Services() {
                         else addToCart(s);
                       }}
                       aria-label={`Increase quantity for ${s.name}`}
-                      className="w-7 h-7 flex items-center justify-center text-xs rounded bg-gray-100"
+                      className="w-6 h-6 flex items-center justify-center text-[12px] rounded bg-gray-100"
                     >
                       +
                     </button>
 
-                    <div className="text-xs font-semibold bg-white border px-2 py-0.5 rounded">{qty}</div>
+                    <div className="text-[11px] font-semibold bg-white border px-2 py-0.5 rounded">{qty}</div>
 
                     <button
                       onClick={() => {
@@ -302,7 +316,7 @@ export default function Services() {
                         }
                       }}
                       aria-label={`Decrease quantity for ${s.name}`}
-                      className="w-7 h-7 flex items-center justify-center text-xs rounded bg-gray-100"
+                      className="w-6 h-6 flex items-center justify-center text-[12px] rounded bg-gray-100"
                     >
                       −
                     </button>
@@ -334,120 +348,91 @@ export default function Services() {
         </div>
       </main>
 
-      {/* Cart Modal */}
+      {/* Inline Cart Panel Below Services */}
       {cartOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end md:items-center justify-center z-50 p-0 md:p-4">
-          <div className="bg-white p-6 rounded-t-3xl md:rounded-2xl w-full max-w-lg shadow-2xl animate-in slide-in-from-bottom md:zoom-in duration-300">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h3 className="font-bold text-xl text-gray-900">Your Cart</h3>
-                <p className="text-sm text-gray-500 mt-1">{cart.length} items — UGX {cartTotal.toLocaleString()}</p>
-              </div>
-              <button onClick={() => setCartOpen(false)} className="text-gray-400 p-2 text-xl">✕</button>
+        <div className="mx-auto max-w-4xl mt-6 bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+          <div className="flex justify-between items-start mb-3">
+            <div>
+              <h3 className="font-bold text-lg text-gray-900">Your Cart</h3>
+              <p className="text-sm text-gray-500 mt-1">{cart.length} items — UGX {cartTotal.toLocaleString()}</p>
             </div>
+            <button onClick={() => setCartOpen(false)} className="text-gray-400 p-2 text-lg">✕</button>
+          </div>
 
-            <div className="space-y-3 mb-4">
-              {cart.length === 0 && <div className="text-center text-gray-500 py-6">Your cart is empty.</div>}
+          {toast && cartOpen && (
+            <div className={`mb-3 px-4 py-2 rounded text-sm ${toast.type === 'success' ? 'bg-green-600 text-white' : toast.type === 'error' ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'}`} role="status" aria-live="polite">
+              {toast.message}
+            </div>
+          )}
 
-              {cart.map((it) => (
-                <div key={it.id} className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg">
-                  <div className="w-12 h-12 rounded-md bg-white overflow-hidden border">
-                    {it.photo ? (
-                      <img src={`${photosBaseUrl}${it.photo}`} alt={it.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-[12px] text-gray-400">No Img</div>
-                    )}
-                  </div>
+          <div className="space-y-2 mb-4">
+            {cart.length === 0 && <div className="text-center text-gray-500 py-4">Your cart is empty.</div>}
 
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-gray-800 truncate">{it.name}</div>
-                    <div className="text-xs text-gray-500">{it.category}</div>
-                    <div className="text-sm font-black text-gray-800 mt-1">UGX {it.unitAmount.toLocaleString()}</div>
-                  </div>
-
-                  <div className="px-3 py-1 bg-white border rounded text-sm">{it.quantity}</div>
-
-                  <div className="ml-4 text-right">
-                    {/* <div className="text-sm text-gray-500">Line</div> */}
-                    <div className="font-black">UGX {(it.unitAmount * it.quantity).toLocaleString()}</div>
-                    <button onClick={() => removeFromCart(it.id)} className="text-xs text-red-500 mt-1">Remove</button>
-                  </div>
+            {cart.map((it) => (
+              <div key={it.id} className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg">
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-gray-800 truncate">{it.name}</div>
+                  <div className="text-sm font-bold text-gray-800 mt-1">UGX {it.unitAmount.toLocaleString()}</div>
                 </div>
-              ))}
-            </div>
 
-            <div className="bg-gray-50 p-4 rounded-xl mb-4">
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-500">Total</div>
-                <div className="text-xl font-black">UGX {cartTotal.toLocaleString()}</div>
+                <div className="px-3 py-1 bg-white border rounded text-sm">Qty: {it.quantity}</div>
+
+                <div className="ml-4 text-right">
+                  <div className="font-bold text-sm">UGX {(it.unitAmount * it.quantity).toLocaleString()}</div>
+                  <button onClick={() => removeFromCart(it.id)} className="text-xs text-red-500 mt-1">Remove</button>
+                </div>
               </div>
-            </div>
+            ))}
+          </div>
 
-            <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Mobile Money Number</label>
-            <input
-              type="tel"
-              placeholder="0775617890"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className="w-full border-2 border-gray-100 p-4 rounded-xl mb-6 focus:border-[#d81b60] outline-none transition-all font-mono"
-            />
-
-            <div className="grid grid-cols-1 gap-3">
-              <button
-                onClick={async () => {
-                  // pay cart via invoice endpoint (payNow flag)
-                  if (cart.length === 0) { showToast('Cart is empty', 'error'); return; }
-                  setLoading(true);
-                  try {
-                    const payload = {
-                      items: cart.map((c) => ({ serviceId: c.id, serviceName: c.name, amount: c.unitAmount, quantity: c.quantity })),
-                      amount: cartTotal,
-                      phone,
-                      payNow: 1,
-                    };
-                    const { data } = await invoiceService.createInvoice(payload);
-                    if (data?.receiptId) showToast(`Payment initiated: ${data.receiptId}`, 'success');
-                    else showToast(`Invoice created: ${data.invoiceId ?? 'unknown'}`, 'success');
-                    setCart([]);
-                    setCartOpen(false);
-                  } catch (err: any) {
-                    console.error('Cart pay failed:', err);
-                    showToast(err?.message || 'Payment failed', 'error');
-                  } finally {
-                    setLoading(false);
-                  }
-                }}
-                disabled={loading}
-                className="w-full py-4 bg-[#e0d5d8] text-gray-800 rounded-xl font-bold hover:bg-gray-500 disabled:opacity-50 transition-all"
-              >
-                {loading ? 'Processing...' : 'Pay Now'}
-              </button>
-              <button
-                onClick={async () => {
-                  if (cart.length === 0) { showToast('Cart is empty', 'error'); return; }
-                  setLoading(true);
-                  try {
-                    const payload = {
-                      items: cart.map((c) => ({ serviceId: c.id, serviceName: c.name, amount: c.unitAmount, quantity: c.quantity })),
-                      amount: cartTotal,
-                    };
-                    const { data } = await invoiceService.createInvoice(payload);
-                    showToast(`Invoice created: ${data.invoiceId ?? 'unknown'}`, 'success');
-                    setCart([]);
-                    setCartOpen(false);
-                  } catch (err: any) {
-                    console.error('Cart invoice failed:', err);
-                    showToast(err.message || 'Failed to create invoice', 'error');
-                  } finally {
-                    setLoading(false);
-                  }
-                }}
-                disabled={loading}
-                className="w-full py-4 bg-gray-100 text-gray-600 rounded-xl font-bold hover:bg-gray-200 transition-all"
-              >
-                Pay Later
-              </button>
+          <div className="bg-gray-50 p-3 rounded-xl mb-4">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-500">Total</div>
+              <div className="text-lg font-bold">UGX {cartTotal.toLocaleString()}</div>
             </div>
+          </div>
+
+          <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Mobile Money Number</label>
+          <input
+            type="tel"
+            placeholder="0775617890"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            className="w-full border-2 border-gray-100 p-3 rounded-xl mb-4 focus:border-[#d81b60] outline-none transition-all font-mono"
+          />
+
+          <div className="grid grid-cols-1 gap-2">
+            <button
+              onClick={async () => {
+                if (cart.length === 0) { showToast('Cart is empty', 'error'); return; }
+                setLoading(true);
+                try {
+                  const collectoId = localStorage.getItem("collectoId") || "141122";
+                  if (!clientId) { showToast('Unable to determine your customer id. Please login or refresh your profile.', 'error'); setLoading(false); return; }
+                  const payload = {
+                    collectoId,
+                    clientId: clientId,
+                    items: cart.map((c) => ({ serviceId: c.id, serviceName: c.name, amount: c.unitAmount, quantity: c.quantity })),
+                    amount: cartTotal,
+                    phone,
+                    payNow: 0, // Place Order creates invoice (not immediate payment)
+                  };
+                  const { data } = await invoiceService.createInvoice(payload);
+                  showToast(`Order placed: ${data.invoiceId ?? 'unknown'}`, 'success');
+                  setCart([]);
+                  setCartOpen(false);
+                } catch (err: any) {
+                  console.error('Place order failed:', err);
+                  showToast(err?.message || 'Failed to place order', 'error');
+                } finally {
+                  setLoading(false);
+                }
+              }}
+              disabled={loading}
+              className="w-full py-3 bg-[#d81b60] text-white rounded-xl font-bold hover:opacity-95 disabled:opacity-50 transition-all"
+            >
+              {loading ? 'Placing Order...' : 'Place Order'}
+            </button>
           </div>
         </div>
       )}

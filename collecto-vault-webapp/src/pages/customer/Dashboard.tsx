@@ -6,8 +6,8 @@ import ServicesList from "../../components/ServicesList";
 import BuyPoints from "../customer/BuyPoints";
 import SpendPointsModal from "./SpendPoints";
 import TierDetailsModal from "./TierDetails";
-// Added CheckCircle, Clock, AlertCircle for status icons
-import { X, CheckCircle, Clock, AlertCircle, Download } from "lucide-react";
+// Added CheckCircle, Clock for status icons
+import { X } from "lucide-react";
 import { customerService } from "../../api/customer";
 
 
@@ -25,7 +25,7 @@ const mockUser = {
   invoicesCount: 0,
 };
 
-type TabType = "points" | "tier" | "invoices";
+type TabType = "points" | "tier";
 
 interface RedeemableOffer {
   id: string;
@@ -34,17 +34,7 @@ interface RedeemableOffer {
   pointsCost: number;
 }
 
-interface InvoiceType {
-  id: string;
-  date: string;
-  status: string;
-  lastPaid: string;
-  daysAgo?: number;
-  remaining: string;
-  items: any[];
-  payments?: any[];
-  totalAmount?: string;
-} 
+
 
 interface UserProfile {
   name?: string;
@@ -66,23 +56,12 @@ export default function Dashboard() {
   const [spendPointsOpen, setSpendPointsOpen] = useState<boolean>(false);
   const [tierDetailsOpen, setTierDetailsOpen] = useState<boolean>(false);
 
-  // NEW: State for selected Invoice
-  const [selectedInvoice, setSelectedInvoice] = useState<InvoiceType | null>(
-    null
-  );
-  const [selectedRedeemOffer, setSelectedRedeemOffer] =
+const [selectedRedeemOffer, setSelectedRedeemOffer] =
     useState<RedeemableOffer | null>(null);
 
-  // Offers & invoices state (replaces mocked constants)
+  // Offers state
   const [redeemableOffers, setRedeemableOffers] = useState<RedeemableOffer[]>([]);
   const [offersLoading, setOffersLoading] = useState<boolean>(false);
-  const [invoices, setInvoices] = useState<InvoiceType[]>([]);
-  const [invoicesLoading, setInvoicesLoading] = useState<boolean>(false);
-  // Prefer server-provided count if available; null until fetched
-  const [invoiceCount, setInvoiceCount] = useState<number | null>(null);
-
-  // Use server count when available, otherwise fall back to local array length or user fallback
-  const invoicesCount = invoiceCount ?? invoices.length ?? user.invoicesCount ?? 0;
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -90,10 +69,6 @@ export default function Dashboard() {
         const res = await customerService.getProfile();
         const profile = res.data ?? {};
         setUser((prev) => ({ ...prev, ...profile }));
-        const countFromProfile = profile?.invoicesCount ?? profile?.invoiceCount ?? profile?.totalInvoices;
-        if (typeof countFromProfile !== "undefined") {
-          setInvoiceCount(Number(countFromProfile) || 0);
-        }
       } catch (err) {
         console.warn("Failed to fetch profile", err);
       }
@@ -112,34 +87,9 @@ export default function Dashboard() {
       }
     };
 
-    const fetchInvoices = async () => {
-      setInvoicesLoading(true);
-      try {
-        const res = await customerService.getInvoices();
-        const fetched = res.data?.invoices ?? res.data ?? [];
-        setInvoices(fetched);
-
-        // Prefer explicit counts returned by the API (common names)
-        const countFromRes = res.data?.count ?? res.data?.totalCount ?? res.data?.total ?? res.data?.meta?.total;
-        if (typeof countFromRes !== "undefined") {
-          setInvoiceCount(Number(countFromRes) || 0);
-        } else {
-          // Fallback to array length
-          setInvoiceCount(Array.isArray(fetched) ? fetched.length : 0);
-        }
-      } catch (err) {
-        console.warn("Failed to fetch invoices", err);
-        setInvoices([]);
-        setInvoiceCount(0);
-      } finally {
-        setInvoicesLoading(false);
-      }
-    };
-
     // Start by refreshing profile (which may provide counts/points) then fetch other resources
     fetchProfile();
     fetchOffers();
-    fetchInvoices();
   }, []);
 
   const handleViewRedeemOffer = (offer: RedeemableOffer) => {
@@ -151,41 +101,9 @@ export default function Dashboard() {
     setSpendPointsOpen(true);
   };
 
-  const getStatusVisuals = (status: string) => {
-    switch (status) {
-      case "Paid":
-        return {
-          color: "text-green-600 bg-green-50",
-          icon: <CheckCircle size={18} className="fill-green-600 text-white" />,
-        };
-      case "Pending":
-        return {
-          color: "text-yellow-600 bg-yellow-50",
-          icon: <Clock size={18} className="fill-yellow-500 text-white" />,
-        };
-      case "Overdue":
-        return {
-          color: "text-red-600 bg-red-50",
-          icon: <AlertCircle size={18} className="fill-red-500 text-white" />,
-        };
-      default:
-        return { color: "text-gray-600 bg-gray-50", icon: <Clock size={18} /> };
-    }
-  };
 
-  // Compute total invoiced sum from fetched invoices (fallback to mock if none)
-  const totalInvoicedSum = invoicesLoading
-    ? "Loading…"
-    : (() => {
-        const sum = invoices.reduce((acc, inv) => {
-          const amountStr = inv.totalAmount ?? inv.remaining ?? "0";
-          const normalized = String(amountStr).replace(/[^0-9.-]+/g, "");
-          const num = Number(normalized) || 0;
-          return acc + num;
-        }, 0);
 
-        return sum.toLocaleString();
-      })();
+
 
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-50 to-[#fff8e7] font-sans">
@@ -238,23 +156,7 @@ export default function Dashboard() {
             )}
           </button>
 
-          {/* TAB 3: INVOICES */}
-          <button
-            onClick={() => setActiveTab("invoices")}
-            className={`flex-1 py-4 flex flex-col items-center justify-center relative transition-colors ${
-              activeTab === "invoices" ? "bg-white" : "bg-gray-50/50"
-            }`}
-          >
-            <span className="text-3xl text-gray-800 font-light tracking-tight">
-              {invoicesCount}
-            </span>
-            <span className="text-xs font-medium text-gray-500 uppercase mt-1">
-              My Invoices
-            </span>
-            {activeTab === "invoices" && (
-              <div className="absolute bottom-0 w-full h-[3px] bg-[#cb0d6c] animate-in fade-in zoom-in duration-200" />
-            )}
-          </button>
+
         </div>
 
         {/* --- MAIN CONTENT AREA --- */}
@@ -368,93 +270,9 @@ export default function Dashboard() {
             </>
           )}
 
-          {/* 3. VIEW: INVOICES TAB (UPDATED) */}
-          {activeTab === "invoices" && (
-            <div className="px-4 pb-20 animate-in slide-in-from-bottom-2 fade-in duration-300">
-              {/* Total Amount Header */}
-              <div className="bg-[#b03f69] rounded-xl p-5 text-white shadow-lg shadow-blue-900/20 mb-6">
-                <p className="text-blue-200 text-sm font-medium uppercase tracking-wide">
-                  Total Invoiced
-                </p>
-                <h2 className="text-3xl font-bold mt-1">{totalInvoicedSum}</h2>
-                <div className="mt-2 text-xs text-blue-300">
-                  Total value across all invoices
-                </div>
-              </div>
-
-              <div className="mb-4 flex justify-between items-center">
-                <h3 className="text-lg font-semibold text-gray-800">History</h3>
-              </div>
-
-              <div className="space-y-3">
-                {invoicesLoading ? (
-                  <div className="text-center py-6 text-sm text-gray-500">Loading invoices…</div>
-                ) : invoices.length === 0 ? (
-                  <div className="text-center py-8">
-                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2 text-gray-400">
-                      <AlertCircle size={24} />
-                    </div>
-                    <p className="text-sm text-gray-500">No invoices found.</p>
-                  </div>
-                ) : (
-                  invoices.map((inv) => {
                   const visuals = getStatusVisuals(inv.status);
 
-                  return (
-                    <div
-                      key={inv.id}
-                      onClick={() => setSelectedInvoice(inv)}
-                      className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors group"
-                    >
-                      {/* Left: Invoice ID and Last Paid Info */}
-                      <div className="flex items-start gap-3">
-                        <div className="mt-1">
-                          {/* Icon replaces FileText, generic file icon */}
-                          <div className="" title={inv.status}>
-                            {visuals.icon}
-                          </div>
-                        </div>
-                        <div className="flex flex-col items-start">
-                          <p className="font-bold text-gray-900 leading-none">
-                            {inv.id}
-                          </p>
 
-                          {/* Last Paid Logic */}
-                          {inv.lastPaid !== "0" ? (
-                            <p className="text-xs text-gray-500 mt-1">
-                              Last paid: {inv.lastPaid}{" "}
-                              <span className="text-gray-400">
-                                ({inv.daysAgo} days ago)
-                              </span>
-                            </p>
-                          ) : (
-                            <p className="text-xs text-gray-400 mt-1 italic">
-                              No payments yet
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Right: Remaining Amount & Status Icon */}
-                      <div className="flex items-center gap-3">
-                        <div className="text-right">
-                          {/* Remaining Amount */}
-                          <span className="block font-bold text-gray-800 text-sm">
-                            {inv.remaining}
-                          </span>
-                          {/* <span className="text-[10px] text-gray-400 uppercase tracking-wide">
-                            Remaining
-                          </span> */}
-                        </div>
-
-                        {/* Status Icon (Green/Yellow/Red) */}
-                      </div>
-                    </div>
-                  );
-                }))}
-              </div>
-            </div>
-          )}
         </div>
       </main>
 
@@ -479,13 +297,7 @@ export default function Dashboard() {
         pointsToNextTier={1500}
       />
 
-      {/* --- NEW INVOICE DETAIL MODAL --- */}
-      {selectedInvoice && (
-        <InvoiceDetailModal
-          invoice={selectedInvoice}
-          onClose={() => setSelectedInvoice(null)}
-        />
-      )}
+
       {/* --- REDEEM OFFER MODAL --- */}
       {selectedRedeemOffer && (
         <div
@@ -550,220 +362,3 @@ export default function Dashboard() {
   );
 }
 
-// --- SUB-COMPONENT: INVOICE DETAIL MODAL ---
-function InvoiceDetailModal({
-  invoice,
-  onClose,
-}: {
-  invoice: any; // Replaced with 'any' or your specific 'InvoiceType'
-  onClose: () => void;
-}) {
-  const [tab, setTab] = useState<"details" | "payment">("details");
-
-  // Function to download the entire model (JSON data)
-  const handleDownload = () => {
-    // 1. Convert the invoice object to a JSON string
-    const jsonString = JSON.stringify(invoice, null, 2);
-    
-    // 2. Create a Blob (file-like object)
-    const blob = new Blob([jsonString], { type: "application/json" });
-    
-    // 3. Create a temporary URL for the blob
-    const url = URL.createObjectURL(blob);
-    
-    // 4. Create a hidden link element and trigger click
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `Invoice_${invoice.id}_Data.pdf`; // File name
-    document.body.appendChild(link);
-    link.click();
-    
-    // 5. Cleanup
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
-  return (
-    <div
-      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white w-full max-w-md rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Modal Header */}
-        <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-          <div>
-            <h3 className="font-bold text-lg text-gray-900">{invoice.id}</h3>
-            <p className="text-xs text-gray-500">Issued: {invoice.date}</p>
-          </div>
-          
-          <div className="flex gap-2">
-            {/* NEW: Download Button */}
-            <button
-              onClick={handleDownload}
-              title="Download Invoice Data"
-              className="p-2 bg-white rounded-full text-gray-500 hover:text-[#c01754] shadow-sm border border-gray-100 transition-colors"
-            >
-              <Download size={20} />
-            </button>
-
-            {/* Close Button */}
-            <button
-              onClick={onClose}
-              className="p-2 bg-white rounded-full text-gray-500 hover:text-gray-800 shadow-sm border border-gray-100"
-            >
-              <X size={20} />
-            </button>
-          </div>
-        </div>
-
-        {/* Internal Tabs */}
-        <div className="flex border-b border-gray-200">
-          <button
-            onClick={() => setTab("details")}
-            className={`flex-1 py-3 text-sm font-medium transition-colors border-b-2 ${
-              tab === "details"
-                ? "border-[#c01754] text-[#c01754] bg-[#c01754]/5"
-                : "border-transparent text-gray-500 hover:bg-gray-50"
-            }`}
-          >
-            Details
-          </button>
-          <button
-            onClick={() => setTab("payment")}
-            className={`flex-1 py-3 text-sm font-medium transition-colors border-b-2 ${
-              tab === "payment"
-                ? "border-[#c01754] text-[#c01754] bg-[#c01754]/5"
-                : "border-transparent text-gray-500 hover:bg-gray-50"
-            }`}
-          >
-            Payment
-          </button>
-        </div>
-
-        {/* Modal Body */}
-        <div className="p-6 overflow-y-auto">
-
-          {/* DETAILS TAB CONTENT */}
-          {tab === "details" && (
-            <div className="space-y-4 animate-in fade-in slide-in-from-left-4 duration-300">
-              {/* INVOICE ITEMS SECTION */}
-              <div className="space-y-2">
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-                  Invoice Items
-                </p>
-
-                <div className="bg-white rounded-lg p-2">
-                  {invoice.items.map((item: any, i: number) => (
-                    <div key={i} className="flex justify-between py-1.5 border-b border-gray-50 last:border-0">
-                      <span className="text-gray-700 text-sm font-medium">
-                        Service/Product
-                      </span>
-                      <span className="text-gray-900 text-sm font-medium">
-                        {item.service}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* TOTALS SECTION */}
-              <div className="bg-gray-50 rounded-lg p-4 mt-4 space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Client</span>
-                  <span className="font-medium text-gray-900">
-                    {invoice.items[0]?.client || "N/A"}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Client Phone</span>
-                  <span className="font-medium text-gray-900">
-                    {invoice.items[0]?.phone || "N/A"}
-                  </span>
-                </div>
-                <div className="border-t border-gray-200 my-2 pt-2"></div>
-
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Total Amount</span>
-                  <span className="font-medium text-gray-900">
-                    {invoice.totalAmount}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Paid Amount</span>
-                  <span className="font-medium text-[#c01754]">
-                    {invoice.lastPaid}
-                  </span>
-                </div>
-                <div className="border-t border-gray-200 my-2 pt-2 flex justify-between text-base">
-                  <span className="font-bold text-gray-800">Remaining</span>
-                  <span className="font-bold text-gray-900">
-                    {invoice.remaining}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* PAYMENT TAB CONTENT */}
-          {tab === "payment" && (
-            <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-                Payment History
-              </p>
-
-              {invoice.payments && invoice.payments.length > 0 ? (
-                <div className="space-y-3">
-                  {invoice.payments.map((pay: any, i: number) => (
-                    <div
-                      key={i}
-                      className="flex items-start gap-3 bg-green-50/50 p-3 rounded-lg border border-green-100"
-                    >
-                      <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600 shrink-0 mt-0.5">
-                        <CheckCircle size={16} />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex justify-between items-start">
-                          <p className="text-sm font-semibold text-gray-800">
-                            {pay.amount}
-                          </p>
-                          <p className="text-xs text-gray-400">
-                            {pay.date}
-                          </p>
-                        </div>
-                        
-                         {/* NEW: Transaction ID Display */}
-                        <div className="mt-1 pt-1 border-t border-green-100/50">
-                          <p className="text-[10px] text-gray-400 font-mono tracking-wide">
-                            Tran ID: <span className="text-gray-600 font-medium">{pay.tranId || "N/A"}</span>
-                          </p>
-                        </div>
-
-                        <p className="text-xs text-gray-500 mt-1">
-                          {pay.method}
-                        </p>
-                        
-                       
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2 text-gray-400">
-                    <AlertCircle size={24} />
-                  </div>
-                  <p className="text-sm text-gray-500">
-                    No payments have been recorded for this invoice yet.
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}

@@ -8,4 +8,6 @@ export const transactionService = {
 
 export const invoiceService = {
     createInvoice: (payload: any) => api.post('/invoice', payload),
+    getInvoices: () => api.get('/invoices'),
+    payInvoice: (payload: { invoiceId: string; method: 'points' | 'mm'; phone?: string }) => api.post('/invoice/pay', payload),
 };
