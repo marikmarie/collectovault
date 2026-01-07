@@ -171,6 +171,33 @@ export default function Services() {
     setCart((prev) => prev.map((c) => (c.id === id ? { ...c, quantity: Math.max(1, quantity) } : c)));
   };
 
+  // Place order helper (creates invoice)
+  const handlePlaceOrder = async () => {
+    if (cart.length === 0) { showToast('Cart is empty', 'error'); return; }
+    setLoading(true);
+    try {
+      const collectoId = localStorage.getItem("collectoId") || "141122";
+      if (!clientId) { showToast('Unable to determine your customer id. Please login or refresh your profile.', 'error'); setLoading(false); return; }
+      const payload = {
+        collectoId,
+        clientId: clientId,
+        items: cart.map((c) => ({ serviceId: c.id, serviceName: c.name, amount: c.unitAmount, quantity: c.quantity })),
+        amount: cartTotal,
+        phone,
+        payNow: 0,
+      };
+      const { data } = await invoiceService.createInvoice(payload);
+      showToast(`Order placed: ${data.invoiceId ?? 'unknown'}`, 'success');
+      setCart([]);
+      setCartOpen(false);
+    } catch (err: any) {
+      console.error('Place order failed:', err);
+      showToast(err?.message || 'Failed to place order', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const cartCount = cart.reduce((acc, it) => acc + it.quantity, 0);
   const cartTotal = cart.reduce((acc, it) => acc + it.unitAmount * it.quantity, 0);
 
@@ -348,91 +375,80 @@ export default function Services() {
         </div>
       </main>
 
-      {/* Inline Cart Panel Below Services */}
+      {/* Inline Cart Popup Modal */}
       {cartOpen && (
-        <div className="mx-auto max-w-4xl mt-6 bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-          <div className="flex justify-between items-start mb-3">
-            <div>
-              <h3 className="font-bold text-lg text-gray-900">Your Cart</h3>
-              <p className="text-sm text-gray-500 mt-1">{cart.length} items — UGX {cartTotal.toLocaleString()}</p>
-            </div>
-            <button onClick={() => setCartOpen(false)} className="text-gray-400 p-2 text-lg">✕</button>
-          </div>
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-24 px-4">
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/40" onClick={() => setCartOpen(false)} />
 
-          {toast && cartOpen && (
-            <div className={`mb-3 px-4 py-2 rounded text-sm ${toast.type === 'success' ? 'bg-green-600 text-white' : toast.type === 'error' ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'}`} role="status" aria-live="polite">
-              {toast.message}
-            </div>
-          )}
-
-          <div className="space-y-2 mb-4">
-            {cart.length === 0 && <div className="text-center text-gray-500 py-4">Your cart is empty.</div>}
-
-            {cart.map((it) => (
-              <div key={it.id} className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg">
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium text-gray-800 truncate">{it.name}</div>
-                  <div className="text-sm font-bold text-gray-800 mt-1">UGX {it.unitAmount.toLocaleString()}</div>
-                </div>
-
-                <div className="px-3 py-1 bg-white border rounded text-sm">Qty: {it.quantity}</div>
-
-                <div className="ml-4 text-right">
-                  <div className="font-bold text-sm">UGX {(it.unitAmount * it.quantity).toLocaleString()}</div>
-                  <button onClick={() => removeFromCart(it.id)} className="text-xs text-red-500 mt-1">Remove</button>
-                </div>
+          <div className="relative w-full max-w-md bg-white rounded-2xl border border-gray-100 shadow-lg p-4 z-10">
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <h3 className="font-bold text-lg text-gray-900">Your Cart</h3>
+                <p className="text-sm text-gray-500 mt-1">{cart.length} items — UGX {cartTotal.toLocaleString()}</p>
               </div>
-            ))}
-          </div>
-
-          <div className="bg-gray-50 p-3 rounded-xl mb-4">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-500">Total</div>
-              <div className="text-lg font-bold">UGX {cartTotal.toLocaleString()}</div>
+              <button onClick={() => setCartOpen(false)} className="text-gray-400 p-2 text-lg">✕</button>
             </div>
-          </div>
 
-          <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Mobile Money Number</label>
-          <input
-            type="tel"
-            placeholder="0775617890"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            className="w-full border-2 border-gray-100 p-3 rounded-xl mb-4 focus:border-[#d81b60] outline-none transition-all font-mono"
-          />
+            {toast && cartOpen && (
+              <div className={`mb-3 px-4 py-2 rounded text-sm ${toast.type === 'success' ? 'bg-green-600 text-white' : toast.type === 'error' ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'}`} role="status" aria-live="polite">
+                {toast.message}
+              </div>
+            )}
 
-          <div className="grid grid-cols-1 gap-2">
-            <button
-              onClick={async () => {
-                if (cart.length === 0) { showToast('Cart is empty', 'error'); return; }
-                setLoading(true);
-                try {
-                  const collectoId = localStorage.getItem("collectoId") || "141122";
-                  if (!clientId) { showToast('Unable to determine your customer id. Please login or refresh your profile.', 'error'); setLoading(false); return; }
-                  const payload = {
-                    collectoId,
-                    clientId: clientId,
-                    items: cart.map((c) => ({ serviceId: c.id, serviceName: c.name, amount: c.unitAmount, quantity: c.quantity })),
-                    amount: cartTotal,
-                    phone,
-                    payNow: 0, // Place Order creates invoice (not immediate payment)
-                  };
-                  const { data } = await invoiceService.createInvoice(payload);
-                  showToast(`Order placed: ${data.invoiceId ?? 'unknown'}`, 'success');
-                  setCart([]);
-                  setCartOpen(false);
-                } catch (err: any) {
-                  console.error('Place order failed:', err);
-                  showToast(err?.message || 'Failed to place order', 'error');
-                } finally {
-                  setLoading(false);
-                }
-              }}
-              disabled={loading}
-              className="w-full py-3 bg-[#d81b60] text-white rounded-xl font-bold hover:opacity-95 disabled:opacity-50 transition-all"
-            >
-              {loading ? 'Placing Order...' : 'Place Order'}
-            </button>
+            <div className="mb-4 max-h-60 overflow-y-auto">
+              {cart.length === 0 ? (
+                <div className="text-center text-gray-500 py-6">Your cart is empty.</div>
+              ) : (
+                <ul className="divide-y divide-gray-100">
+                  {cart.map((it) => (
+                    <li key={it.id} className="flex items-center justify-between py-2">
+                      <div className="min-w-0">
+                        <div className="font-medium text-gray-800 text-sm truncate">
+                          {it.name} <span className="text-gray-600 text-xs">({it.quantity})</span>
+                        </div>
+                        <div className="text-[10px] text-gray-500 mt-0.5">UGX {it.unitAmount.toLocaleString()} each</div>
+                      </div>
+
+                      <div className="ml-4 text-right">
+                        <div className="font-semibold text-sm">UGX {(it.unitAmount * it.quantity).toLocaleString()}</div>
+                        <button onClick={() => removeFromCart(it.id)} className="text-xs text-red-500 mt-1">Remove</button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className="bg-gray-50 p-3 rounded-xl mb-4">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-500">Total</div>
+                <div className="text-lg font-bold">UGX {cartTotal.toLocaleString()}</div>
+              </div>
+            </div>
+
+            <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Mobile Money Number</label>
+            <input
+              type="tel"
+              placeholder="0775617890"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className="w-full border-2 border-gray-100 p-3 rounded-xl mb-4 focus:border-[#d81b60] outline-none transition-all font-mono"
+            />
+
+            <div className="flex gap-2">
+              <button
+                onClick={handlePlaceOrder}
+                disabled={loading}
+                className="flex-1 py-3 bg-[#d81b60] text-white rounded-xl font-bold hover:opacity-95 disabled:opacity-50 transition-all"
+              >
+                {loading ? 'Placing Order...' : 'Place Order'}
+              </button>
+
+              <button onClick={() => setCartOpen(false)} className="px-6 py-3 bg-white border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50">
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}

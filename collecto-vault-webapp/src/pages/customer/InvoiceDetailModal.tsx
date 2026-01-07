@@ -1,8 +1,12 @@
 import { useState } from 'react';
 import { X, Download, CheckCircle } from 'lucide-react';
+import { invoiceService } from '../../api/collecto';
 
-export default function InvoiceDetailModal({ invoice, onClose }: { invoice: any; onClose: () => void; }) {
+export default function InvoiceDetailModal({ invoice, onClose, onPaid }: { invoice: any; onClose: () => void; onPaid?: (invoiceId: string) => void; }) {
   const [tab, setTab] = useState<'details' | 'payment'>('details');
+  const [payMethod, setPayMethod] = useState<'points' | 'mm'>('points');
+  const [payPhone, setPayPhone] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleDownload = () => {
     const jsonString = JSON.stringify(invoice, null, 2);
@@ -16,6 +20,23 @@ export default function InvoiceDetailModal({ invoice, onClose }: { invoice: any;
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
+
+  const handlePay = async () => {
+    if (!invoice) return;
+    try {
+      setLoading(true);
+      const invoiceId = invoice.invoiceId ?? invoice.id;
+      await invoiceService.payInvoice({ invoiceId, method: payMethod, phone: payMethod === 'mm' ? payPhone : undefined });
+      if (onPaid) onPaid(invoice.invoiceId ?? invoice.id);
+    } catch (err: any) {
+      console.error('Pay failed', err);
+      alert(err?.message || 'Payment failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const isPaid = String((invoice.status ?? invoice.state ?? '')).toUpperCase() === 'PAID';
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4" onClick={onClose}>
@@ -88,6 +109,28 @@ export default function InvoiceDetailModal({ invoice, onClose }: { invoice: any;
 
           {tab === 'payment' && (
             <div className="space-y-4">
+
+              {!isPaid ? (
+                <div className="mb-4 bg-gray-50 p-3 rounded">
+                  <label className="text-xs text-gray-600">Method</label>
+                  <select value={payMethod} onChange={(e) => setPayMethod(e.target.value as any)} className="w-full p-2 mt-1 mb-2 border rounded">
+                    <option value="points">Points</option>
+                    <option value="mm">Mobile Money</option>
+                  </select>
+
+                  {payMethod === 'mm' && (
+                    <input value={payPhone} onChange={(e) => setPayPhone(e.target.value)} placeholder="07xxxxxxxx" className="w-full p-2 border rounded mb-2" />
+                  )}
+
+                  <div className="flex gap-2">
+                    <button onClick={handlePay} disabled={loading} className="px-3 py-2 bg-green-600 text-white rounded">{loading ? 'Processing...' : 'Confirm Pay'}</button>
+                    <button onClick={onClose} className="px-3 py-2 bg-gray-200 rounded">Close</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3 mb-4 bg-green-50 rounded">This invoice is already paid.</div>
+              )}
+
               <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Payment History</p>
 
               {(invoice.payments || []).length > 0 ? (

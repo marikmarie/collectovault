@@ -34,35 +34,37 @@ export default function Statement() {
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
   const { toast, showToast } = useLocalToast();
 
+  const fetchInvoices = async () => {
+    setLoading(true);
+    try {
+      const res = await invoiceService.getInvoices();
+      const data = res.data?.data ?? res.data ?? [];
+      setInvoices(Array.isArray(data) ? data : []);
+      return data;
+    } catch (err) {
+      console.warn("Failed to fetch invoices", err);
+      setInvoices([]);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchTransactions = async () => {
+    setLoading(true);
+    try {
+      const res = await transactionService.getTransactions("me");
+      const data = res.data?.transactions ?? res.data ?? [];
+      setTransactions(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.warn("Failed to fetch transactions", err);
+      setTransactions([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchTransactions = async () => {
-      setLoading(true);
-      try {
-        const res = await transactionService.getTransactions("me");
-        const data = res.data?.transactions ?? res.data ?? [];
-        setTransactions(Array.isArray(data) ? data : []);
-      } catch (err) {
-        console.warn("Failed to fetch transactions", err);
-        setTransactions([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const fetchInvoices = async () => {
-      setLoading(true);
-      try {
-        const res = await invoiceService.getInvoices();
-        const data = res.data?.data ?? res.data ?? [];
-        setInvoices(Array.isArray(data) ? data : []);
-      } catch (err) {
-        console.warn("Failed to fetch invoices", err);
-        setInvoices([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     // load default tab
     if (activeTab === 'invoices') fetchInvoices();
     else fetchTransactions();
@@ -204,7 +206,19 @@ export default function Statement() {
         </div>
       </main>
 
-      {selectedInvoice && <InvoiceDetailModal invoice={selectedInvoice} onClose={() => setSelectedInvoice(null)} />}
+      {selectedInvoice && (
+        <InvoiceDetailModal
+          invoice={selectedInvoice}
+          onClose={() => setSelectedInvoice(null)}
+          onPaid={async (invoiceId: string) => {
+            // refresh invoices and update currently selected invoice with fresh data
+            const data = await fetchInvoices();
+            const updated = (data ?? []).find((inv: any) => (inv.invoiceId ?? inv.id) === invoiceId || inv.id === invoiceId);
+            setSelectedInvoice(updated ?? null);
+            showToast('Payment successful', 'success');
+          }}
+        />
+      )}
     </div>
   );
 }

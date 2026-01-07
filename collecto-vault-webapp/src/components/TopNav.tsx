@@ -173,8 +173,7 @@ export default function TopNav() {
       {/* This div is crucial. It ensures your page content isn't hidden 
           behind the fixed headers or bottom nav. 
       */}
-      {/* <div className="pb-24 lg:pb-10 pt-4 px-4 max-w-7xl mx-auto">
-      </div> */}
+      <div className="pb-24 lg:pb-10 pt-4 px-4 max-w-7xl mx-auto" />
 
 
       {/* ==================================================================
