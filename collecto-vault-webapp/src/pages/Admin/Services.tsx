@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import TopNav from "../../components/TopNav";
-import { Search, ShoppingCart } from "lucide-react";
+import { Search, ShoppingCart, Filter, ChevronDown } from "lucide-react";
 import Icon from "../../components/Icon";
 import api from "../../api";
 
@@ -177,9 +177,9 @@ export default function Services() {
           </button>
         </div>
 
-        {/* --- Single Line Search & Filter --- */}
-        <div className="flex gap-2 md:gap-4 mb-2 flex-col">
-          <div className="relative">
+        {/* --- Search with Category Dropdown --- */}
+        <div className="flex gap-2 mb-8 items-center">
+          <div className="relative w-1/2">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 md:w-5 md:h-5" />
             <input
               type="text"
@@ -191,15 +191,19 @@ export default function Services() {
           </div>
 
           {categories.length > 0 && (
-            <div className="flex gap-2 flex-wrap mt-2">
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`text-xs px-3 py-1 rounded-full transition-all ${selectedCategory === cat ? 'bg-[#d81b60] text-white' : 'bg-white border border-gray-200 text-gray-700'}`}>
-                  {cat}
-                </button>
-              ))}
+            <div className="relative w-1/2">
+              <Filter className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="w-full pl-9 pr-8 py-2.5 bg-white border border-gray-200 rounded-xl shadow-sm appearance-none text-sm"
+                aria-label="Filter by category"
+              >
+                {categories.map((cat) => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
             </div>
           )}
         </div>
