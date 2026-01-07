@@ -5,7 +5,7 @@ import { authService } from '../api/authService';
 import { setVaultOtpToken, getVaultOtpToken } from '../api';
 
 // Define the available user types
-type UserType = 'client' | 'staff';
+type UserType = 'client' | 'staff' ;
 
 // Type for the temporary payload needed between ID and OTP steps
 type PendingPayload = {

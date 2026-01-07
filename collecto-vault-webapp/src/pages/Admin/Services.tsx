@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import TopNav from "../../components/TopNav";
 import { Search, ChevronDown, ShoppingCart } from "lucide-react";
 import Icon from "../../components/Icon";
-import api from "../../api";
+
 import { customerService } from "../../api/customer";
 
 type Service = {
@@ -19,7 +19,7 @@ export default function Services() {
   const [services, setServices] = useState<Service[]>([]);
   const [filteredServices, setFilteredServices] = useState<Service[]>([]);
   const [photosBaseUrl, setPhotosBaseUrl] = useState<string>("");
-  const [phone, setPhone] = useState("");
+
   const [loading, setLoading] = useState(false);
 
 
@@ -165,10 +165,11 @@ export default function Services() {
 
           <button
             onClick={() => setCartOpen(true)}
-            className="relative rounded-full p-2 bg-white border border-gray-200 shadow-sm hover:shadow-md"
+            className="relative rounded-full p-2 bg-white border border-gray-200 shadow-sm hover:shadow-md flex items-center gap-2"
             aria-label="Open cart"
           >
             <ShoppingCart className="w-5 h-5 text-gray-700" />
+            <span className="text-sm font-bold text-gray-700">UGX {cartTotal.toLocaleString()}</span>
             {cartCount > 0 && (
               <span className="absolute -top-1 -right-1 bg-[#d81b60] text-white text-[10px] rounded-full px-1.5 py-0.5">{cartCount}</span>
             )}
@@ -217,54 +218,87 @@ export default function Services() {
         )}
 
         <div className="grid grid-cols-1 gap-3">
-          {paginatedServices.map((s) => (
-            <div
-              key={s.id}
-              className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:border-pink-100 transition-all group"
-            >
-              <div className="flex items-center gap-4 min-w-0">
-                <div className="w-12 h-12 md:w-16 md:h-16 bg-gray-50 rounded-xl overflow-hidden shrink-0 border border-gray-50">
-                  {s.photo ? (
-                    <img
-                      src={`${photosBaseUrl}${s.photo}`}
-                      alt={s.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+          {paginatedServices.map((s) => {
+            const cartItem = cart.find((c) => c.id === s.id);
+            const selected = Boolean(cartItem);
+            const qty = cartItem?.quantity || 0;
+            return (
+              <div
+                key={s.id}
+                className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:border-pink-100 transition-all group"
+              >
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className="flex items-center gap-3 mr-2">
+                    <input
+                      type="checkbox"
+                      checked={selected}
+                      onChange={(e) => {
+                        if (e.target.checked) addToCart(s);
+                        else removeFromCart(s.id);
+                      }}
+                      className="w-4 h-4"
                     />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-300">
-                      NO IMAGE
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => {
+                          if (selected) {
+                            if (qty > 1) updateQuantity(s.id, qty - 1);
+                            else removeFromCart(s.id);
+                          }
+                        }}
+                        className="px-2 py-1 rounded bg-gray-100"
+                      >
+                        −
+                      </button>
+                      <div className="px-3 py-1 bg-white border rounded">{qty}</div>
+                      <button
+                        onClick={() => {
+                          if (selected) updateQuantity(s.id, qty + 1);
+                          else addToCart(s);
+                        }}
+                        className="px-2 py-1 rounded bg-gray-100"
+                      >
+                        +
+                      </button>
                     </div>
-                  )}
-                </div>
-
-                <div className="min-w-0 text-left">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <h2 className="font-bold text-gray-900 truncate text-sm md:text-base text-left">{s.name}</h2>
                   </div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[10px] text-[#d81b60] font-medium bg-pink-50 px-2 py-0.5 rounded-md inline-block">
-                      {s.category}
-                    </span>
-                    {s.isProduct && (
-                      <span className="text-[10px] text-gray-700 font-medium bg-gray-100 px-2 py-0.5 rounded-md inline-block">
-                        Product
-                      </span>
+
+                  <div className="w-12 h-12 md:w-16 md:h-16 bg-gray-50 rounded-xl overflow-hidden shrink-0 border border-gray-50">
+                    {s.photo ? (
+                      <img
+                        src={`${photosBaseUrl}${s.photo}`}
+                        alt={s.name}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-300">
+                        NO IMAGE
+                      </div>
                     )}
                   </div>
-                  <p className="text-sm font-black text-gray-800 text-left">
-                    UGX {s.amount.toLocaleString()}
-                  </p>
+
+                  <div className="min-w-0 text-left">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <h2 className="font-bold text-gray-900 truncate text-sm md:text-base text-left">{s.name}</h2>
+                    </div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[10px] text-[#d81b60] font-medium bg-pink-50 px-2 py-0.5 rounded-md inline-block">
+                        {s.category}
+                      </span>
+                      {s.isProduct && (
+                        <span className="text-[10px] text-gray-700 font-medium bg-gray-100 px-2 py-0.5 rounded-md inline-block">
+                          Product
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm font-black text-gray-800 text-left">
+                      UGX {s.amount.toLocaleString()}
+                    </p>
+                  </div>
                 </div>
               </div>
-
-              <button
-                onClick={() => addToCart(s)}
-                className="ml-2 px-4 py-2 rounded-xl bg-[#c4b9bd] text-gray-800 text-xs font-bold hover:opacity-90 transition-colors shrink-0"
-              >
-                Add to Cart
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <div className="flex justify-center items-center gap-3 mt-4">
@@ -295,7 +329,7 @@ export default function Services() {
             <div className="flex justify-between items-start mb-4">
               <div>
                 <h3 className="font-bold text-xl text-gray-900">Your Cart</h3>
-                <p className="text-sm text-gray-500 mt-1">{cart.length} items — {cartCount} total</p>
+                <p className="text-sm text-gray-500 mt-1">{cart.length} items — UGX {cartTotal.toLocaleString()}</p>
               </div>
               <button onClick={() => setCartOpen(false)} className="text-gray-400 p-2 text-xl">✕</button>
             </div>
@@ -319,14 +353,10 @@ export default function Services() {
                     <div className="text-sm font-black text-gray-800 mt-1">UGX {it.unitAmount.toLocaleString()}</div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => updateQuantity(it.id, it.quantity - 1)} className="px-2 py-1 rounded bg-gray-100">−</button>
-                    <div className="px-3 py-1 bg-white border rounded">{it.quantity}</div>
-                    <button onClick={() => updateQuantity(it.id, it.quantity + 1)} className="px-2 py-1 rounded bg-gray-100">+</button>
-                  </div>
+                  <div className="px-3 py-1 bg-white border rounded text-sm">{it.quantity}</div>
 
                   <div className="ml-4 text-right">
-                    <div className="text-sm text-gray-500">Line</div>
+                    {/* <div className="text-sm text-gray-500">Line</div> */}
                     <div className="font-black">UGX {(it.unitAmount * it.quantity).toLocaleString()}</div>
                     <button onClick={() => removeFromCart(it.id)} className="text-xs text-red-500 mt-1">Remove</button>
                   </div>
@@ -341,68 +371,8 @@ export default function Services() {
               </div>
             </div>
 
-            <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Mobile Money Number</label>
-            <input
-              type="tel"
-              placeholder="0775617890"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className="w-full border-2 border-gray-100 p-4 rounded-xl mb-6 focus:border-[#d81b60] outline-none transition-all font-mono"
-            />
-
-            <div className="grid grid-cols-1 gap-3">
-              <button
-                onClick={async () => {
-                  // pay cart
-                  if (cart.length === 0) return alert('Cart is empty');
-                  setLoading(true);
-                  try {
-                    const payload = {
-                      items: cart.map((c) => ({ serviceId: c.id, serviceName: c.name, amount: c.unitAmount, quantity: c.quantity })),
-                      amount: cartTotal,
-                      phone,
-                    };
-                    const { data } = await api.post('/pay', payload);
-                    alert(`Payment initiated: ${data.receiptId ?? 'unknown'}`);
-                    setCart([]);
-                    setCartOpen(false);
-                  } catch (err: any) {
-                    console.error('Cart pay failed:', err);
-                    alert(err.message || 'Payment failed');
-                  } finally {
-                    setLoading(false);
-                  }
-                }}
-                disabled={loading}
-                className="w-full py-4 bg-[#d81b60] text-white rounded-xl font-bold hover:opacity-90 disabled:opacity-50 shadow-lg shadow-pink-200"
-              >
-                {loading ? 'Processing...' : 'Pay Now'}
-              </button>
-              <button
-                onClick={async () => {
-                  if (cart.length === 0) return alert('Cart is empty');
-                  setLoading(true);
-                  try {
-                    const payload = {
-                      items: cart.map((c) => ({ serviceId: c.id, serviceName: c.name, amount: c.unitAmount, quantity: c.quantity })),
-                      amount: cartTotal,
-                    };
-                    const { data } = await api.post('/invoice', payload);
-                    alert(`Invoice created: ${data.invoiceId ?? 'unknown'}`);
-                    setCart([]);
-                    setCartOpen(false);
-                  } catch (err: any) {
-                    console.error('Cart invoice failed:', err);
-                    alert(err.message || 'Failed to create invoice');
-                  } finally {
-                    setLoading(false);
-                  }
-                }}
-                disabled={loading}
-                className="w-full py-4 bg-gray-100 text-gray-600 rounded-xl font-bold hover:bg-gray-200 transition-all"
-              >
-                Pay Later
-              </button>
+            <div className="flex justify-end mt-4">
+              <button onClick={() => setCartOpen(false)} className="px-4 py-2 bg-gray-100 rounded-xl">Close</button>
             </div>
           </div>
         </div>
