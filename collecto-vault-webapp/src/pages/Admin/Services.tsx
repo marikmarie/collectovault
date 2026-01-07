@@ -96,7 +96,9 @@ export default function Services() {
         isProduct: Boolean(item.is_product),
       }));
 
-      const uniqueCategories: string[] = ["All", ...Array.from(new Set(mappedServices.map((s: any) => (s.category ?? 'General') as string)))];
+      const catSet = new Set<string>();
+      mappedServices.forEach((s: any) => catSet.add((s.category ?? 'General') as string));
+      const uniqueCategories: string[] = ["All", ...Array.from(catSet)];
 
       setCategories(uniqueCategories);
       setPhotosBaseUrl(baseUrl);
