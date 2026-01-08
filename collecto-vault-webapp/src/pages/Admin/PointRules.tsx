@@ -14,7 +14,6 @@ interface EarningRule {
   createdBy?: string;
 }
 
-/** Re-usable Modal (small) */
 const Modal: React.FC<{
   open: boolean;
   title?: string;
