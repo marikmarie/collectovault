@@ -188,38 +188,55 @@ const TierModal: React.FC<TierModalProps> = ({ initialData, onClose, onSave }) =
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
-                <div className="flex justify-between items-center border-b pb-3 mb-4">
+        <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white bg-opacity-95 text-gray-900 rounded-xl shadow-2xl w-full max-w-md p-6 ring-1 ring-gray-100">
+                <div className="flex justify-between items-center border-b border-gray-100 pb-3 mb-4">
                     <h3 className="text-xl font-bold text-gray-900">
                         {initialData ? 'Edit Tier' : 'Create New Tier'}
                     </h3>
                     <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-100">
-                        <X className="w-5 h-5 text-gray-500" />
+                        <X className="w-5 h-5 text-gray-600" />
                     </button>
                 </div>
 
                 <div className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Tier Name</label>
-                        <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500" />
+                        <input
+                          type="text"
+                          value={name}
+                          onChange={e => setName(e.target.value)}
+                          className="w-full bg-white border border-gray-300 text-gray-900 rounded-lg px-3 py-2 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                          placeholder="e.g., Silver"
+                        />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Entry Threshold (Points)</label>
-                        <input type="number" value={threshold} onChange={e => setThreshold(parseInt(e.target.value) || 0)} className="w-full border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500" />
+                        <input
+                          type="number"
+                          value={threshold}
+                          onChange={e => setThreshold(parseInt(e.target.value) || 0)}
+                          className="w-full bg-white border border-gray-300 text-gray-900 rounded-lg px-3 py-2 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                        />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Earning Multiplier</label>
-                        <input type="number" step="0.1" value={multiplier} onChange={e => setMultiplier(parseFloat(e.target.value) || 1.0)} className="w-full border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500" />
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={multiplier}
+                          onChange={e => setMultiplier(parseFloat(e.target.value) || 1.0)}
+                          className="w-full bg-white border border-gray-300 text-gray-900 rounded-lg px-3 py-2 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                        />
                     </div>
                     
                 </div>
                 
                 <div className="mt-6 flex justify-end gap-3">
-                    <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                    <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
                         Cancel
                     </button>
-                    <button onClick={handleSubmit} className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700">
+                    <button onClick={handleSubmit} className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 shadow-sm">
                         {initialData ? 'Update Tier' : 'Create Tier'}
                     </button>
                 </div>

@@ -70,7 +70,7 @@ export default function LoginPage() {
       
       if (returnedToken) {
         // 2. Set token and prepare payload for next step
-        const expiryIso = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+        const expiryIso = new Date(Date.now() + 30 * 60 * 1000).toISOString();
         setVaultOtpToken(returnedToken, expiryIso);
         
         const newPayload: PendingPayload = { type, id: idValue, vaultOTPToken: returnedToken };
@@ -151,8 +151,22 @@ export default function LoginPage() {
         setError(message);
 
         // Save short user info if available
+     
         if (name) {
           try { localStorage.setItem('userName', String(name).trim()); } catch (e) { /* ignore */ }
+        }
+
+        // Persist the raw ID the user entered (used as clientId) and derive collectoId
+        try {
+          const enteredId = pendingPayload.id;
+          if (enteredId) {
+            localStorage.setItem('clientId', String(enteredId));
+            // collectoId is digits before the letter 'C' in the client id
+            const m = String(enteredId).match(/(\d+)(?=C)/i);
+            if (m && m[1]) localStorage.setItem('collectoId', m[1]);
+          }
+        } catch (e) {
+          // noop
         }
 
         // Clear pending payload after successful login

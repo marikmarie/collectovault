@@ -10,6 +10,8 @@ export const collectovault = {
     api.get(`/api/vendor/${vendorId}/point-rules`),
   savePointRule: (vendorId: string, data: any) =>
     api.post(`/api/vendor/${vendorId}/point-rules`, data),
+  deletePointRule: (vendorId: string, ruleId: number) =>
+    api.delete(`/api/vendor/${vendorId}/point-rules/${ruleId}`),
 
   //tier rules
   getTierRules: (vendorId: string) =>

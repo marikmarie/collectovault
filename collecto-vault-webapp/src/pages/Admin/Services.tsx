@@ -65,18 +65,9 @@ export default function Services() {
   useEffect(() => {
     fetchServices();
 
-    // fetch client profile to get clientId for invoice payload
-    (async () => {
-      try {
-        const res = await customerService.getProfile("me");
-        const d = res.data?.data ?? res.data ?? res;
-        // to do better id detection
-        const id = d?.id ?? d?.customerId ?? d?.userId ?? null;
-        if (id) setClientId(String(id));
-      } catch (err) {
-        // To do: handle error
-      }
-    })();
+    // Initialize clientId from the login step if available
+    const storedClientId = localStorage.getItem('clientId');
+    if (storedClientId) setClientId(storedClientId);
   }, [page]);
 
   useEffect(() => {

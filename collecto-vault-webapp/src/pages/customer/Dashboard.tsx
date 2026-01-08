@@ -11,20 +11,6 @@ import { X } from "lucide-react";
 import { customerService } from "../../api/customer";
 
 
-const mockUser = {
-  // Minimal values that could be available immediately after login
-  name: "Mariam Tukasingura",
-  phone: "256721695 645",
-  avatar: "/photo.png",
-  // The rest will be fetched when the dashboard loads
-  pointsBalance: 0,
-  avatarsize: 120,
-  tier: "Blue",
-  tierProgress: 0,
-  expiryDate: "30 Apr 2027",
-  invoicesCount: 0,
-};
-
 type TabType = "points" | "tier";
 
 interface RedeemableOffer {
@@ -50,8 +36,19 @@ interface UserProfile {
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabType>("tier");
-  // User profile (starts with minimal data available at login)
-  const [user, setUser] = useState<UserProfile>(mockUser);
+  // Initialize user with any name stored at login and sensible defaults
+  const [user, setUser] = useState<UserProfile>(() => ({
+    name: localStorage.getItem('userName') ?? undefined,
+    phone: undefined,
+    avatar: '/photo.png',
+    pointsBalance: 0,
+    avatarsize: 120,
+    tier: undefined,
+    tierProgress: 0,
+    expiryDate: undefined,
+    invoicesCount: 0,
+  }));
+
   const [buyPointsOpen, setBuyPointsOpen] = useState<boolean>(false);
   const [spendPointsOpen, setSpendPointsOpen] = useState<boolean>(false);
   const [tierDetailsOpen, setTierDetailsOpen] = useState<boolean>(false);
@@ -107,9 +104,9 @@ const [selectedRedeemOffer, setSelectedRedeemOffer] =
       
       <TopNav />
       <Header
-        name={user.name ?? mockUser.name}
-        phone={user.phone ?? mockUser.phone}
-        avatar={user.avatar ?? mockUser.avatar}
+        name={user.name ?? localStorage.getItem('userName') ?? 'User'}
+        phone={user.phone ?? ''}
+        avatar={user.avatar ?? '/photo.png'}
         useVideo={false}
         onAvatarFileChange={() => {}}
       />
@@ -144,7 +141,7 @@ const [selectedRedeemOffer, setSelectedRedeemOffer] =
             }`}
           >
             <span className="text-3xl text-gray-800 font-light tracking-tight">
-              {user.tier ?? mockUser.tier}
+              {user.tier ?? 'N/A'}
             </span>
             <span className="text-xs font-medium text-gray-500 uppercase mt-1">
               Tier
@@ -183,8 +180,8 @@ const [selectedRedeemOffer, setSelectedRedeemOffer] =
           <div className="animate-in slide-in-from-bottom-2 fade-in duration-300">
             {activeTab === "tier" && (
               <TierProgress
-                currentTier={user.tier ?? mockUser.tier}
-                progress={user.tierProgress ?? mockUser.tierProgress}
+                currentTier={user.tier ?? 'N/A'}
+                progress={user.tierProgress ?? 0}
               />
             )}
           </div>
@@ -268,7 +265,6 @@ const [selectedRedeemOffer, setSelectedRedeemOffer] =
             </>
           )}
 
-                  const visuals = getStatusVisuals(inv.status);
 
 
         </div>
@@ -290,8 +286,8 @@ const [selectedRedeemOffer, setSelectedRedeemOffer] =
       <TierDetailsModal
         open={tierDetailsOpen}
         onClose={() => setTierDetailsOpen(false)}
-        tier={user.tier ?? mockUser.tier}
-        expiry={user.expiryDate ?? mockUser.expiryDate}
+        tier={user.tier ?? 'N/A'}
+        expiry={user.expiryDate ?? ''}
         pointsToNextTier={1500}
       />
 
