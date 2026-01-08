@@ -133,18 +133,30 @@ export default function LoginPage() {
     try {
       // 1. Prepare verify payload
       const verifyPayload = {
-        id: pendingPayload.id, // ID is needed here, as per your authService definition
+        id: pendingPayload.id, 
         vaultOTP: otpValue,
         vaultOTPToken: pendingPayload.vaultOTPToken,
       };
 
       const res = await authService.verifyCollectoOtp(verifyPayload);
-      
-      const verified = res?.data?.verified;
-      
+
+      // Response may have nested structure: { status, status_message, data: { status, message, data: { verified, name }, authVerify } }
+      const verified = Boolean(res?.data?.data?.verified ?? res?.data?.authVerify ?? res?.authVerify ?? false);
+      const message = res?.data?.message ?? res?.status_message ?? res?.message ?? "Login successful.";
+      const name = res?.data?.data?.name ?? null;
+
       if (verified) {
         console.log(`Login Successful as ${pendingPayload.type.toUpperCase()}! Redirecting...`);
-        setError(res?.message ?? "Login successful.");
+        // Show success message from API
+        setError(message);
+
+        // Save short user info if available
+        if (name) {
+          try { localStorage.setItem('userName', String(name).trim()); } catch (e) { /* ignore */ }
+        }
+
+        // Clear pending payload after successful login
+        setPendingPayload(null);
 
         if (pendingPayload.type === 'client') {
           navigate('/dashboard');
@@ -155,8 +167,8 @@ export default function LoginPage() {
         }
         
       } else {
-        // Note: authService returns data, not data.data, so accessing message directly
-        setError(res?.message ?? "Invalid OTP. Please try again.");
+        // Use API-provided message when available
+        setError(message ?? "Invalid OTP. Please try again.");
       }
       
     } catch (err: any) {
@@ -364,7 +376,7 @@ export default function LoginPage() {
                   type="submit"
                   disabled={isProcessing}
                   className={`w-full flex items-center justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-base font-medium text-white transition-colors 
-                      ${isProcessing ? 'bg-gray-400 cursor-wait' : 'bg-[#67095D] hover:bg-[#880666] focus:ring-[#67095D]'}`}
+                      ${isProcessing ? 'bg-gray-400 cursor-wait' : 'bg-[#e2d0e2] hover:bg-[#b9acb6] focus:ring-[#67095D]'}`}
                 >
                   {isProcessing ? (
                       <RotateCw className="w-5 h-5 mr-2 animate-spin" />

@@ -47,6 +47,12 @@ export default function Services() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
 
+  // Service detail modal state
+  const [selectedService, setSelectedService] = useState<Service | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const openDetail = (s: Service) => { setSelectedService(s); setDetailOpen(true); };
+  const closeDetail = () => { setSelectedService(null); setDetailOpen(false); }; 
+
   // Pagination
   const [page, setPage] = useState(0);
   const itemsPerPage = 10;
@@ -64,11 +70,11 @@ export default function Services() {
       try {
         const res = await customerService.getProfile("me");
         const d = res.data?.data ?? res.data ?? res;
-        // Try common id fields
+        // to do better id detection
         const id = d?.id ?? d?.customerId ?? d?.userId ?? null;
         if (id) setClientId(String(id));
       } catch (err) {
-        // ignore
+        // To do: handle error
       }
     })();
   }, [page]);
@@ -132,13 +138,9 @@ export default function Services() {
       setLoading(false);
     }
   }
-
-
-
-  // Pagination helpers (server returns a page; if fewer than itemsPerPage returned then there's no next page)
-  const paginatedServices = filteredServices; // already the current page
-  const hasPrev = page > 0;
-  const hasNext = services.length === itemsPerPage; // if current page returned a full page, there may be a next page
+const paginatedServices = filteredServices; 
+  // const hasPrev = page > 0;
+  // const hasNext = services.length === itemsPerPage; 
 
   // Cart helpers
   const addToCart = (s: Service) => {
@@ -179,15 +181,19 @@ export default function Services() {
       const collectoId = localStorage.getItem("collectoId") || "141122";
       if (!clientId) { showToast('Unable to determine your customer id. Please login or refresh your profile.', 'error'); setLoading(false); return; }
       const payload = {
-        collectoId,
-        clientId: clientId,
-        items: cart.map((c) => ({ serviceId: c.id, serviceName: c.name, amount: c.unitAmount, quantity: c.quantity })),
-        amount: cartTotal,
+        items: cart.map((c) => ({
+          collectoId,
+          clientId,
+          serviceId: c.id,
+          serviceName: c.name,
+          Quantity: c.quantity,
+          totalAmount: Number(c.unitAmount * c.quantity),
+        })),
         phone,
-        payNow: 0,
       };
       const { data } = await invoiceService.createInvoice(payload);
       showToast(`Order placed: ${data.invoiceId ?? 'unknown'}`, 'success');
+      try { window.dispatchEvent(new CustomEvent('invoice:created', { detail: data?.invoiceId ?? data?.id ?? null })); } catch (e) { /* noop */ }
       setCart([]);
       setCartOpen(false);
     } catch (err: any) {
@@ -212,24 +218,26 @@ export default function Services() {
         </div>
       )}
 
-      <main className="max-w-4xl mx-auto p-4 md:p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold flex gap-2 items-center text-gray-800">
+      <main className="max-w-4xl mx-auto p-3 md:p-4 pt-0">
+        <div className="flex flex-col items-start mb-6">
+          <h1 className="text-2xl md:text-3xl font-bold flex gap-0.5 items-center text-gray-800">
             <Icon name="services" className="text-[#d81b60]" size={20} />
             Services and Products
           </h1>
 
-          <button
-            onClick={() => setCartOpen(true)}
-            className="relative rounded-full p-2 bg-white border border-gray-200 shadow-sm hover:shadow-md flex items-center gap-2"
-            aria-label="Open cart"
-          >
-            <ShoppingCart className="w-5 h-5 text-gray-700" />
-            <span className="text-sm font-bold text-gray-700">UGX {cartTotal.toLocaleString()}</span>
-            {cartCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-[#d81b60] text-white text-[10px] rounded-full px-1.5 py-0.5">{cartCount}</span>
-            )}
-          </button>
+          <div className="w-full flex justify-start mt-2">
+            <button
+              onClick={() => setCartOpen(true)}
+              className="relative rounded-full p-2 bg-white border border-gray-200 shadow-sm hover:shadow-md flex items-center gap-2"
+              aria-label="Open cart"
+            >
+              <ShoppingCart className="w-5 h-5 text-gray-700" />
+              <span className="text-sm font-bold text-gray-400">UGX {cartTotal.toLocaleString()}</span>
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-[#d3c7cb] text-gray-900 text-[10px] rounded-full px-1.5 py-0.5">{cartCount}</span>
+              )}
+            </button>
+          </div>
         </div>
 
         {/* --- Search with Category Dropdown --- */}
@@ -283,12 +291,14 @@ export default function Services() {
             return (
               <div
                 key={s.id}
-                className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:border-pink-100 transition-all group"
-              >
+                onClick={() => openDetail(s)}
+                className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:border-pink-100 transition-all group relative cursor-pointer"
+              > 
                 <div className="flex items-center gap-4 min-w-0">
                   <div className="w-10 h-10 md:w-12 md:h-12 bg-gray-50 rounded-lg overflow-hidden shrink-0 border border-gray-50">
                     {s.photo ? (
                       <img
+
                         src={`${photosBaseUrl}${s.photo}`}
                         alt={s.name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
@@ -302,7 +312,7 @@ export default function Services() {
 
                   <div className="min-w-0 text-left">
                     <div className="flex items-center gap-2 mb-0.5">
-                      <h2 className="font-bold text-gray-900 truncate text-sm text-left">{s.name}</h2>
+                    <h2 className="font-bold text-gray-900 truncate text-xs text-left">{s.name}</h2>
                     </div>
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-[9px] text-[#d81b60] font-medium bg-pink-50 px-2 py-0.5 rounded-md inline-block">
@@ -314,8 +324,8 @@ export default function Services() {
                         </span>
                       )}
                     </div>
-                    <p className="text-sm font-bold text-gray-800 text-left">
-                      UGX {s.amount.toLocaleString()}
+                    <p className="text-xs font-semibold text-gray-800">
+                      {s.amount.toLocaleString()}
                     </p>
                   </div>
                 </div>
@@ -323,7 +333,8 @@ export default function Services() {
                 <div className="ml-2 flex items-center shrink-0">
                   <div className="flex flex-col items-center gap-1">
                     <button
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         if (selected) updateQuantity(s.id, qty + 1);
                         else addToCart(s);
                       }}
@@ -331,12 +342,13 @@ export default function Services() {
                       className="w-6 h-6 flex items-center justify-center text-[12px] rounded bg-gray-100"
                     >
                       +
-                    </button>
+                    </button> 
 
                     <div className="text-[11px] font-semibold bg-white border px-2 py-0.5 rounded">{qty}</div>
 
                     <button
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         if (selected) {
                           if (qty > 1) updateQuantity(s.id, qty - 1);
                           else removeFromCart(s.id);
@@ -346,14 +358,31 @@ export default function Services() {
                       className="w-6 h-6 flex items-center justify-center text-[12px] rounded bg-gray-100"
                     >
                       −
+                    </button> 
+                  </div>
+                </div>
+
+                {/* Hover preview (desktop) */}
+                <div className="absolute inset-0 bg-white/95 p-4 rounded-2xl shadow-lg hidden group-hover:flex flex-col justify-between">
+                  <div>
+                    <h3 className="font-bold text-sm text-gray-900">{s.name}</h3>
+                    <p className="text-xs text-gray-600 mt-2 max-h-14 overflow-hidden">{s.description}</p>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-semibold">UGX {s.amount.toLocaleString()}</div>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); addToCart(s); showToast('Added to cart', 'success'); }}
+                      className="py-2 px-3 bg-[#d81b60] text-white rounded-xl text-xs"
+                    >
+                      Add
                     </button>
                   </div>
                 </div>
-              </div>
+              </div> 
             );
           })}
         </div>
-
+{/* 
         <div className="flex justify-center items-center gap-3 mt-4">
           <button
             onClick={() => setPage((p) => Math.max(0, p - 1))}
@@ -372,7 +401,7 @@ export default function Services() {
           >
             Next
           </button>
-        </div>
+        </div> */}
       </main>
 
       {/* Inline Cart Popup Modal */}
@@ -396,6 +425,46 @@ export default function Services() {
               </div>
             )}
 
+      {/* Service detail modal */}
+      {detailOpen && selectedService && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/40" onClick={closeDetail} />
+          <div className="relative w-full max-w-md bg-white rounded-2xl border border-gray-100 shadow-lg p-4 z-10">
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <h3 className="font-bold text-lg text-gray-900">{selectedService.name}</h3>
+                <p className="text-sm text-gray-500 mt-1">{selectedService.category}</p>
+              </div>
+              <button onClick={closeDetail} className="text-gray-400 p-2 text-lg">✕</button>
+            </div>
+
+            {selectedService.photo && (
+              <img src={`${photosBaseUrl}${selectedService.photo}`} alt={selectedService.name} className="w-full h-48 object-cover rounded-md mb-3" />
+            )}
+
+            <p className="text-sm text-gray-700 mb-4">{selectedService.description}</p>
+
+            <div className="flex items-center justify-between">
+              <div className="text-lg font-bold">UGX {selectedService.amount.toLocaleString()}</div>
+              <div className="flex gap-2">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    addToCart(selectedService);
+                    showToast('Added to cart', 'success');
+                    setDetailOpen(false);
+                  }}
+                  className="py-2 px-4 bg-[#d81b60] text-white rounded-xl font-bold"
+                >
+                  Add to Cart
+                </button>
+                <button onClick={closeDetail} className="py-2 px-4 border border-gray-200 rounded-xl">Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
             <div className="mb-4 max-h-60 overflow-y-auto">
               {cart.length === 0 ? (
                 <div className="text-center text-gray-500 py-6">Your cart is empty.</div>
@@ -404,7 +473,7 @@ export default function Services() {
                   {cart.map((it) => (
                     <li key={it.id} className="flex items-center justify-between py-2">
                       <div className="min-w-0">
-                        <div className="font-medium text-gray-800 text-sm truncate">
+                        <div className="font-medium text-gray-800 text-xs truncate">
                           {it.name} <span className="text-gray-600 text-xs">({it.quantity})</span>
                         </div>
                         <div className="text-[10px] text-gray-500 mt-0.5">UGX {it.unitAmount.toLocaleString()} each</div>
@@ -440,7 +509,7 @@ export default function Services() {
               <button
                 onClick={handlePlaceOrder}
                 disabled={loading}
-                className="flex-1 py-3 bg-[#d81b60] text-white rounded-xl font-bold hover:opacity-95 disabled:opacity-50 transition-all"
+                className="flex-1 py-3 bg-[#ddd2d6] text-gray-800 rounded-xl font-bold hover:opacity-95 disabled:opacity-50 transition-all"
               >
                 {loading ? 'Placing Order...' : 'Place Order'}
               </button>

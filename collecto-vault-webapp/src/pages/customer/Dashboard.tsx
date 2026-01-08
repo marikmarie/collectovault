@@ -102,9 +102,6 @@ const [selectedRedeemOffer, setSelectedRedeemOffer] =
   };
 
 
-
-
-
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-50 to-[#fff8e7] font-sans">
       
@@ -119,6 +116,7 @@ const [selectedRedeemOffer, setSelectedRedeemOffer] =
 
       <main className="px-0">
         {/* --- TABS SECTION --- */}
+       
         <div className="bg-white shadow-lg flex divide-x divide-gray-100">
           {/* TAB 1: POINTS */}
           <button

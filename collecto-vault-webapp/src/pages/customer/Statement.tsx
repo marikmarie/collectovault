@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import TopNav from "../../components/TopNav";
-import { ArrowUpRight, ArrowDownLeft, TrendingUp } from "lucide-react";
+import { ArrowUpRight, ArrowDownLeft, ChevronRight } from "lucide-react";
 import { transactionService, invoiceService } from "../../api/collecto";
 import InvoiceDetailModal from "./InvoiceDetailModal";
 
@@ -21,7 +21,7 @@ interface Transaction {
   points: number;
   ugxValue?: number | string;
   date: string;
-} 
+}
 
 export default function Statement() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -42,7 +42,6 @@ export default function Statement() {
       setInvoices(Array.isArray(data) ? data : []);
       return data;
     } catch (err) {
-      console.warn("Failed to fetch invoices", err);
       setInvoices([]);
       return [];
     } finally {
@@ -57,7 +56,6 @@ export default function Statement() {
       const data = res.data?.transactions ?? res.data ?? [];
       setTransactions(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.warn("Failed to fetch transactions", err);
       setTransactions([]);
     } finally {
       setLoading(false);
@@ -65,38 +63,21 @@ export default function Statement() {
   };
 
   useEffect(() => {
-    // load default tab
-    if (activeTab === 'invoices') fetchInvoices();
-    else fetchTransactions();
-  }, [activeTab]);
-
-  const formatPoints = (points: number, type: "Earn" | "Redeem") => { 
-    const sign = type === "Earn" ? "+" : "-";
-    const color = type === "Earn" ? "text-green-600" : "text-red-600";
-    return (
-      <span className={`font-semibold ${color}`}>
-        {sign} {points.toLocaleString()} pts
-      </span>
-    );
-  };
-
-  const getIcon = (type: "Earn" | "Redeem") => {
-    if (type === "Earn") return <ArrowUpRight className="w-5 h-5 text-green-600" />;
-    return <ArrowDownLeft className="w-5 h-5 text-red-600" />;
-  };
+    (async () => {
+      await Promise.allSettled([fetchInvoices(), fetchTransactions()]);
+    })();
+  }, []);
 
   const handlePayInvoice = async (invoiceId: string) => {
     try {
       setLoading(true);
       await invoiceService.payInvoice({ invoiceId, method: payMethod, phone: payMethod === 'mm' ? payPhone : undefined });
-      // refresh invoices
       const res = await invoiceService.getInvoices();
       const data = res.data?.data ?? res.data ?? [];
       setInvoices(Array.isArray(data) ? data : []);
       setPayingInvoice(null);
       showToast('Payment initiated', 'success');
     } catch (err: any) {
-      console.error('Invoice payment failed', err);
       showToast(err?.message || 'Payment failed', 'error');
     } finally {
       setLoading(false);
@@ -104,116 +85,143 @@ export default function Statement() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 font-sans">
+    <div className="min-h-screen bg-[#FFFBF7] font-sans pb-20">
       <TopNav />
 
       {toast && (
-        <div className={`fixed top-4 right-4 z-50 max-w-sm w-auto px-4 py-2 rounded shadow-lg text-sm ${toast.type === 'success' ? 'bg-green-600 text-white' : toast.type === 'error' ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'}`} role="status" aria-live="polite">
+        <div className="fixed top-4 right-4 z-50 px-4 py-2 rounded shadow-lg text-sm bg-black text-white">
           {toast.message}
         </div>
       )}
 
-      <main className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-          <TrendingUp className="w-8 h-8 text-[#0b4b78]" /> 
-          Transaction Statement
-        </h1>
+      {/* --- FULL WIDTH DASHBOARD TABS IMMEDIATELY BELOW NAV --- */}
+      <div className="w-full bg-white shadow-md flex divide-x divide-gray-100 border-b border-gray-100">
+        <button
+          onClick={() => setActiveTab('invoices')}
+          className={`flex-1 py-6 flex flex-col items-center justify-center relative transition-colors ${activeTab === 'invoices' ? 'bg-white' : 'bg-gray-50/30'}`}
+        >
+          <span className="text-4xl text-gray-800 font-light tracking-tight">{invoices.length}</span>
+          <span className="text-xs font-bold text-gray-400 uppercase mt-1 tracking-widest">Invoices</span>
+          {activeTab === 'invoices' && (
+            <div className="absolute bottom-0 w-full h-1 bg-[#cb0d6c]" />
+          )}
+        </button>
 
-        <div className="bg-white shadow-lg rounded-xl overflow-hidden">
-          <div className="p-4 sm:p-6 border-b border-gray-100 flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-700">{activeTab === 'invoices' ? 'Invoices' : 'Payments'}</h2>
-            <div className="space-x-2">
-              <button onClick={() => setActiveTab('invoices')} className={`px-3 py-1 rounded ${activeTab === 'invoices' ? 'bg-[#d81b60] text-white' : 'bg-gray-50 text-gray-600'}`}>Invoices</button>
-              <button onClick={() => setActiveTab('payments')} className={`px-3 py-1 rounded ${activeTab === 'payments' ? 'bg-[#d81b60] text-white' : 'bg-gray-50 text-gray-600'}`}>Payments</button>
-            </div>
-          </div>
+        <button
+          onClick={() => setActiveTab('payments')}
+          className={`flex-1 py-6 flex flex-col items-center justify-center relative transition-colors ${activeTab === 'payments' ? 'bg-white' : 'bg-gray-50/30'}`}
+        >
+          <span className="text-4xl text-gray-800 font-light tracking-tight">{transactions.length}</span>
+          <span className="text-xs font-bold text-gray-400 uppercase mt-1 tracking-widest">Payments</span>
+          {activeTab === 'payments' && (
+            <div className="absolute bottom-0 w-full h-1 bg-[#cb0d6c]" />
+          )}
+        </button>
+      </div>
 
-          {activeTab === 'invoices' ? (
-            <ul className="divide-y divide-gray-100">
-              {loading ? (
-                <li className="p-4 sm:p-6 text-center text-sm text-gray-500">Loading invoices…</li>
-              ) : invoices.length === 0 ? (
-                <li className="p-4 sm:p-6 text-center text-sm text-gray-500">No invoices found.</li>
-              ) : (
-                invoices.map((inv: any) => (
-                  <li key={inv.id || inv.invoiceId} onClick={() => setSelectedInvoice(inv)} className="p-4 sm:p-6 flex justify-between items-start hover:bg-gray-50 transition-colors cursor-pointer">
-                    <div>
-                      <p className="font-medium text-gray-800">{inv.invoiceId ?? inv.reference ?? inv.id}</p>
-                      <p className="text-xs text-gray-500 mt-1">{new Date(inv.createdAt || inv.created_at || inv.date).toLocaleDateString('en-UG', { year: 'numeric', month: 'short', day: 'numeric' })}</p>
-                      <div className="text-sm text-gray-600 mt-1">Total: UGX {Number(inv.amount ?? inv.totalAmount ?? inv.total).toLocaleString()}</div>
-                      <div className="text-sm text-gray-500">Status: {inv.status ?? inv.state ?? 'unknown'}</div>
-                    </div>
+      {/* Centered Content Below Tabs */}
+      <main className="max-w-4xl mx-auto px-4 mt-0">
+        
+        <div className="mt-6 mb-6 text-center">
+             {!loading && (
+                <p className="text-gray-400 text-sm font-medium">
+                    {activeTab === 'invoices' 
+                        ? (invoices.length > 0 ? `${invoices.length} invoices found` : 'No invoices found')
+                        : (transactions.length > 0 ? `${transactions.length} payments found` : 'No payments found')
+                    }
+                </p>
+             )}
+        </div>
 
-                    <div className="text-right flex flex-col items-end gap-2">
-                      <div className="flex gap-2">
-                        {(inv.status ?? inv.state) !== 'PAID' && (
-                          <button onClick={(e) => { e.stopPropagation(); setPayingInvoice(inv.invoiceId ?? inv.id); }} className="px-3 py-2 bg-[#d81b60] text-white rounded">Pay</button>
-                        )}
-
-                        <button onClick={(e) => { e.stopPropagation(); setSelectedInvoice(inv); }} className="px-3 py-2 bg-gray-100 text-gray-700 rounded">View</button>
-                      </div>
-
-                      {payingInvoice === (inv.invoiceId ?? inv.id) && (
-                        <div onClick={(e) => e.stopPropagation()} className="mt-3 bg-gray-50 p-3 rounded w-full">
-                          <label className="text-xs text-gray-600">Method</label>
-                          <select value={payMethod} onChange={(e) => setPayMethod(e.target.value as any)} className="w-full p-2 mt-1 mb-2 border rounded">
-                            <option value="points">Points</option>
-                            <option value="mm">Mobile Money</option>
-                          </select>
-
-                          {payMethod === 'mm' && (
-                            <input value={payPhone} onChange={(e) => setPayPhone(e.target.value)} placeholder="07xxxxxxxx" className="w-full p-2 border rounded mb-2" />
-                          )}
-
-                          <div className="flex gap-2">
-                            <button onClick={(e) => { e.stopPropagation(); handlePayInvoice(inv.invoiceId ?? inv.id); }} className="px-3 py-2 bg-green-600 text-white rounded">Confirm Pay</button>
-                            <button onClick={(e) => { e.stopPropagation(); setPayingInvoice(null); }} className="px-3 py-2 bg-gray-200 rounded">Cancel</button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </li>
-                ))
-              )}
-            </ul>
+        <div className="space-y-4">
+          {loading ? (
+            <div className="text-center py-10 text-gray-400">Loading...</div>
+          ) : activeTab === 'invoices' ? (
+            invoices.map((inv: any) => (
+              <div 
+                key={inv.id || inv.invoiceId} 
+                onClick={() => setSelectedInvoice(inv)}
+                className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between active:scale-[0.98] transition-transform cursor-pointer"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center">
+                    <ArrowDownLeft className="w-6 h-6 text-gray-300" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-gray-800 text-base">{inv.invoiceId ?? inv.id}</p>
+                    <p className="text-[11px] text-gray-400 uppercase font-extrabold tracking-wider">
+                        {new Date(inv.createdAt || inv.date).toLocaleDateString()} • {inv.status ?? 'Pending'}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right flex items-center gap-4">
+                  <div>
+                    <p className="font-black text-gray-900 text-lg">UGX {Number(inv.amount ?? 0).toLocaleString()}</p>
+                    {(inv.status ?? inv.state) !== 'PAID' && (
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); setPayingInvoice(inv.invoiceId ?? inv.id); }}
+                            className="text-[11px] text-[#D81B60] font-black uppercase underline"
+                        >
+                            Pay Now
+                        </button>
+                    )}
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-gray-300" />
+                </div>
+              </div>
+            ))
           ) : (
-            <ul className="divide-y divide-gray-100">
-              {loading ? (
-                <li className="p-4 sm:p-6 text-center text-sm text-gray-500">Loading payments…</li>
-              ) : transactions.length === 0 ? (
-                <li className="p-4 sm:p-6 text-center text-sm text-gray-500">No payments found.</li>
-              ) : (
-                transactions.map((tx) => (
-                <li key={tx.id} className="p-4 sm:p-6 flex justify-between items-center hover:bg-gray-50 transition-colors">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-full bg-gray-100">
-                      {getIcon(tx.type as "Earn" | "Redeem")}
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-800">{tx.description}</p>
-                      <p className="text-xs text-gray-500 mt-1">{new Date(tx.date).toLocaleDateString('en-UG', { year: 'numeric', month: 'short', day: 'numeric' })}</p>
-                    </div>
+            transactions.map((tx) => (
+              <div key={tx.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center ${tx.type === 'Earn' ? 'bg-green-50' : 'bg-red-50'}`}>
+                    {tx.type === "Earn" ? <ArrowUpRight className="w-6 h-6 text-green-600" /> : <ArrowDownLeft className="w-6 h-6 text-red-600" />}
                   </div>
-                  <div className="text-right">
-                    {formatPoints(tx.points, tx.type as "Earn" | "Redeem")}
-                    <p className="text-xs text-gray-400 mt-1">~UGX {Number(String(tx.ugxValue).replace(/[^0-9.-]+/g,'') || 0).toLocaleString()}</p>
+                  <div>
+                    <p className="font-bold text-gray-800 text-base">{tx.description}</p>
+                    <p className="text-[11px] text-gray-400 font-extrabold uppercase tracking-wider">{new Date(tx.date).toLocaleDateString()}</p>
                   </div>
-                </li>
-                ))
-              )}
-            </ul>
+                </div>
+                <div className="text-right">
+                  <p className={`font-black text-lg ${tx.type === 'Earn' ? 'text-green-600' : 'text-red-600'}`}>
+                    {tx.type === 'Earn' ? '+' : '-'}{tx.points.toLocaleString()} pts
+                  </p>
+                </div>
+              </div>
+            ))
           )}
         </div>
       </main>
+
+      {/* Payment Sheet */}
+      {payingInvoice && (
+        <div className="fixed inset-0 bg-black/60 z-100 flex items-end justify-center">
+          <div className="bg-white w-full max-w-md rounded-t-[2.5rem] p-8 animate-in slide-in-from-bottom duration-300">
+            <h4 className="font-black text-xl mb-6 text-center">Payment Method</h4>
+            <div className="space-y-3">
+                <select value={payMethod} onChange={(e) => setPayMethod(e.target.value as any)} className="w-full p-4 bg-gray-50 rounded-2xl mb-2 outline-none font-bold border-none">
+                <option value="points">Use Points Balance</option>
+                <option value="mm">Mobile Money</option>
+                </select>
+                {payMethod === 'mm' && (
+                <input value={payPhone} onChange={(e) => setPayPhone(e.target.value)} placeholder="07XX XXX XXX" className="w-full p-4 bg-gray-50 rounded-2xl mb-4 font-bold border-none" />
+                )}
+            </div>
+            <div className="flex gap-4 mt-4">
+              <button onClick={() => handlePayInvoice(payingInvoice)} className="flex-1 bg-[#D81B60] text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-transform">Confirm</button>
+              <button onClick={() => setPayingInvoice(null)} className="flex-1 bg-gray-100 text-gray-500 font-black py-4 rounded-2xl active:scale-95 transition-transform">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {selectedInvoice && (
         <InvoiceDetailModal
           invoice={selectedInvoice}
           onClose={() => setSelectedInvoice(null)}
           onPaid={async (invoiceId: string) => {
-            // refresh invoices and update currently selected invoice with fresh data
             const data = await fetchInvoices();
-            const updated = (data ?? []).find((inv: any) => (inv.invoiceId ?? inv.id) === invoiceId || inv.id === invoiceId);
+            const updated = (data ?? []).find((inv: any) => (inv.invoiceId ?? inv.id) === invoiceId);
             setSelectedInvoice(updated ?? null);
             showToast('Payment successful', 'success');
           }}

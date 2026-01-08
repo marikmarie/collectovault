@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import { clearVaultOtpToken } from "../api";
 import {
   X,
   Home,
@@ -43,6 +44,13 @@ export default function TopNav() {
 
   const handleSignOut = () => {
     console.log("Signing out...");
+    // Clear session token
+    try {
+      clearVaultOtpToken();
+    } catch (e) {
+      sessionStorage.removeItem('vaultOtpToken');
+      sessionStorage.removeItem('vaultOtpExpiresAt');
+    }
     navigate("/login");
   };
 
@@ -71,7 +79,7 @@ export default function TopNav() {
             {[
               { name: "Dashboard", path: "/dashboard" },
               { name: "Transactions", path: "/statement" },
-              { name: "Services", path: "/services" },
+              { name: "Offerings", path: "/services" },
               { name: "Reports", path: "/reports" },
             ].map((link) => (
               <Link
@@ -173,7 +181,8 @@ export default function TopNav() {
       {/* This div is crucial. It ensures your page content isn't hidden 
           behind the fixed headers or bottom nav. 
       */}
-      <div className="pb-24 lg:pb-10 pt-4 px-4 max-w-7xl mx-auto" />
+      {/* <div className="pb-24 lg:pb-10 pt-4 px-4 max-w-7xl mx-auto">
+      </div> */}
 
 
       {/* ==================================================================
@@ -183,7 +192,7 @@ export default function TopNav() {
         <div className="flex justify-around items-center h-16">
           <NavLinkMobile to="/dashboard" icon={<Home size={20} />} label="Home" active={isActive('/dashboard')} />
           <NavLinkMobile to="/statement" icon={<CreditCard size={20} />} label="Statement" active={isActive('/statement')} />
-          <NavLinkMobile to="/services" icon={<Box size={20} />} label="Services" active={isActive('/services')} />
+          <NavLinkMobile to="/services" icon={<Box size={20} />} label="Offerings" active={isActive('/services')} />
           {/* <NavLinkMobile to="/reports" icon={<FileText size={20} />} label="Reports" active={isActive('/reports')} /> */}
           
           {/* "More" button for Chat/Support if needed, or keep it 4 items */}

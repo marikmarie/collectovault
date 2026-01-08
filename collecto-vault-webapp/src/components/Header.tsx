@@ -1,5 +1,5 @@
 import React, { useRef } from "react";
-import { useNavigate } from "react-router-dom";
+// import { useNavigate } from "react-router-dom";
 import { Camera } from "lucide-react";
 
 type Props = {
@@ -19,7 +19,7 @@ export default function Header({
   avatarSize = 180,
   onAvatarFileChange,
 }: Props) {
-  const navigate = useNavigate();
+  //const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const customGradient =
@@ -110,8 +110,8 @@ export default function Header({
         </svg>
       </div>
 
-      {/* Main Content Container - Changed max-w-3xl to w-full and removed pt-3 */}
-      <div className="relative w-full px-4 pb-4 pt-4">
+      {/* Main Content Container - keep flush under TopNav (no top padding) */}
+      <div className="relative w-full px-4 pb-0 pt-0">
         <input
           type="file"
           ref={fileInputRef}
@@ -152,12 +152,12 @@ export default function Header({
           <h1 className="text-white text-xl md:text-2xl font-semibold">{name}</h1>
           {phone && <p className="text-white/90 text-sm mt-1">{phone}</p>}
 
-          <button
+          {/* <button
             onClick={() => navigate("/statement")}
             className="mt-3 text-xs text-white bg-white/20 px-4 py-1.5 rounded-full hover:bg-white/30 active:scale-95 transition-all border border-white/10"
           >
             My Statement
-          </button>
+          </button> */}
         </div>
       </div>
     </header>
