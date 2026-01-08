@@ -1,31 +1,31 @@
-// src/api/vendorService.ts
+// srcService.ts
 import api from "./index";
 
 export const collectovault = {
-  getMyServices: () => api.get(`/api/vendor/services`),
+  getMyServices: () => api.get(`/services`),
 
 
   //point rules
   getPointRules: (vendorId: string) =>
-    api.get(`/api/vendor/${vendorId}/point-rules`),
+    api.get(`/pointRules/${vendorId}/`),
   savePointRule: (vendorId: string, data: any) =>
-    api.post(`/api/vendor/${vendorId}/point-rules`, data),
+    api.post(`/pointRules/${vendorId}`, data),
   deletePointRule: (vendorId: string, ruleId: number) =>
-    api.delete(`/api/vendor/${vendorId}/point-rules/${ruleId}`),
+    api.delete(`/pointRules/${vendorId}/pointRules/${ruleId}`),
 
   //tier rules
   getTierRules: (vendorId: string) =>
-    api.get(`/api/vendor/${vendorId}/tier-rules`),
+    api.get(`/tier/${vendorId}`),
   saveTierRule: (vendorId: string, data: any) =>
-    api.post(`/api/vendor/${vendorId}/tier-rules`, data),
+    api.post(`/tier/${vendorId}`, data),
 
 
   //point packages
   getPackages: (vendorId: number) =>
-    api.get(`/api/vendor/${vendorId}/packages`),
+    api.get(`/vaultPackages/${vendorId}`),
 
   savePackages: (vendorId: string, data: any) =>
-    api.post(`/api/vendor/${vendorId}/tier-rules`, data),
+    api.post(`/vaultPackages/${vendorId}/tier-rules`, data),
 
 
 };

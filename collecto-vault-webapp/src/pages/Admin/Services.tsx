@@ -180,7 +180,6 @@ const paginatedServices = filteredServices;
           Quantity: c.quantity,
           totalAmount: Number(c.unitAmount * c.quantity),
         })),
-        phone,
       };
       const { data } = await invoiceService.createInvoice(payload);
       showToast(`Order placed: ${data.invoiceId ?? 'unknown'}`, 'success');

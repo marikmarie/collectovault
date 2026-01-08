@@ -324,7 +324,7 @@ const PointRules: React.FC = () => {
       {/* Modal for create / edit */}
       {/* Message banner */}
       {message && (
-        <div className={`fixed top-6 right-6 z-50 px-4 py-2 rounded shadow ${message.type === 'success' ? 'bg-green-600 text-white' : message.type === 'error' ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'}`} role="status" aria-live="polite">
+        <div className={`fixed top-6 left-1/2 transform -translate-x-1/2 z-50 px-4 py-2 rounded shadow max-w-md w-full text-center ${message.type === 'success' ? 'bg-green-600 text-white' : message.type === 'error' ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'}`} role="status" aria-live="polite">
           {message.text}
         </div>
       )}
