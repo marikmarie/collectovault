@@ -50,8 +50,9 @@ export default function Services() {
   // Service detail modal state
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
-  const openDetail = (s: Service) => { setSelectedService(s); setDetailOpen(true); };
-  const closeDetail = () => { setSelectedService(null); setDetailOpen(false); }; 
+  const [activePreviewId, setActivePreviewId] = useState<string | null>(null);
+  const openDetail = (s: Service) => { setSelectedService(s); setDetailOpen(true); setActivePreviewId(null); };
+  const closeDetail = () => { setSelectedService(null); setDetailOpen(false); };
 
   // Pagination
   const [page, setPage] = useState(0);
@@ -84,6 +85,18 @@ export default function Services() {
     }
     setFilteredServices(result);
   }, [searchQuery, selectedCategory, services]);
+
+  // Close active inline preview when clicking *outside* a card
+  useEffect(() => {
+    const onDocumentClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('[data-service-card]')) {
+        setActivePreviewId(null);
+      }
+    };
+    document.addEventListener('click', onDocumentClick);
+    return () => document.removeEventListener('click', onDocumentClick);
+  }, []);
 
   // Reset to first page whenever the filtered result changes (e.g., search or category changes)
   useEffect(() => {
@@ -171,16 +184,20 @@ const paginatedServices = filteredServices;
     try {
       const collectoId = localStorage.getItem("collectoId") || "141122";
       if (!clientId) { showToast('Unable to determine your customer id. Please login or refresh your profile.', 'error'); setLoading(false); return; }
+      const vaultOTPToken = sessionStorage.getItem('vaultOtpToken') || undefined;
+
       const payload = {
+        vaultOTPToken,
+        collectoId,
+        clientId,
+        totalAmount: Number(cartTotal),
         items: cart.map((c) => ({
-          collectoId,
-          clientId,
           serviceId: c.id,
           serviceName: c.name,
-          Quantity: c.quantity,
+          quantity: c.quantity,
           totalAmount: Number(c.unitAmount * c.quantity),
         })),
-      };
+      }; 
       const { data } = await invoiceService.createInvoice(payload);
       showToast(`Order placed: ${data.invoiceId ?? 'unknown'}`, 'success');
       try { window.dispatchEvent(new CustomEvent('invoice:created', { detail: data?.invoiceId ?? data?.id ?? null })); } catch (e) { /* noop */ }
@@ -281,8 +298,17 @@ const paginatedServices = filteredServices;
             return (
               <div
                 key={s.id}
-                onClick={() => openDetail(s)}
-                className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:border-pink-100 transition-all group relative cursor-pointer"
+                data-service-card={s.id}
+                onClick={() => {
+                  if (activePreviewId === s.id) {
+                    // second tap => open details modal
+                    openDetail(s);
+                  } else {
+                    // first tap => show inline preview
+                    setActivePreviewId(s.id);
+                  }
+                }}
+                className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between transition-all group relative cursor-pointer"
               > 
                 <div className="flex items-center gap-4 min-w-0">
                   <div className="w-10 h-10 md:w-12 md:h-12 bg-gray-50 rounded-lg overflow-hidden shrink-0 border border-gray-50">
@@ -291,7 +317,7 @@ const paginatedServices = filteredServices;
 
                         src={`${photosBaseUrl}${s.photo}`}
                         alt={s.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                        className="w-full h-full object-cover transition-transform duration-200"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-300">
@@ -352,8 +378,13 @@ const paginatedServices = filteredServices;
                   </div>
                 </div>
 
-                {/* Hover preview (desktop) */}
-                <div className="absolute inset-0 bg-white/95 p-4 rounded-2xl shadow-lg hidden group-hover:flex flex-col justify-between">
+                {/* Tap preview (replaces hover) */}
+                <div
+                  className={`absolute inset-0 bg-white/95 p-4 rounded-2xl shadow-lg ${activePreviewId === s.id ? 'flex' : 'hidden'} flex-col justify-between`}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button onClick={(e) => { e.stopPropagation(); setActivePreviewId(null); }} className="absolute top-3 right-3 p-1 rounded-full text-gray-600 hover:bg-gray-100">✕</button>
+
                   <div>
                     <h3 className="font-bold text-sm text-gray-900">{s.name}</h3>
                     <p className="text-xs text-gray-600 mt-2 max-h-14 overflow-hidden">{s.description}</p>

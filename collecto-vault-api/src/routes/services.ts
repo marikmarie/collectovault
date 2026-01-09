@@ -80,15 +80,17 @@ router.get("/invoices", async (req: Request, res: Response) => {
  * POST /api/invoice
  * Unified invoice endpoint for creating invoices (Place Order behavior).
  * body: {
- *   items: [{ serviceId, serviceName, amount, quantity }],
- *   amount: number,
+ *   vaultOTPToken?: string,
+ *   items: [{ serviceId, serviceName, amount|totalAmount, quantity }],
+ *   amount?: number,
+ *   totalAmount?: number | string
  * }
  */
 
 router.post("/invoice", async (req: Request, res: Response) => {
   try {
     const userToken = req.headers.authorization;
-    const { items, amount } = req.body;
+    const { items, amount, vaultOTPToken } = req.body;
 
     if (!userToken) return res.status(401).send("Missing user token");
     if (!items || !Array.isArray(items) || items.length === 0)
@@ -111,7 +113,6 @@ router.post("/invoice", async (req: Request, res: Response) => {
     let forwardItems: any[] = [];
 
     if (isNewShape) {
-      // Ensure all items have the same collectoId and clientId
       const collectoSet = new Set(items.map((it: any) => String(it.collectoId)));
       const clientSet = new Set(items.map((it: any) => String(it.clientId)));
       if (collectoSet.size > 1 || clientSet.size > 1) return res.status(400).send("Mismatched collectoId or clientId across items");
@@ -135,8 +136,10 @@ router.post("/invoice", async (req: Request, res: Response) => {
         };
       });
     } else {
-      // Legacy shape - validate elements (expect amount & quantity fields)
-      const invalidItem = items.find((it: any) => !it.serviceId || !it.serviceName || (it.quantity === undefined) || (it.amount === undefined));
+      // Legacy shapes:
+      // - items with { amount, quantity }
+      // - or items with { totalAmount, quantity } and top-level collectoId & clientId
+      const invalidItem = items.find((it: any) => !it.serviceId || !it.serviceName || (it.quantity === undefined) || (it.amount === undefined && it.totalAmount === undefined));
       if (invalidItem) return res.status(400).send("One or more items are missing required fields (legacy shape expected)");
 
       // collectoId and clientId should be provided at the top-level (fallback)
@@ -145,20 +148,38 @@ router.post("/invoice", async (req: Request, res: Response) => {
       if (!collectoId) return res.status(400).send("collectoId is required");
       if (!clientId) return res.status(400).send("clientId (customer id) is required");
 
-      forwardItems = items.map((it: any) => ({
-        serviceId: it.serviceId,
-        serviceName: it.serviceName,
-        amount: Number(it.amount),
-        quantity: Number(it.quantity),
-      }));
+      forwardItems = items.map((it: any) => {
+        const quantity = Number(it.quantity);
+        if (it.amount !== undefined) {
+          return {
+            serviceId: it.serviceId,
+            serviceName: it.serviceName,
+            amount: Number(it.amount),
+            quantity,
+          };
+        }
+        // totalAmount provided per item - compute unit amount
+        const total = Number(it.totalAmount);
+        const unit = quantity > 0 ? total / quantity : total;
+        return {
+          serviceId: it.serviceId,
+          serviceName: it.serviceName,
+          amount: Number(unit),
+          quantity,
+        };
+      });
     }
 
     // Compute total amount from items
     const computedAmount = forwardItems.reduce((acc: number, it: any) => acc + Number(it.amount) * Number(it.quantity), 0);
+    const providedTotal = req.body.totalAmount;
+    const finalAmount = providedTotal !== undefined && providedTotal !== null ? Number(providedTotal) : Number(computedAmount);
 
     const payload: any = {
+      // include vaultOTPToken if provided by client
+      ...(vaultOTPToken ? { vaultOTPToken } : {}),
       items: forwardItems,
-      amount: Number(computedAmount),
+      amount: Number(finalAmount),
       collectoId,
       clientId,
     };

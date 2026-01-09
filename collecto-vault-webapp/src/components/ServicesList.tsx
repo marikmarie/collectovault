@@ -5,9 +5,9 @@ import { customerService } from "../api/customer";
 // Updated Service type to match your real API response
 interface Service {
   id: string;
-  name: string; // Changed from title
-  description: string; // Changed from desc
-  category: string;
+  name: string; 
+  description: string; 
+  category: string; 
   price: number;
   photo: string;
   is_product: number;

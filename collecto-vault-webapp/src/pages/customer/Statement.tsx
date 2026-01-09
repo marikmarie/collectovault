@@ -100,7 +100,7 @@ export default function Statement() {
           onClick={() => setActiveTab('invoices')}
           className={`flex-1 py-6 flex flex-col items-center justify-center relative transition-colors ${activeTab === 'invoices' ? 'bg-white' : 'bg-gray-50/30'}`}
         >
-          <span className="text-4xl text-gray-800 font-light tracking-tight">{invoices.length}</span>
+          {/* <span className="text-4xl text-gray-800 font-light tracking-tight">{invoices.length}</span> */}
           <span className="text-xs font-bold text-gray-400 uppercase mt-1 tracking-widest">Invoices</span>
           {activeTab === 'invoices' && (
             <div className="absolute bottom-0 w-full h-1 bg-[#cb0d6c]" />
@@ -111,7 +111,7 @@ export default function Statement() {
           onClick={() => setActiveTab('payments')}
           className={`flex-1 py-6 flex flex-col items-center justify-center relative transition-colors ${activeTab === 'payments' ? 'bg-white' : 'bg-gray-50/30'}`}
         >
-          <span className="text-4xl text-gray-800 font-light tracking-tight">{transactions.length}</span>
+          {/* <span className="text-4xl text-gray-800 font-light tracking-tight">{transactions.length}</span> */}
           <span className="text-xs font-bold text-gray-400 uppercase mt-1 tracking-widest">Payments</span>
           {activeTab === 'payments' && (
             <div className="absolute bottom-0 w-full h-1 bg-[#cb0d6c]" />
