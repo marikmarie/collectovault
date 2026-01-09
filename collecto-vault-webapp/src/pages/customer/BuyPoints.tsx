@@ -157,30 +157,30 @@ export default function BuyPointsModal({ open, onClose, onSuccess }: Props): JSX
             ) : packages.map((p) => {
               const isSel = String(selectedId) === String(p.id);
               return (
-                <div key={String(p.id)} data-card onClick={() => setSelectedId(p.id)} className="min-w-[200px] shrink-0 snap-start relative outline-none">
-                  <Card className={`relative flex flex-col justify-between h-full p-5 cursor-pointer transition-all duration-200 bg-white border-2 rounded-xl ${isSel ? `border-[${PRIMARY}] ring-4 ring-[${PRIMARY}]/20 shadow-xl scale-[1.03]` : "border-slate-100 hover:border-slate-300 hover:shadow-lg"}`}>
+                <div key={String(p.id)} data-card onClick={() => setSelectedId(p.id)} className="min-w-40 shrink-0 snap-start relative outline-none">
+                  <Card className={`relative flex flex-col justify-between h-full p-4 cursor-pointer transition-all duration-200 bg-white border-2 rounded-2xl ${isSel ? `border-[${PRIMARY}] ring-1 ring-[${PRIMARY}]/30 shadow-md scale-105` : "border-slate-100 hover:border-slate-200 hover:shadow-md"}`}>
                     <div>
-                      <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1">
-                        <Zap className="w-3 h-3 text-yellow-500" /> {p.label || 'Package'}
+                      <div className="text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-2 flex items-center gap-1">
+                        <Zap className="w-3 h-3 text-yellow-500" /> {p.label || 'Pack'}
                       </div>
                       <div className="flex items-baseline gap-1">
-                        <span className="text-4xl font-extrabold text-slate-900">{p.points.toLocaleString()}</span>
-                        <span className="text-sm font-medium text-slate-500">pts</span>
+                        <span className="text-3xl font-bold text-slate-900">{p.points.toLocaleString()}</span>
+                        <span className="text-xs font-semibold text-slate-600">pts</span>
                       </div>
                     </div>
-                    <div className="mt-4 pt-3 border-t border-dashed border-slate-200">
-                      <div className="flex justify-between items-end">
-                        <span className="text-xs text-slate-400">Price</span>
-                        <span className={`text-xl font-bold ${isSel ? `text-[${PRIMARY}]` : 'text-slate-700'}`}>
-                          {p.price.toLocaleString()} <span className="text-sm font-normal text-slate-400">UGX</span>
+                    <div className="mt-3 pt-3 border-t border-slate-200">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-slate-600 font-medium">Price (UGX)</span>
+                        <span className={`text-lg font-bold ${isSel ? `text-[${PRIMARY}]` : 'text-slate-700'}`}>
+                          {p.price.toLocaleString()}
                         </span>
                       </div>
                     </div>
-                    {isSel && <div className={`absolute top-3 right-3 text-[${PRIMARY}]`}><Heart className="w-6 h-6 fill-current" /></div>}
+                    {isSel && <div className={`absolute top-2 right-2 text-[${PRIMARY}]`}><Heart className="w-5 h-5 fill-current text-gray-400" /></div>}
                   </Card>
                   {p.recommended && (
-                    <div className={`absolute -top-3 left-1/2 -translate-x-1/2 bg-[${ACCENT}] text-white text-[10px] font-extrabold px-3 py-1 rounded-full shadow-lg z-10 uppercase flex items-center gap-1`}>
-                      <Star className="w-3 h-3 fill-white" /> Recommended
+                    <div className={`absolute -top-2.5 left-1/2 -translate-x-1/2 bg-[${ACCENT}] text-white text-[9px] font-bold px-2.5 py-0.5 rounded-full shadow-md z-10 uppercase flex items-center gap-1`}>
+                      <Star className="w-2.5 h-2.5 fill-white" /> Best
                     </div>
                   )}
                 </div>

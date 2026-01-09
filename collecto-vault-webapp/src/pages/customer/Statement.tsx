@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import TopNav from "../../components/TopNav";
-import { ArrowUpRight, ArrowDownLeft, ChevronRight } from "lucide-react";
+import { ArrowDownLeft, ChevronRight } from "lucide-react";
 import { transactionService, invoiceService } from "../../api/collecto";
 import InvoiceDetailModal from "./InvoiceDetailModal";
 
@@ -14,12 +14,25 @@ const useLocalToast = () => {
   return { toast, showToast };
 };
 
+// Dummy data for demo
+const dummyInvoices = [
+  { id: 'INV-001', invoiceId: 'INV-001', amount: 250000, status: 'PAID', createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString() },
+  { id: 'INV-002', invoiceId: 'INV-002', amount: 500000, status: 'PENDING', createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() },
+  { id: 'INV-003', invoiceId: 'INV-003', amount: 150000, status: 'PAID', createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString() },
+];
+
+const dummyTransactions = [
+  { id: '1', type: 'Payment' as const, description: 'Mobile Phone Service Purchase', amount: 50000, method: 'Mobile Money', date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() },
+  { id: '2', type: 'Payment' as const, description: 'Internet Bundle', amount: 75000, method: 'Points Redeemed', date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() },
+  { id: '3', type: 'Payment' as const, description: 'Utility Payment', amount: 120000, method: 'Mobile Money', date: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString() },
+];
+
 interface Transaction {
   id: string | number;
-  type: "Earn" | "Redeem";
+  type: "Payment";
   description: string;
-  points: number;
-  ugxValue?: number | string;
+  amount: number;
+  method: string;
   date: string;
 }
 
@@ -55,8 +68,10 @@ export default function Statement() {
       const res = await transactionService.getTransactions("me");
       const data = res.data?.transactions ?? res.data ?? [];
       setTransactions(Array.isArray(data) ? data : []);
+      return data;
     } catch (err) {
       setTransactions([]);
+      return [];
     } finally {
       setLoading(false);
     }
@@ -64,7 +79,15 @@ export default function Statement() {
 
   useEffect(() => {
     (async () => {
-      await Promise.allSettled([fetchInvoices(), fetchTransactions()]);
+      const invData = await fetchInvoices();
+      const txData = await fetchTransactions();
+      // Use dummy data if API returns empty
+      if (!invData || invData.length === 0) {
+        setInvoices(dummyInvoices);
+      }
+      if (!txData || txData.length === 0) {
+        setTransactions(dummyTransactions);
+      }
     })();
   }, []);
 
@@ -174,17 +197,17 @@ export default function Statement() {
             transactions.map((tx) => (
               <div key={tx.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center ${tx.type === 'Earn' ? 'bg-green-50' : 'bg-red-50'}`}>
-                    {tx.type === "Earn" ? <ArrowUpRight className="w-6 h-6 text-green-600" /> : <ArrowDownLeft className="w-6 h-6 text-red-600" />}
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center bg-blue-50">
+                    <ArrowDownLeft className="w-6 h-6 text-blue-600" />
                   </div>
                   <div>
                     <p className="font-bold text-gray-800 text-base">{tx.description}</p>
-                    <p className="text-[11px] text-gray-400 font-extrabold uppercase tracking-wider">{new Date(tx.date).toLocaleDateString()}</p>
+                    <p className="text-[11px] text-gray-400 font-extrabold uppercase tracking-wider">{tx.method} • {new Date(tx.date).toLocaleDateString()}</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className={`font-black text-lg ${tx.type === 'Earn' ? 'text-green-600' : 'text-red-600'}`}>
-                    {tx.type === 'Earn' ? '+' : '-'}{tx.points.toLocaleString()} pts
+                  <p className="font-black text-lg text-gray-900">
+                    UGX {tx.amount.toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -195,21 +218,81 @@ export default function Statement() {
 
       {/* Payment Sheet */}
       {payingInvoice && (
-        <div className="fixed inset-0 bg-black/60 z-100 flex items-end justify-center">
-          <div className="bg-white w-full max-w-md rounded-t-[2.5rem] p-8 animate-in slide-in-from-bottom duration-300">
-            <h4 className="font-black text-xl mb-6 text-center">Payment Method</h4>
-            <div className="space-y-3">
-                <select value={payMethod} onChange={(e) => setPayMethod(e.target.value as any)} className="w-full p-4 bg-gray-50 rounded-2xl mb-2 outline-none font-bold border-none">
-                <option value="points">Use Points Balance</option>
-                <option value="mm">Mobile Money</option>
-                </select>
-                {payMethod === 'mm' && (
-                <input value={payPhone} onChange={(e) => setPayPhone(e.target.value)} placeholder="07XX XXX XXX" className="w-full p-4 bg-gray-50 rounded-2xl mb-4 font-bold border-none" />
-                )}
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 animate-in fade-in scale-in duration-300 border border-gray-100">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <h4 className="text-2xl font-black text-gray-900">Payment Details</h4>
+              <button onClick={() => setPayingInvoice(null)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
-            <div className="flex gap-4 mt-4">
-              <button onClick={() => handlePayInvoice(payingInvoice)} className="flex-1 bg-[#D81B60] text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-transform">Confirm</button>
-              <button onClick={() => setPayingInvoice(null)} className="flex-1 bg-gray-100 text-gray-500 font-black py-4 rounded-2xl active:scale-95 transition-transform">Cancel</button>
+
+            {/* Invoice Amount Display */}
+            <div className="bg-linear-to-br from-pink-50 to-orange-50 rounded-xl p-4 mb-5 border border-pink-100">
+              <p className="text-xs text-gray-600 font-medium mb-1">Amount to Pay</p>
+              <p className="text-2xl font-black text-gray-900">
+                UGX {invoices.find((inv: any) => (inv.invoiceId ?? inv.id) === payingInvoice)?.amount?.toLocaleString() ?? 0}
+              </p>
+            </div>
+
+            {/* Payment Method Tabs */}
+            <div className="mb-6">
+              <p className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">Select Payment Method</p>
+              <div className="flex gap-3 bg-gray-100 p-1 rounded-2xl">
+                <button
+                  onClick={() => setPayMethod('points')}
+                  className={`flex-1 py-3 px-4 rounded-xl font-bold text-sm transition-all duration-200 ${
+                    payMethod === 'points'
+                      ? 'bg-white text-[#D81B60] shadow-md'
+                      : 'bg-transparent text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  💰 Points
+                </button>
+                <button
+                  onClick={() => setPayMethod('mm')}
+                  className={`flex-1 py-3 px-4 rounded-xl font-bold text-sm transition-all duration-200 ${
+                    payMethod === 'mm'
+                      ? 'bg-white text-[#D81B60] shadow-md'
+                      : 'bg-transparent text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  📱 Mobile Money
+                </button>
+              </div>
+            </div>
+
+            {/* Conditional Input for Mobile Money */}
+            {payMethod === 'mm' && (
+              <div className="mb-6 animate-in fade-in slide-in-from-top-2 duration-200">
+                <label className="text-sm font-bold text-gray-700 uppercase tracking-wide block mb-2">Phone Number</label>
+                <input
+                  value={payPhone}
+                  onChange={(e) => setPayPhone(e.target.value)}
+                  placeholder="07XX XXX XXX"
+                  className="w-full p-4 bg-gray-50 border-2 border-gray-200 rounded-xl font-semibold focus:border-[#D81B60] focus:ring-2 focus:ring-[#D81B60]/20 outline-none transition-all"
+                />
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={() => setPayingInvoice(null)}
+                className="flex-1 py-2 px-3 bg-gray-300 text-slate-700 font-semibold text-sm rounded-lg hover:bg-gray-500 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handlePayInvoice(payingInvoice)}
+                disabled={payMethod === 'mm' && (!payPhone || payPhone.trim().length < 10)}
+                className="flex-1 py-2 px-3 bg-gray-300 text-gray-800 font-semibold text-sm rounded-lg hover:bg-gray-500 disabled:cursor-not-allowed transition-colors"
+              >
+                {loading ? 'Processing...' : 'Confirm'}
+              </button>
             </div>
           </div>
         </div>

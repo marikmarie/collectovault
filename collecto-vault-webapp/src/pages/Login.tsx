@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Briefcase, Lock, ArrowRight, Mail, RotateCw, ShieldCheck } from 'lucide-react';
+import { User, Briefcase,  ArrowRight,  RotateCw, ShieldCheck, ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom'; 
 import { authService } from '../api/authService';
 import { setVaultOtpToken, getVaultOtpToken } from '../api';
@@ -13,7 +13,7 @@ type PendingPayload = {
 
 export default function LoginPage() {
   const navigate = useNavigate(); 
-    
+  
   const [userType, setUserType] = useState<UserType>('client');
   const [loginStep, setLoginStep] = useState<'id_entry' | 'otp_entry'>('id_entry');
   const [idValue, setIdValue] = useState('');
@@ -34,23 +34,16 @@ export default function LoginPage() {
     setIsProcessing(true);
 
     if (idValue.length < 5) {
-      setError(`Please enter a valid ${userType === 'client' ? 'Client ID/Email' : 'User ID'}.`);
+      setError(`Please enter a valid ${userType === 'client' ? 'ID/Email' : 'User ID'}.`);
       setIsProcessing(false);
       return;
     }
 
     try {
       const { id, type } = buildAuthPayload(userType, idValue);
-      const apiPayload = { type, id }; 
-      const res = await authService.startCollectoAuth(apiPayload as any);
-      const root = res;
-      const inner = root?.data ?? null;
+      const res = await authService.startCollectoAuth({ type, id } as any);
+      const inner = res?.data ?? null;
       
-      if (!root) {
-        setError("Authorization failed. Unexpected server response.");
-        return;
-      }
-
       const returnedToken = inner?.data?.vaultOTPToken ?? inner?.vaultOTPToken ?? null;
       
       if (returnedToken) {
@@ -58,22 +51,20 @@ export default function LoginPage() {
         setVaultOtpToken(returnedToken, expiryIso);
         setPendingPayload({ type, id: idValue, vaultOTPToken: returnedToken });
         setLoginStep('otp_entry');
-        setError(inner?.message ?? "OTP sent — check your registered channel.");
         return;
       }
 
-      if (root?.auth === true && root?.status === "error") {
+      if (res?.auth === true && res?.status === "error") {
         const existingToken = getVaultOtpToken();
         if (existingToken) {
           setPendingPayload({ type, id: idValue, vaultOTPToken: existingToken });
           setLoginStep('otp_entry');
-          setError(root?.message ?? "You already have an active OTP session.");
         } else {
-          setError("You must wait before requesting a new OTP.");
+          setError("Please wait before requesting a new OTP.");
         }
         return;
       }
-      setError(inner?.message ?? root?.message ?? "Authorization failed.");
+      setError(inner?.message ?? res?.message ?? "Authorization failed.");
     } catch (err: any) {
       setError(err?.message ?? "Network or service error.");
     } finally {
@@ -92,37 +83,25 @@ export default function LoginPage() {
       return;
     }
 
-    if (!pendingPayload?.vaultOTPToken) {
-      setError("No active session. Please restart.");
-      handleBackToIdEntry();
-      setIsProcessing(false);
-      return;
-    }
-
     try {
       const verifyPayload = {
-        id: pendingPayload.id, 
+        id: pendingPayload!.id, 
         vaultOTP: otpValue,
-        vaultOTPToken: pendingPayload.vaultOTPToken,
+        vaultOTPToken: pendingPayload!.vaultOTPToken!,
       };
 
       const res = await authService.verifyCollectoOtp(verifyPayload);
-      const verified = Boolean(res?.data?.data?.verified ?? res?.data?.authVerify ?? res?.authVerify ?? false);
-      const message = res?.data?.message ?? res?.status_message ?? res?.message ?? "Login successful.";
-      const name = res?.data?.data?.name ?? null;
+      const verified = Boolean(res?.data?.data?.verified ?? res?.data?.authVerify ?? false);
 
       if (verified) {
+        const name = res?.data?.data?.name;
         if (name) localStorage.setItem('userName', String(name).trim());
-        const returnedClientId = res?.data?.data?.id ?? res?.data?.id ?? res?.id ?? pendingPayload.id ?? null;
-        if (returnedClientId) localStorage.setItem('clientId', String(returnedClientId));
-        
-        setPendingPayload(null);
-        navigate(pendingPayload.type === 'client' ? '/dashboard' : '/staff/dashboard');
+        navigate(pendingPayload!.type === 'client' ? '/dashboard' : '/staff/dashboard');
       } else {
-        setError(message ?? "Invalid OTP.");
+        setError("Invalid verification code.");
       }
     } catch (err: any) {
-      setError(err?.message ?? "Verification failed.");
+      setError("Verification failed.");
     } finally {
       setIsProcessing(false);
     }
@@ -131,100 +110,91 @@ export default function LoginPage() {
   const handleResendOtp = async () => {
     if (!pendingPayload || isProcessing) return;
     setIsProcessing(true);
-    setError('');
     try {
       const payload = buildAuthPayload(pendingPayload.type, pendingPayload.id);
-      const res = await authService.startCollectoAuth({ type: payload.type, cid: payload.cid, uid: payload.uid } as any); 
-      setError(res?.data?.message ?? "OTP resent successfully.");
-    } catch (e: any) {
-      setError(e?.message ?? "Unable to resend OTP.");
+      await authService.startCollectoAuth({ type: payload.type, cid: payload.cid, uid: payload.uid } as any); 
+      setError("A new code has been sent.");
+    } catch (e) {
+      setError("Unable to resend code.");
     } finally {
       setIsProcessing(false);
     }
   };
-  
-  const handleBackToIdEntry = () => {
-    setLoginStep('id_entry');
-    setPendingPayload(null);
-    setOtpValue('');
-    setError('');
-  };
-
-  const TabButton: React.FC<{ type: UserType; icon: React.FC<any>; label: string }> = ({ type, icon: Icon, label }) => (
-    <button
-      onClick={() => {
-        setUserType(type);
-        handleBackToIdEntry();
-      }}
-      className={`flex-1 flex items-center justify-center gap-2 py-4 text-sm font-bold transition-all duration-200
-        ${userType === type
-          ? 'bg-white text-[#67095D] border-b-2 border-[#67095D]'
-          : 'bg-gray-100 text-gray-500 hover:bg-gray-200 border-b-2 border-transparent'
-        }
-      `}
-      disabled={isProcessing}
-    >
-      <Icon className="w-4 h-4" />
-      {label}
-    </button>
-  );
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-linear-to-br from-gray-50 to-gray-200">
-      <div className="w-full">
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#F9FAFB]">
+      <div className="w-full max-w-[400px]">
         
-        {/* Logo (no background) */}
-        <div className="flex flex-col items-center mb-8">
-          <img src="/logo.png" alt="CollectoVault Logo" className="h-16 w-auto object-contain" />
+        {/* Logo Section */}
+        <div className="flex flex-col items-center mb-10">
+          <img src="/logo.png" alt="Logo" className="h-12 w-auto mb-2" />
+          <p className="text-gray-600 text-xs font-medium uppercase tracking-[0.2em]">Earn & Thrive</p>
         </div>
 
-        {/* Login Card */}
-        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100">
+        {/* Main Card */}
+        <div className="bg-white rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.05)] overflow-hidden border border-gray-100">
           
-          {/* Gray Tabs */}
-          <div className="flex">
-            <TabButton type="client" icon={User} label="CLIENT" />
-            <TabButton type="staff" icon={Briefcase} label="STAFF" />
-          </div>
+          {/* Switcher */}
+          {loginStep === 'id_entry' && (
+            <div className="flex p-1.5 bg-gray-50/50 border-b border-gray-100">
+              <button
+                onClick={() => setUserType('client')}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-xl transition-all duration-300 ${
+                  userType === 'client' ? 'bg-white shadow-sm text-[#67095D]' : 'text-gray-400 hover:text-gray-600'
+                }`}
+              >
+                <User className="w-3.5 h-3.5" /> CLIENT
+              </button>
+              <button
+                onClick={() => setUserType('staff')}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-xl transition-all duration-300 ${
+                  userType === 'staff' ? 'bg-white shadow-sm text-[#67095D]' : 'text-gray-400 hover:text-gray-600'
+                }`}
+              >
+                <Briefcase className="w-3.5 h-3.5" /> STAFF
+              </button>
+            </div>
+          )}
 
           <div className="p-8">
-            {/* Dynamic Title */}
-            <div className="mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">
-                    {loginStep === 'id_entry' ? (userType === 'client' ? 'Welcome Back' : 'Staff Sign In') : 'Verify OTP'}
-                </h2>
-                <p className="text-sm text-gray-500 mt-1">
-                    {loginStep === 'id_entry' ? 'Enter your credentials to continue' : 'Secure verification required'}
-                </p>
+            <div className="mb-8 text-center">
+              <h2 className="text-2xl font-bold text-gray-900 tracking-tight">
+                {loginStep === 'id_entry' ? 'Sign In' : 'Verify Identity'}
+              </h2>
+              <p className="text-sm text-gray-500 mt-2">
+                {loginStep === 'id_entry' 
+                  ? `Access your ${userType} account` 
+                  : 'Enter the 6-digit code sent to your device'}
+              </p>
             </div>
 
             {error && (
-              <div className={`mb-6 p-4 text-sm rounded-xl flex items-center gap-3 border ${
-                error.includes('successful') || error.includes('sent') 
-                ? 'text-green-700 border-green-100 bg-green-50' 
-                : 'text-red-700 border-red-100 bg-red-50'
+              <div className={`mb-6 p-3 rounded-xl text-xs font-medium flex items-center gap-2 animate-in fade-in slide-in-from-top-1 ${
+                error.toLowerCase().includes('sent') || error.toLowerCase().includes('success')
+                ? 'bg-emerald-50 text-emerald-700' 
+                : 'bg-rose-50 text-rose-700'
               }`}>
-                <ShieldCheck className="w-5 h-5 shrink-0" />
+                <ShieldCheck className="w-4 h-4 shrink-0" />
                 {error}
               </div>
             )}
 
             {loginStep === 'id_entry' ? (
               <form onSubmit={handleIdSubmit} className="space-y-5">
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-                    {userType === 'client' ? 'Client ID / Email' : 'Staff User ID'}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-gray-400 uppercase ml-1">
+                    {userType === 'client' ? 'Client ID' : 'Staff User ID'}
                   </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#b2a3b0] transition-colors">
                       {userType === 'client' ? <User size={18} /> : <Briefcase size={18} />}
                     </div>
                     <input
                       type="text"
                       value={idValue}
                       onChange={(e) => { setIdValue(e.target.value); setError(''); }}
-                      placeholder={userType === 'client' ? "e.g. CLI-12345" : "e.g. STF-001"}
-                      className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#67095D] focus:border-transparent bg-gray-50 transition-all text-sm"
+                      placeholder={userType === 'client' ? "324CV38" : "STF-001"}
+                      className="block w-full pl-11 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-[#67095D]/5 focus:border-[#67095D] focus:bg-white transition-all outline-none text-sm font-medium"
                       required
                       disabled={isProcessing}
                     />
@@ -234,52 +204,56 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={isProcessing}
-                  className="w-full flex items-center justify-center py-3.5 px-4 rounded-xl shadow-lg text-sm font-bold text-gray-700 bg-[#f8f5f8] hover:bg-[#c5bdc4] active:scale-[0.98] transition-all disabled:opacity-70"
+                  className="w-full flex items-center justify-center py-4 px-4 rounded-2xl text-sm font-bold text-gray-800 bg-[#e1d7e0] hover:bg-[#b6adb5] shadow-lg shadow-[#67095D]/20 active:scale-[0.98] transition-all disabled:opacity-50"
                 >
                   {isProcessing ? <RotateCw className="w-5 h-5 animate-spin" /> : (
-                    <>Next Step <ArrowRight className="w-4 h-4 ml-2" /></>
+                    <>Continue <ArrowRight className="w-4 h-4 ml-2" /></>
                   )}
-                </button>
-                
-                <button type="button" className="w-full text-center text-xs font-semibold text-gray-400 hover:text-gray-600 transition-colors">
-                  Trouble logging in? Contact Support
                 </button>
               </form>
             ) : (
               <form onSubmit={handleOtpSubmit} className="space-y-6">
-                <div className="bg-gray-50 p-4 rounded-xl border border-dashed border-gray-200 text-center">
-                    <Mail className="w-5 h-5 text-[#67095D] mx-auto mb-2" />
-                    <p className="text-sm text-gray-600">Verification code sent to</p>
-                    <p className="text-sm font-bold text-gray-900">{pendingPayload?.id}</p>
+                <div className="flex flex-col items-center">
+                  <input
+                    type="text"
+                    value={otpValue}
+                    onChange={(e) => { 
+                        const val = e.target.value.replace(/\D/g, '');
+                        if(val.length <= 6) setOtpValue(val); 
+                        setError(''); 
+                    }}
+                    placeholder=""
+                    className="block w-full text-center py-4 bg-gray-50/50 border-2 border-dashed border-gray-200 rounded-2xl focus:border-[#67095D] focus:bg-white transition-all outline-none text-3xl font-bold tracking-[0.4em] text-gray-800"
+                    maxLength={6}
+                    required
+                    autoFocus
+                    disabled={isProcessing}
+                  />
                 </div>
-
-                <input
-                  type="text"
-                  value={otpValue}
-                  onChange={(e) => { setOtpValue(e.target.value); setError(''); }}
-                  placeholder="0 0 0 0 0 0"
-                  className="block w-full text-center py-4 border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-[#67095D] focus:border-transparent text-2xl font-black tracking-[0.5em] bg-gray-50 transition-all"
-                  maxLength={6}
-                  required
-                  disabled={isProcessing}
-                />
 
                 <button
                   type="submit"
                   disabled={isProcessing}
-                  className="w-full flex items-center justify-center py-3.5 px-4 rounded-xl shadow-lg text-sm font-bold text-gray-700 bg-[#f0e8ef] hover:bg-[#c0bdc0] transition-all"
+                  className="w-full flex items-center justify-center py-4 px-4 rounded-2xl text-sm font-bold text-gray-700 bg-[#cec9ce] hover:bg-[#b8afb7] shadow-lg shadow-[#67095D]/20 transition-all disabled:opacity-50"
                 >
-                  {isProcessing ? <RotateCw className="w-5 h-5 animate-spin" /> : (
-                    <><Lock className="w-4 h-4 mr-2" /> Verify & Access</>
-                  )}
+                  {isProcessing ? <RotateCw className="w-5 h-5 animate-spin" /> : 'Verify Code'}
                 </button>
                 
-                <div className="flex items-center justify-between pt-2">
-                    <button onClick={handleBackToIdEntry} type="button" className="text-xs font-bold text-gray-400 hover:text-gray-600">
-                      ← CHANGE ID
+                <div className="flex flex-col gap-4 pt-2">
+                    <button 
+                        onClick={handleResendOtp} 
+                        type="button" 
+                        disabled={isProcessing}
+                        className="text-xs font-bold text-gray-700 hover:text-gray-900 transition-colors flex items-center justify-center gap-1.5"
+                    >
+                        <RotateCw className="w-3 h-3" /> RESEND CODE
                     </button>
-                    <button onClick={handleResendOtp} disabled={isProcessing} type="button" className="text-xs font-bold text-[#67095D] hover:underline uppercase">
-                      Resend Code
+                    <button 
+                        onClick={() => setLoginStep('id_entry')} 
+                        type="button" 
+                        className="text-xs font-medium text-gray-400 hover:text-gray-600 flex items-center justify-center gap-1"
+                    >
+                        <ChevronLeft className="w-3.5 h-3.5" /> Use a different ID
                     </button>
                 </div>
               </form>
@@ -287,9 +261,9 @@ export default function LoginPage() {
           </div>
         </div>
         
-        <div className="flex items-center justify-center mt-8">
-          <p className="text-xs text-gray-800">© 2026 CollectoVault. All rights reserved.</p>
-         </div>
+        <p className="text-center mt-10 text-[11px] font-medium text-gray-500 uppercase tracking-widest">
+          © 2026 CollectoVault • Security First
+        </p>
       </div>
     </div>
   );

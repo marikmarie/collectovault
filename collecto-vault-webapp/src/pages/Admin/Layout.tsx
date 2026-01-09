@@ -32,18 +32,18 @@ const THEME_GRADIENT = "linear-gradient(to right top, #18010e, #2b0a1f, #3f0b31,
 
 const navItems: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
-  { id: 'users', label: 'Users', icon: <Users className="w-5 h-5" /> },
-  { id: 'tiers', label: 'Tier Levels', icon: <Trophy className="w-5 h-5" /> },
- { id: 'rules', label: 'Point Rules', icon: <Coins className="w-5 h-5" /> }, 
+  { id: 'rules', label: 'Point Rules', icon: <Coins className="w-5 h-5" /> }, 
   { id: 'packages', label: 'Packages', icon: <CreditCard className="w-5 h-5" /> },
+  { id: 'tiers', label: 'Tier Levels', icon: <Trophy className="w-5 h-5" /> },
+  { id: 'users', label: 'Users', icon: <Users className="w-5 h-5" /> },
 ];
 
 const TabContent: Record<Tab, React.FC> = {
   dashboard: Dashboard,
-  users: UsersManagement,
-  tiers: Tiers,
   rules: PointRules,
   packages: PointPackages,
+  tiers: Tiers,
+  users: UsersManagement,
 };
 
 // --- Sub-Components ---
