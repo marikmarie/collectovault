@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Trophy, Plus, Trash2, Edit, X } from 'lucide-react';
+import { collectovault } from '../../api/collectovault';
 
 // --- Type Definitions ---
 interface Tier {
@@ -12,32 +13,7 @@ interface Tier {
 }
 
 // --- Mock Data ---
-const initialTiers: Tier[] = [
-  { 
-    id: 1,
-    name: 'Standard',
-    threshold: 0,
-    multiplier: 1.0,
-    color: '#880666', // From the user's gradient
-    tailwindColorClass: 'bg-purple-100 text-purple-800 border-purple-200',
-  },
-  {
-    id: 2,
-    name: 'Silver',
-    threshold: 500,
-    multiplier: 1.2,
-    color: '#cb0d6c', // From the user's gradient
-    tailwindColorClass: 'bg-pink-100 text-pink-800 border-pink-200',
-  },
-  {
-    id: 3,
-    name: 'Gold',
-    threshold: 2000,
-    multiplier: 1.5,
-    color: '#ef4155', // From the user's gradient (Red)
-    tailwindColorClass: 'bg-red-100 text-red-800 border-red-200',
-  },
-];
+const initialTiers: Tier[] = [];
 
 // --- Sub-components ---
 
@@ -100,6 +76,46 @@ const Tiers: React.FC = () => {
   const [tiers, setTiers] = useState<Tier[]>(initialTiers);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTier, setEditingTier] = useState<Tier | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const vendorId = localStorage.getItem('collectoId') || '141122';
+
+  // Fetch tiers on component mount
+  useEffect(() => {
+    fetchTiers();
+  }, []);
+
+  const fetchTiers = async () => {
+    setLoading(true);
+    try {
+      const res = await collectovault.getTierRules(vendorId);
+      const data = res.data?.data ?? res.data ?? res;
+      const tiersArray = Array.isArray(data) ? data : (data?.tiers ?? data?.items ?? []);
+      
+      // Map API data to Tier format
+      const mappedTiers: Tier[] = tiersArray.map((tier: any, idx: number) => ({
+        id: tier.id || idx,
+        name: tier.name || tier.tierName || `Tier ${idx + 1}`,
+        threshold: tier.threshold || tier.minimumPoints || 0,
+        multiplier: tier.multiplier || tier.earnMultiplier || 1.0,
+        color: tier.color || '#000000',
+        tailwindColorClass: tier.tailwindColorClass || 'bg-gray-100 text-gray-800 border-gray-200',
+      }));
+      setTiers(mappedTiers);
+    } catch (err: any) {
+      console.error('Failed to load tiers', err);
+      showMessage('error', 'Failed to load tiers');
+      setTiers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const showMessage = (type: 'success' | 'error', text: string) => {
+    setMessage({ type, text });
+    setTimeout(() => setMessage(null), 3000);
+  };
 
   const handleCreateOrEdit = (tier?: Tier) => {
     setEditingTier(tier || null);
@@ -108,31 +124,60 @@ const Tiers: React.FC = () => {
 
   const handleRemoveTier = (id: number) => {
     if (window.confirm('Are you sure you want to remove this tier?')) {
-      setTiers((prevTiers) => prevTiers.filter((tier) => tier.id !== id));
+      deleteTier(id);
     }
   };
 
-  const handleSaveTier = (tierData: Omit<Tier, 'id' | 'color' | 'tailwindColorClass'>) => {
-    // Placeholder logic for saving
-    if (editingTier) {
-        // Edit existing
-        setTiers(prevTiers => prevTiers.map(t => t.id === editingTier.id ? {...t, ...tierData} as Tier : t));
-    } else {
-        // Create new
+  const deleteTier = async (id: number) => {
+    try {
+      // API endpoint for deleting tier (adjust if needed)
+      await collectovault.saveTierRule(vendorId, { id, _method: 'DELETE' });
+      setTiers((prevTiers) => prevTiers.filter((tier) => tier.id !== id));
+      showMessage('success', 'Tier deleted successfully');
+    } catch (err: any) {
+      console.error('Failed to delete tier', err);
+      showMessage('error', 'Failed to delete tier');
+    }
+  };
+
+  const handleSaveTier = async (tierData: Omit<Tier, 'id' | 'color' | 'tailwindColorClass'>) => {
+    try {
+      if (editingTier) {
+        // Edit existing tier
+        const updateData = { id: editingTier.id, ...tierData };
+        const res = await collectovault.saveTierRule(vendorId, updateData);
+        const updated = res.data?.data ?? res.data ?? res;
+        setTiers(prevTiers => prevTiers.map(t => t.id === editingTier.id ? { ...t, ...updated } as Tier : t));
+        showMessage('success', 'Tier updated successfully');
+      } else {
+        // Create new tier
+        const res = await collectovault.saveTierRule(vendorId, tierData);
+        const created = res.data?.data ?? res.data ?? res;
         const newTier: Tier = {
-            id: Date.now(),
-            ...tierData,
-            color: '#000000', // Mock placeholder
-            tailwindColorClass: 'bg-gray-100 text-gray-800 border-gray-200' // Mock placeholder
+          id: created.id || Date.now(),
+          ...tierData,
+          color: created.color || '#000000',
+          tailwindColorClass: created.tailwindColorClass || 'bg-gray-100 text-gray-800 border-gray-200'
         };
         setTiers(prevTiers => [...prevTiers, newTier]);
+        showMessage('success', 'Tier created successfully');
+      }
+      setIsModalOpen(false);
+      setEditingTier(null);
+    } catch (err: any) {
+      console.error('Failed to save tier', err);
+      showMessage('error', 'Failed to save tier');
     }
-    setIsModalOpen(false);
-    setEditingTier(null);
-  }
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-4xl">
+      {message && (
+        <div className={`fixed top-6 left-1/2 transform -translate-x-1/2 z-50 px-4 py-2 rounded shadow max-w-md w-full text-center text-white ${message.type === 'success' ? 'bg-green-600' : 'bg-red-600'}`} role="status" aria-live="polite">
+          {message.text}
+        </div>
+      )}
+      
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-900">Tier Hierarchy ({tiers.length} Tiers)</h2>
         <button
@@ -149,9 +194,15 @@ const Tiers: React.FC = () => {
 
       {/* Tiers Grid */}
       <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 transition-all duration-300 ${isModalOpen ? 'blur-sm' : ''}`}>
-        {tiers.map((tier) => (
-          <TierCard key={tier.id} tier={tier} onEdit={handleCreateOrEdit} onRemove={handleRemoveTier} />
-        ))}
+        {loading ? (
+          <div className="text-center py-6 text-sm text-gray-500">Loading tiers…</div>
+        ) : tiers.length === 0 ? (
+          <div className="text-center py-6 text-sm text-gray-500">No tiers defined yet.</div>
+        ) : (
+          tiers.map((tier) => (
+            <TierCard key={tier.id} tier={tier} onEdit={handleCreateOrEdit} onRemove={handleRemoveTier} />
+          ))
+        )}
       </div>
 
       {/* Modal Placeholder for Create/Edit */}
