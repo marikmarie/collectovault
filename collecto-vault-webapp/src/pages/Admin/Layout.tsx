@@ -242,9 +242,9 @@ export default function Layout() {
           {/* Decorative background circle to tie content to theme */}
           <div className="absolute top-0 left-0 w-full h-64 bg-linear-to-b from-gray-200 to-transparent pointer-events-none -z-10" />
           
-          <div className="max-w-7xl mx-auto">
+           <div className="w-full">
              <CurrentTabComponent />
-          </div>
+           </div>
         </div>
 
       </main>

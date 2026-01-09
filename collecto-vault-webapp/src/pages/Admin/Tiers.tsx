@@ -171,7 +171,7 @@ const Tiers: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-4xl">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-full">
       {message && (
         <div className={`fixed top-6 left-1/2 transform -translate-x-1/2 z-50 px-4 py-2 rounded shadow max-w-md w-full text-center text-white ${message.type === 'success' ? 'bg-green-600' : 'bg-red-600'}`} role="status" aria-live="polite">
           {message.text}

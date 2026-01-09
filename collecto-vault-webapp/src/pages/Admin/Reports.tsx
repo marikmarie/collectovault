@@ -30,7 +30,7 @@ export default function Reports() {
   return (
     <div className="min-h-screen bg-gray-100 font-sans">
       <TopNav />
-      <main className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
+      <main className="w-full p-4 sm:p-6 lg:p-8">
         <h1 className="text-3xl font-bold text-gray-800 mb-8 flex items-center gap-2">
            <BarChart3 className="w-8 h-8 text-[#0b4b78]" />
            Program Overview Reports (Admin View)

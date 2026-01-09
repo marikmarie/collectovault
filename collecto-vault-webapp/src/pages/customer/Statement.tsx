@@ -120,7 +120,7 @@ export default function Statement() {
       </div>
 
       {/* Centered Content Below Tabs */}
-      <main className="max-w-4xl mx-auto px-4 mt-0">
+      <main className="w-full px-4 mt-0">
         
         <div className="mt-6 mb-6 text-center">
              {!loading && (

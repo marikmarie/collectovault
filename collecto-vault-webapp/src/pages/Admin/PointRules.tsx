@@ -192,7 +192,7 @@ const PointRules: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-4xl">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-full">
       {/* Header */}
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-900">Point Rules Configuration</h2>

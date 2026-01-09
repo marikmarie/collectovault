@@ -225,7 +225,7 @@ const paginatedServices = filteredServices;
         </div>
       )}
 
-      <main className="max-w-4xl mx-auto p-3 md:p-4 pt-0">
+      <main className="w-full p-3 md:p-4 pt-0">
         <div className="flex flex-col items-start mb-6">
           <h1 className="text-2xl md:text-3xl font-bold flex gap-0.5 items-center text-gray-800">
             <Icon name="services" className="text-[#d81b60]" size={20} />

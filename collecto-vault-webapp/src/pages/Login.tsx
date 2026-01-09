@@ -171,7 +171,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-linear-to-br from-gray-50 to-gray-200">
-      <div className="w-full max-w-md">
+      <div className="w-full">
         
         {/* Logo (no background) */}
         <div className="flex flex-col items-center mb-8">
@@ -288,7 +288,7 @@ export default function LoginPage() {
         </div>
         
         <div className="flex items-center justify-center mt-8">
-          <p className="text-xs text-gray-400">© 2026 CollectoVault. All rights reserved.</p>
+          <p className="text-xs text-gray-800">© 2026 CollectoVault. All rights reserved.</p>
          </div>
       </div>
     </div>
