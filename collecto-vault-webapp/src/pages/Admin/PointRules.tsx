@@ -401,7 +401,7 @@ const RuleForm: React.FC<{
       </div>
 
       <div className="flex items-center gap-3">
-        <input id="active" type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} className="h-4 w-4 text-red-600 border-gray-300 rounded focus:ring-red-500" />
+        <input id="active" type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} className="h-4 w-4 text-gray-600 border-gray-300 rounded focus:ring-red-500" />
         <label htmlFor="active" className="text-sm text-gray-700">Active</label>
       </div>
 
@@ -409,7 +409,7 @@ const RuleForm: React.FC<{
         <button type="button" onClick={onCancel} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
           Cancel
         </button>
-        <button type="submit" disabled={loading} className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700">
+        <button type="submit" disabled={loading} className="px-4 py-2 text-sm font-medium text-gray-800 bg-gray-200 rounded-lg hover:bg-gray-400">
           {loading ? (initial ? 'Updating...' : 'Creating...') : initial ? "Update Rule" : "Create Rule"}
         </button>
       </div>
