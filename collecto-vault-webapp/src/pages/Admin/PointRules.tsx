@@ -40,21 +40,13 @@ const Modal: React.FC<{
 /** Rule Toggle Row (display only) */
 const RuleToggle: React.FC<{
   rule: Omit<EarningRule, 'createdAt' | 'updatedAt' | 'createdBy'> & { title: string; desc: string };
-  onToggle: (id: number, newStatus: boolean) => void;
   onPointsChange: (id: number, newPoints: number) => void;
-}> = ({ rule, onToggle, onPointsChange }) => {
+}> = ({ rule, onPointsChange }) => {
   return (
     <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-red-300 transition-colors bg-white shadow-sm">
       <div className="flex items-start gap-3">
-        <div
-          className={`mt-1 w-4 h-4 rounded-full border flex items-center justify-center ${
-            rule.isActive ? "border-red-500 bg-red-50" : "border-gray-300"
-          }`}
-        >
-          {rule.isActive && <div className="w-2 h-2 rounded-full bg-red-500" />}
-        </div>
-        <div>
-          <h4 className={`text-sm font-semibold ${rule.isActive ? "text-gray-900" : "text-gray-500"}`}>
+        <div className="flex-1">
+          <h4 className="text-sm font-semibold text-gray-900">
             {rule.title}
           </h4>
           <p className="text-xs text-gray-500 mt-0.5">{rule.desc}</p>
@@ -67,28 +59,11 @@ const RuleToggle: React.FC<{
             type="number"
             value={rule.points}
             onChange={(e) => onPointsChange(rule.id, parseInt(e.target.value || "0"))}
-            disabled={!rule.isActive}
-            className="w-full text-right text-sm border-2 border-gray-400 bg-gray-50 rounded-lg px-3 py-2 appearance-none disabled:opacity-50"
+            className="w-full text-right text-sm border-2 border-gray-400 bg-gray-50 rounded-lg px-3 py-2 appearance-none"
             placeholder="0"
           />
           <span className="absolute right-3 top-2.5 text-xs text-gray-400 font-medium">Pts</span>
         </div>
-
-        {/* Toggle switch */}
-        <button
-          onClick={() => onToggle(rule.id, !rule.isActive)}
-          className={`w-11 h-6 flex items-center rounded-full transition-colors duration-200 ease-in-out ${
-            rule.isActive ? "bg-red-600" : "bg-gray-200"
-          }`}
-          aria-pressed={rule.isActive}
-          aria-label={`Toggle ${rule.title}`}
-        >
-          <span
-            className={`inline-block w-4 h-4 transform bg-white rounded-full transition duration-200 ease-in-out ${
-              rule.isActive ? "translate-x-6" : "translate-x-1"
-            }`}
-          />
-        </button>
       </div>
     </div>
   );
@@ -199,18 +174,6 @@ const PointRules: React.FC = () => {
     }
   };
 
-  const handleToggle = async (id: number, status: boolean) => {
-    setRules((prev) => prev.map((r) => (r.id === id ? { ...r, isActive: status } : r)));
-    try {
-      await collectovault.savePointRule(vendorId, { id, isActive: status });
-      showMessage('success', 'Rule status updated');
-    } catch (err: any) {
-      console.error('Failed to update rule status', err);
-      showMessage('error', 'Failed to update rule status');
-      await fetchRules();
-    }
-  };
-
   const handlePointsChange = async (id: number, newPoints: number) => {
     setRules((prev) => prev.map((r) => (r.id === id ? { ...r, points: newPoints } : r)));
     try {
@@ -261,7 +224,7 @@ const PointRules: React.FC = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={openCreateModal}
-              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-(--btn-text) bg-(--btn-bg) rounded-lg hover:bg-(--btn-hover-bg)"
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-(--btn-text) bg-gray-200 rounded-lg hover:bg-(--btn-hover-bg)"
               title="Add new bonus rule"
             >
               <Plus className="w-4 h-4" /> Add New Bonus Rule
@@ -276,44 +239,48 @@ const PointRules: React.FC = () => {
             <div className="text-center py-6 text-sm text-gray-500">No rules defined yet.</div>
           ) : (
             rules.map((rule) => (
-              <div key={rule.id} className="group relative">
-                <RuleToggle rule={{ id: rule.id, ruleTitle: rule.ruleTitle, description: rule.description, points: rule.points, isActive: rule.isActive, title: rule.ruleTitle, desc: rule.description }} onToggle={handleToggle} onPointsChange={handlePointsChange} />
+              <div key={rule.id} className="relative">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex-1">
+                    <RuleToggle rule={{ id: rule.id, ruleTitle: rule.ruleTitle, description: rule.description, points: rule.points, isActive: rule.isActive, title: rule.ruleTitle, desc: rule.description }} onPointsChange={handlePointsChange} />
+                  </div>
 
-                {/* Edit / Delete buttons displayed at top-right of the rule card on hover */}
-                <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={() => openEditModal(rule)}
-                    className="p-1 rounded-md bg-white border border-gray-200 shadow-sm hover:bg-gray-50"
-                    title="Edit rule"
-                  >
-                    <Edit className="w-4 h-4 text-gray-600" />
-                  </button>
+                  {/* Edit / Delete buttons always visible */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => openEditModal(rule)}
+                      className="p-2 rounded-md bg-white border border-gray-200 shadow-sm hover:bg-gray-50"
+                      title="Edit rule"
+                    >
+                      <Edit className="w-4 h-4 text-gray-600" />
+                    </button>
 
-                  {confirmDeleteId === rule.id ? (
-                    <div className="flex items-center gap-2">
+                    {confirmDeleteId === rule.id ? (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleDelete(rule.id)}
+                          disabled={deletingId === rule.id}
+                          className="px-3 py-1 text-xs font-semibold text-white bg-gray-600 rounded"
+                        >
+                          {deletingId === rule.id ? 'Deleting...' : 'Confirm'}
+                        </button>
+                        <button
+                          onClick={() => setConfirmDeleteId(null)}
+                          className="px-2 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
                       <button
                         onClick={() => handleDelete(rule.id)}
-                        disabled={deletingId === rule.id}
-                        className="px-3 py-1 text-xs font-semibold text-white bg-red-600 rounded"
+                        className="p-2 rounded-md bg-white border border-gray-200 shadow-sm hover:bg-red-50"
+                        title="Delete rule"
                       >
-                        {deletingId === rule.id ? 'Deleting...' : 'Confirm'}
+                        <Trash2 className="w-4 h-4 text-red-600" />
                       </button>
-                      <button
-                        onClick={() => setConfirmDeleteId(null)}
-                        className="px-2 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => handleDelete(rule.id)}
-                      className="p-1 rounded-md bg-white border border-gray-200 shadow-sm hover:bg-red-50"
-                      title="Delete rule"
-                    >
-                      <Trash2 className="w-4 h-4 text-red-600" />
-                    </button>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
             ))
@@ -375,7 +342,7 @@ const RuleForm: React.FC<{
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="e.g. Signup Bonus"
-          className="w-full border-2 border-gray-400 rounded-lg px-3 py-2 appearance-none focus:border-red-500 focus:ring-0"
+          className="w-full border-2 border-gray-400 rounded-lg px-3 py-2 appearance-none focus:border-gray-500 focus:ring-0"
         />
       </div>
 
@@ -385,7 +352,7 @@ const RuleForm: React.FC<{
           value={desc}
           onChange={(e) => setDesc(e.target.value)}
           placeholder="Short description (shown to admins)"
-          className="w-full border-2 border-gray-400 rounded-lg px-3 py-2 appearance-none focus:border-red-500 focus:ring-0"
+          className="w-full border-2 border-gray-400 rounded-lg px-3 py-2 appearance-none focus:border-gray-500 focus:ring-0"
         />
       </div>
 
@@ -396,7 +363,7 @@ const RuleForm: React.FC<{
           value={points}
           onChange={(e) => setPoints(parseInt(e.target.value || "0"))}
           placeholder="e.g. 50"
-          className="w-full border-2 border-gray-400 rounded-lg px-3 py-2 appearance-none focus:border-red-500 focus:ring-0"
+          className="w-full border-2 border-gray-400 rounded-lg px-3 py-2 appearance-none focus:border-gray-500 focus:ring-0"
         />
       </div>
 
