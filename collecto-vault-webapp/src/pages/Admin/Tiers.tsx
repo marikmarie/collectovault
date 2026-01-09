@@ -148,7 +148,7 @@ const Tiers: React.FC = () => {
       </p>
 
       {/* Tiers Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 transition-all duration-300 ${isModalOpen ? 'blur-sm' : ''}`}>
         {tiers.map((tier) => (
           <TierCard key={tier.id} tier={tier} onEdit={handleCreateOrEdit} onRemove={handleRemoveTier} />
         ))}
@@ -188,55 +188,68 @@ const TierModal: React.FC<TierModalProps> = ({ initialData, onClose, onSave }) =
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white bg-opacity-95 text-gray-900 rounded-xl shadow-2xl w-full max-w-md p-6 ring-1 ring-gray-100">
-                <div className="flex justify-between items-center border-b border-gray-100 pb-3 mb-4">
-                    <h3 className="text-xl font-bold text-gray-900">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Semi-transparent backdrop */}
+            <div className="absolute inset-0 bg-black/20 backdrop-blur-md" onClick={onClose} />
+            
+            {/* Modal - positioned above backdrop */}
+            <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 border border-gray-100 animate-in fade-in scale-in duration-300">
+                <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-2xl font-bold text-gray-900">
                         {initialData ? 'Edit Tier' : 'Create New Tier'}
                     </h3>
-                    <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-100">
+                    <button 
+                        onClick={onClose} 
+                        className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                        title="Close"
+                    >
                         <X className="w-5 h-5 text-gray-600" />
                     </button>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-5">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Tier Name</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Tier Name</label>
                         <input
                           type="text"
                           value={name}
                           onChange={e => setName(e.target.value)}
-                          className="w-full bg-white border border-gray-300 text-gray-900 rounded-lg px-3 py-2 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                          className="w-full bg-gray-50 border-2 border-gray-200 text-gray-900 rounded-lg px-4 py-2.5 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
                           placeholder="e.g., Silver"
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Entry Threshold (Points)</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Entry Threshold (Points)</label>
                         <input
                           type="number"
                           value={threshold}
                           onChange={e => setThreshold(parseInt(e.target.value) || 0)}
-                          className="w-full bg-white border border-gray-300 text-gray-900 rounded-lg px-3 py-2 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                          className="w-full bg-gray-50 border-2 border-gray-200 text-gray-900 rounded-lg px-4 py-2.5 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Earning Multiplier</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Earning Multiplier</label>
                         <input
                           type="number"
                           step="0.1"
                           value={multiplier}
                           onChange={e => setMultiplier(parseFloat(e.target.value) || 1.0)}
-                          className="w-full bg-white border border-gray-300 text-gray-900 rounded-lg px-3 py-2 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                          className="w-full bg-gray-50 border-2 border-gray-200 text-gray-900 rounded-lg px-4 py-2.5 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
                         />
                     </div>
-                    
                 </div>
                 
-                <div className="mt-6 flex justify-end gap-3">
-                    <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
+                <div className="mt-8 flex justify-end gap-3">
+                    <button 
+                        onClick={onClose} 
+                        className="px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
                         Cancel
                     </button>
-                    <button onClick={handleSubmit} className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 shadow-sm">
+                    <button 
+                        onClick={handleSubmit} 
+                        className="px-4 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors shadow-md"
+                    >
                         {initialData ? 'Update Tier' : 'Create Tier'}
                     </button>
                 </div>
