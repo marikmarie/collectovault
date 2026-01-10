@@ -6,9 +6,11 @@ import ServicesList from "../../components/ServicesList";
 import BuyPoints from "../customer/BuyPoints";
 import SpendPointsModal from "./SpendPoints";
 import TierDetailsModal from "./TierDetails";
+import Slider from "../../components/Slider";
 // Added CheckCircle, Clock for status icons
 import { X } from "lucide-react";
 import { customerService } from "../../api/customer";
+import { mockUser } from "../../data/mockUser";
 
 
 type TabType = "points" | "tier";
@@ -20,7 +22,34 @@ interface RedeemableOffer {
   pointsCost: number;
 }
 
+// Dummy tiers data fallback
+const DUMMY_TIERS = [
+  { id: '1', name: 'Silver', minPoints: 0, maxPoints: 5000 },
+  { id: '2', name: 'Gold', minPoints: 5000, maxPoints: 10000 },
+  { id: '3', name: 'Platinum', minPoints: 10000, maxPoints: Infinity },
+];
 
+// Dummy redeemable offers fallback
+const DUMMY_OFFERS: RedeemableOffer[] = [
+  {
+    id: 'offer_1',
+    title: '10% Discount on Next Purchase',
+    desc: 'Get 10% off your next purchase over 15%',
+    pointsCost: 500,
+  },
+  {
+    id: 'offer_2',
+    title: 'Free Shipping',
+    desc: 'Free shipping on any order nationwide',
+    pointsCost: 250,
+  },
+  {
+    id: 'offer_3',
+    title: 'Exclusive Member Offer',
+    desc: 'Special discount available only to tier members',
+    pointsCost: 1000,
+  },
+];
 
 interface UserProfile {
   name?: string;
@@ -41,7 +70,7 @@ export default function Dashboard() {
     name: localStorage.getItem('userName') ?? undefined,
     phone: undefined,
     avatar: '/photo.png',
-    pointsBalance: 0,
+    pointsBalance: 4000,
     avatarsize: 120,
     tier: undefined,
     tierProgress: 0,
@@ -60,14 +89,45 @@ const [selectedRedeemOffer, setSelectedRedeemOffer] =
   const [redeemableOffers, setRedeemableOffers] = useState<RedeemableOffer[]>([]);
   const [offersLoading, setOffersLoading] = useState<boolean>(false);
 
+  // Recent points activity (ascending order)
+  interface LedgerItem { id: string; date: string; desc: string; change: number }
+  const [recentPoints, setRecentPoints] = useState<LedgerItem[]>([]);
+
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchPointsAndTier = async () => {
       try {
-        const res = await customerService.getProfile();
-        const profile = res.data ?? {};
-        setUser((prev) => ({ ...prev, ...profile }));
+        const vendorId = localStorage.getItem('collectoId') || '141122';
+        // Fetch tier information
+        const tierRes = await customerService.getTierInfo(vendorId);
+        let tiers = tierRes.data?.data ?? tierRes.data ?? [];
+        
+        // Use dummy data if no tiers found
+        if (!Array.isArray(tiers) || tiers.length === 0) {
+          console.warn("No tier data from API, using dummy data");
+          tiers = DUMMY_TIERS;
+        }
+        
+        // For now, use the first/highest tier as current tier
+        // In production, this should come from user's account data
+        if (Array.isArray(tiers) && tiers.length > 0) {
+          const currentTier = tiers[tiers.length - 1]; // Get highest tier
+          setUser((prev) => ({
+            ...prev,
+            tier: currentTier.name || 'Standard',
+            tierProgress: 65, // Default progress - should come from actual user data
+          }));
+        }
       } catch (err) {
-        console.warn("Failed to fetch profile", err);
+        console.warn("Failed to fetch tier info, using dummy data", err);
+        // Use dummy tiers on error
+        if (DUMMY_TIERS.length > 0) {
+          const currentTier = DUMMY_TIERS[DUMMY_TIERS.length - 1];
+          setUser((prev) => ({
+            ...prev,
+            tier: currentTier.name || 'Standard',
+            tierProgress: 65,
+          }));
+        }
       }
     };
 
@@ -75,18 +135,34 @@ const [selectedRedeemOffer, setSelectedRedeemOffer] =
       setOffersLoading(true);
       try {
         const res = await customerService.getRedeemableOffers();
-        setRedeemableOffers(res.data?.offers ?? res.data ?? []);
+        const offers = res.data?.offers ?? res.data ?? [];
+        
+        // Use dummy offers if no offers found
+        if (!Array.isArray(offers) || offers.length === 0) {
+          console.warn("No offers from API, using dummy offers");
+          setRedeemableOffers(DUMMY_OFFERS);
+        } else {
+          setRedeemableOffers(offers);
+        }
       } catch (err) {
-        console.warn("Failed to fetch redeemable offers", err);
-        setRedeemableOffers([]);
+        console.warn("Failed to fetch redeemable offers, using dummy offers", err);
+        // Use dummy offers on error
+        setRedeemableOffers(DUMMY_OFFERS);
       } finally {
         setOffersLoading(false);
       }
     };
 
-    // Start by refreshing profile (which may provide counts/points) then fetch other resources
-    fetchProfile();
+    // Fetch tier and offers data
+    fetchPointsAndTier();
     fetchOffers();
+  }, []);
+
+  // Load recent points activity from mock data (ascending by date)
+  useEffect(() => {
+    const ledger = (mockUser.ledger ?? []).slice();
+    ledger.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    setRecentPoints(ledger as any);
   }, []);
 
   const handleViewRedeemOffer = (offer: RedeemableOffer) => {
@@ -100,7 +176,7 @@ const [selectedRedeemOffer, setSelectedRedeemOffer] =
 
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-50 to-[#fff8e7] font-sans">
+    <div className="min-h-screen bg-linear-to-br from-slate-50 to-[#faf9f7] font-sans">
       
       <TopNav />
       <Header
@@ -192,41 +268,80 @@ const [selectedRedeemOffer, setSelectedRedeemOffer] =
           {/* 1. VIEW: POINTS TAB */}
           {activeTab === "points" && (
             <>
-              <div className="px-4 mb-3">
+                  <div className="px-4 mb-3">
                 <h3 className="text-lg font-semibold text-gray-800">
                   Redeemable Offers
                 </h3>
               </div>
-              <div className="space-y-4 px-4 pb-20">
+
+              <div className="px-4 pb-4">
                 {offersLoading ? (
                   <div className="text-center py-6 text-sm text-gray-500">Loading offers…</div>
                 ) : redeemableOffers.length === 0 ? (
                   <div className="text-center py-6 text-sm text-gray-500">No redeemable offers found.</div>
                 ) : (
-                  redeemableOffers.map((offer, index) => (
-                    <div
-                      key={offer.id}
-                      className="overflow-hidden flex items-center bg-white rounded-lg shadow-sm border border-gray-100 p-3 hover:shadow-md transition-shadow"
-                    >
-                      <div className="flex-1">
-                        <div className="font-semibold text-gray-800">
-                          {index + 1}. {offer.title}
+                  <Slider
+                    slides={redeemableOffers.map((offer) => ({
+                      key: offer.id,
+                      node: (
+                        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 h-full flex flex-col justify-between">
+                          <div>
+                            <div className="font-bold text-gray-900 text-base">{offer.title}</div>
+                            <div className="text-sm text-gray-500 mt-1">{offer.desc}</div>
+                          </div>
+
+                          <div className="flex items-center justify-between mt-4">
+                            <div className="text-sm text-gray-700 font-semibold">{offer.pointsCost.toLocaleString()} pts</div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleViewRedeemOffer(offer)}
+                                className="text-xs px-3 py-1 rounded-full bg-[#f0eced] hover:bg-[#e6dfe3] text-gray-800 font-medium"
+                              >
+                                View
+                              </button>
+
+                              <button
+                                onClick={() => { setSelectedRedeemOffer(offer); }}
+                                disabled={(user.pointsBalance ?? 0) < offer.pointsCost}
+                                className={`text-xs px-3 py-1 rounded-full font-semibold transition-all ${
+                                  (user.pointsBalance ?? 0) >= offer.pointsCost
+                                    ? "bg-[#ef4155] text-white hover:bg-[#cb0d6c]"
+                                    : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                                }`}
+                              >
+                                Redeem
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                        <div className="text-sm text-gray-600 mt-1">
-                          {offer.desc}
-                        </div>
-                      </div>
-                      <div className="p-1 shrink-0">
-                        <button
-                          onClick={() => handleViewRedeemOffer(offer)}
-                          className="text-sm px-4 py-2 rounded-full bg-[#d81b60] hover:bg-[#b81752] text-white font-medium transition-colors active:scale-95"
-                        >
-                          View
-                        </button>
-                      </div>
-                    </div>
-                  ))
+                      )
+                    }))}
+                    height="h-44"
+                    className="pb-2"
+                  />
                 )}
+
+                {/* Recent Points Activity (ascending) */}
+                <div className="mt-6">
+                  <h4 className="text-md font-semibold text-gray-800">Recent Points Activity</h4>
+                  <div className="mt-3 space-y-3">
+                    {recentPoints.length === 0 ? (
+                      <div className="text-sm text-gray-500">No recent points activity.</div>
+                    ) : (
+                      recentPoints.map((item) => (
+                        <div key={item.id} className="bg-white p-3 rounded-lg border border-gray-100 flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-gray-800">{item.desc}</p>
+                            <p className="text-xs text-gray-400">{new Date(item.date).toLocaleDateString()}</p>
+                          </div>
+                          <div className={`font-black ${item.change > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {item.change > 0 ? '+' : ''}{item.change.toLocaleString()} pts
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
               </div>
             </>
           )}

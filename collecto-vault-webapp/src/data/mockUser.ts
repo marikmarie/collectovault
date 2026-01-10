@@ -8,8 +8,8 @@ export const mockUser = {
   tierProgress: 0.12, 
   expiryDate: '2027-04-30',
   ledger: [
-    { id: 'l1', date: '2025-11-01', desc: 'Flight ABC123', change: 1200 },
-    { id: 'l2', date: '2025-10-12', desc: 'Hotel stay', change: 800 },
+    { id: 'l1', date: '2025-11-01', desc: 'ABC123', change: 1200 },
+    { id: 'l2', date: '2025-10-12', desc: 'Driving school', change: 800 },
     { id: 'l3', date: '2025-09-05', desc: 'Redeemed - discount', change: -500 },
   ]
 }

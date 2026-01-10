@@ -262,7 +262,7 @@ export default function LoginPage() {
         </div>
         
         <p className="text-center mt-10 text-[11px] font-medium text-gray-500 uppercase tracking-widest">
-          © 2026 CollectoVault • Security First
+          ••• © 2026 CollectoVault ••• 
         </p>
       </div>
     </div>
