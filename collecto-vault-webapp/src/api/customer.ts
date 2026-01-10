@@ -25,4 +25,8 @@ export const customerService = {
 
   getServices: (collectoId?: string, page?: number, limit?: number) => 
     api.post('/services', { collectoId, page, limit }),
+
+  // Create or upsert a customer on login
+  createCustomer: (payload: { collecto_id: string; client_id: string; name?: string }) =>
+    api.post('/customers', payload),
 };

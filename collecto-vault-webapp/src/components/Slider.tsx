@@ -7,6 +7,7 @@ export type SliderProps = {
   slides: Slide[];
   initialIndex?: number;
   height?: string;              
+  itemWidth?: string; // Tailwind width class for each slide (e.g., 'w-56' or 'w-full')
   onChange?: (index: number) => void;
   className?: string;
 };
@@ -16,6 +17,7 @@ export default function Slider({
   slides,
   initialIndex = 0,
   height = "h-48",
+  itemWidth = "w-full",
   onChange,
   className = ""
 }: SliderProps) {
@@ -64,9 +66,9 @@ export default function Slider({
         style={{ WebkitOverflowScrolling: "touch" }}
         aria-roledescription="carousel"
       >
-        <div className="flex w-full h-full">
+        <div className="flex w-full h-full items-stretch">
           {slides.map((s) => (
-            <div key={s.key} className="w-full shrink-0 snap-start px-4">
+            <div key={s.key} className={`${itemWidth} shrink-0 snap-start px-2`}>
               {s.node}
             </div>
           ))}

@@ -39,8 +39,8 @@ const DUMMY_OFFERS: RedeemableOffer[] = [
   },
   {
     id: 'offer_2',
-    title: 'Free Shipping',
-    desc: 'Free shipping on any order nationwide',
+    title: 'Free concert ticket',
+    desc: 'Redeem for a free ticket to a local concert event',
     pointsCost: 250,
   },
   {
@@ -238,13 +238,13 @@ const [selectedRedeemOffer, setSelectedRedeemOffer] =
               <>
                 <button
                   onClick={() => setSpendPointsOpen(true)}
-                  className="text-sm font-semibold px-5 py-2 rounded-full border border-gray-300 bg-white text-(btn-) shadow-sm hover:(--btn-hover-bg) active:scale-95 transition-all"
+                  className="text-sm font-semibold px-5 py-2 rounded-full border border-gray-300 bg-white text-(btn-text) shadow-sm hover:(--btn-hover-bg) active:scale-95 transition-all"
                 >
                   Spend Points
                 </button>
                 <button
                   onClick={() => setBuyPointsOpen(true)}
-                  className="text-sm font-semibold px-5 py-2 rounded-full bg-(--btn-bg) text-(--btn-text) shadow-md shadow-[#ef4155]/30 hover:bg-(--btn-hover-bg) active:scale-95 transition-all"
+                  className="text-sm font-semibold px-5 py-2 rounded-full border border-gray-300 bg-(--btn-bg) text-(--btn-text) shadow-md hover:bg-(--btn-hover-bg) active:scale-95 transition-all"
                 >
                   Buy Points
                 </button>
@@ -284,18 +284,18 @@ const [selectedRedeemOffer, setSelectedRedeemOffer] =
                     slides={redeemableOffers.map((offer) => ({
                       key: offer.id,
                       node: (
-                        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 h-full flex flex-col justify-between">
+                        <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-2 h-full flex flex-col justify-between">
                           <div>
-                            <div className="font-bold text-gray-900 text-base">{offer.title}</div>
-                            <div className="text-sm text-gray-500 mt-1">{offer.desc}</div>
+                            <div className="font-semibold text-gray-900 text-sm">{offer.title}</div>
+                            <div className="text-xs text-gray-500 mt-1">{offer.desc}</div>
                           </div>
 
-                          <div className="flex items-center justify-between mt-4">
-                            <div className="text-sm text-gray-700 font-semibold">{offer.pointsCost.toLocaleString()} pts</div>
+                          <div className="flex items-center justify-between mt-2">
+                            <div className="text-xs text-gray-700 font-semibold">{offer.pointsCost.toLocaleString()} pts</div>
                             <div className="flex items-center gap-2">
                               <button
                                 onClick={() => handleViewRedeemOffer(offer)}
-                                className="text-xs px-3 py-1 rounded-full bg-[#f0eced] hover:bg-[#e6dfe3] text-gray-800 font-medium"
+                                className="text-[10px] px-2 py-1 rounded-full bg-[#f0eced] hover:bg-[#e6dfe3] text-gray-800 font-medium"
                               >
                                 View
                               </button>
@@ -303,7 +303,7 @@ const [selectedRedeemOffer, setSelectedRedeemOffer] =
                               <button
                                 onClick={() => { setSelectedRedeemOffer(offer); }}
                                 disabled={(user.pointsBalance ?? 0) < offer.pointsCost}
-                                className={`text-xs px-3 py-1 rounded-full font-semibold transition-all ${
+                                className={`text-[10px] px-2 py-1 rounded-full font-semibold transition-all ${
                                   (user.pointsBalance ?? 0) >= offer.pointsCost
                                     ? "bg-[#ef4155] text-white hover:bg-[#cb0d6c]"
                                     : "bg-gray-200 text-gray-500 cursor-not-allowed"
@@ -316,8 +316,8 @@ const [selectedRedeemOffer, setSelectedRedeemOffer] =
                         </div>
                       )
                     }))}
-                    height="h-44"
-                    className="pb-2"
+                    height="h-32"
+                    className="pb-1"
                   />
                 )}
 

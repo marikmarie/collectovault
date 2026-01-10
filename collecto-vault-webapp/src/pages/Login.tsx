@@ -3,6 +3,7 @@ import { User, Briefcase,  ArrowRight,  RotateCw, ShieldCheck, ChevronLeft } fro
 import { useNavigate } from 'react-router-dom'; 
 import { authService } from '../api/authService';
 import { setVaultOtpToken, getVaultOtpToken } from '../api';
+import { customerService } from '../api/customer';
 
 type UserType = 'client' | 'staff' ;
 type PendingPayload = {
@@ -96,6 +97,24 @@ export default function LoginPage() {
       if (verified) {
         const name = res?.data?.data?.name;
         if (name) localStorage.setItem('userName', String(name).trim());
+
+        // If this is a client login, create/upsert the customer on the Collecto backend
+        try {
+          if (pendingPayload!.type === 'client') {
+            const collectoId = localStorage.getItem('collectoId') || '141122';
+            const payload = {
+              collecto_id: collectoId,
+              client_id: pendingPayload!.id,
+              name: name ?? undefined,
+            };
+            // fire-and-forget but await to surface errors if desired
+            await customerService.createCustomer(payload);
+          }
+        } catch (err) {
+          // don't block login on customer creation failure, but log it
+          console.warn('Failed to create customer record:', err);
+        }
+
         navigate(pendingPayload!.type === 'client' ? '/dashboard' : '/staff/dashboard');
       } else {
         setError("Invalid verification code.");
