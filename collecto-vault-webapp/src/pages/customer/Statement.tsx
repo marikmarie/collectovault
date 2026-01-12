@@ -4,6 +4,7 @@ import { ArrowDownLeft, ChevronRight } from "lucide-react";
 import { transactionService, invoiceService } from "../../api/collecto";
 import InvoiceDetailModal from "./InvoiceDetailModal";
 import Button from "../../components/Button";
+// import api from "../../api";
 
 // Local toast helper
 const useLocalToast = () => {
@@ -142,18 +143,45 @@ export default function Statement() {
   const handlePayInvoice = async (invoiceId: string) => {
     try {
       setLoading(true);
-      await invoiceService.payInvoice({
-        invoiceId,
-        method: payMethod,
-        phone: payMethod === "mm" ? payPhone : undefined,
-      });
+
+      // 1. Retrieve identifiers from storage
+      const vaultOTPToken =sessionStorage.getItem("vaultOtpToken") || undefined;
+      const collectoId = localStorage.getItem("collectoId") ?? undefined;
+      const clientId = localStorage.getItem("clientId") ?? undefined;
+
+      // 2. Format phone: replace leading '0' with '256'
+      const formattedPhone = payPhone
+        ? payPhone.replace(/^0/, "256")
+        : payPhone;
+
+      const payload = {
+        vaultOTPToken,
+        collectoId,
+        clientId,
+        phone: formattedPhone,
+        paymentOption: payMethod,
+        reference: invoiceId,
+      };
+      // 3. Call the same buyPoints logic/endpoint but using invoiceId as reference
+      // Note: Assuming invoiceService.payInvoice maps to your "/buyPoints" endpoint logic
+      await invoiceService.payInvoice(payload);
+
+      // 4. Refresh invoices list
       const res = await invoiceService.getInvoices();
       const data = res.data?.data ?? res.data ?? [];
       setInvoices(Array.isArray(data) ? data : []);
+
       setPayingInvoice(null);
-      showToast("Payment initiated", "success");
+      showToast(
+        "Payment initiated. Please check your phone for the prompt.",
+        "success"
+      );
     } catch (err: any) {
-      showToast(err?.message || "Payment failed", "error");
+      console.error("Invoice Payment Error:", err);
+      showToast(
+        err.response?.data?.message || err?.message || "Payment failed",
+        "error"
+      );
     } finally {
       setLoading(false);
     }
@@ -236,11 +264,13 @@ export default function Statement() {
                     <p className="font-bold text-gray-800 text-base">
                       {inv.invoiceId ?? inv.id}
                     </p>
-                    <p className={`text-[11px] uppercase font-extrabold tracking-wider ${
-                      (inv.status ?? "PENDING") === "PAID"
-                        ? "text-green-600"
-                        : "text-red-600"
-                    }`}>
+                    <p
+                      className={`text-[11px] uppercase font-extrabold tracking-wider ${
+                        (inv.status ?? "PENDING") === "PAID"
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
+                    >
                       {new Date(inv.createdAt || inv.date).toLocaleDateString()}{" "}
                       • {inv.status ?? "Pending"}
                     </p>
@@ -387,8 +417,8 @@ export default function Statement() {
 
             {/* Action Buttons */}
             <div className="mt-8 flex justify-end gap-3 pt-4 border-t border-slate-100">
-              <button 
-                onClick={() => setPayingInvoice(null)} 
+              <button
+                onClick={() => setPayingInvoice(null)}
                 disabled={loading}
                 className="bg-gray-200 text-black font-semibold py-2 px-6 rounded-lg hover:bg-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors border-none"
               >

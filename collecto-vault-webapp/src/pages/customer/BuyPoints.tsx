@@ -235,7 +235,7 @@ const handleConfirmPayment = async () => {
     // Replace leading '0' with '256'
     const formattedPhone = phone ? phone.replace(/^0/, '256') : phone;
 
-    const res = await api.post("/buyPoints", {
+    const res = await api.post("/requestToPay", {
       vaultOTPToken,
       collectoId,
       clientId,
