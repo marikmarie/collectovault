@@ -49,14 +49,15 @@ export default function BuyPointsModal({
 
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [paymentMode, setPaymentMode] = useState<"momo" | "bank">("momo");
+  const [paymentMode, setPaymentMode] = useState<"mobilemoney" | "bank">("mobilemoney");
   const [phone, setPhone] = useState<string>("");
   const [step, setStep] = useState<ModalStep>("select");
 
-  // MoMo verification states
+  // mobilemoney verification states
   const [accountName, setAccountName] = useState<string | null>(null);
   const [verifying, setVerifying] = useState(false);
   const [verified, setVerified] = useState(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
 
   // Transaction tracking / query states
   const [txId, setTxId] = useState<string | number | null>(null);
@@ -71,8 +72,13 @@ export default function BuyPointsModal({
       setVerifying(true);
       setVerified(false);
       setAccountName(null);
+      setPhoneError(null);
 
-      const res = await api.post("/verifyPhoneNumber", { phoneNumber: trimmed });
+        const vaultOTPToken = sessionStorage.getItem('vaultOtpToken') || undefined;
+        const collectoId = localStorage.getItem("collectoId") || undefined;
+        const clientId = localStorage.getItem("clientId") || undefined;
+      
+        const res = await api.post("/verifyPhoneNumber", { vaultOTPToken,collectoId,clientId,phoneNumber: trimmed });
 
       // Response shapes:
       // { status, status_message, data: { verifyPhoneNumber: true, message, data: { name, phone } } }
@@ -90,22 +96,24 @@ export default function BuyPointsModal({
         nested?.verifyPhoneNumber ?? deeper?.verifyPhoneNumber ?? (String(payload?.status_message ?? "").toLowerCase() === "success")
       );
 
-      if (name) {
-        setAccountName(String(name).trim());
-      } else if (verifiedFlag) {
-        // Verified but no name returned — use fallback
-        setAccountName("Mariam Tukasingura");
-      } else {
-        // No useful info — fallback name (maintain previous lenient behavior)
-        setAccountName("Mariam Tukasingura");
-      }
+      const serverMessage = nested?.message ?? payload?.message ?? null;
 
-      // Mark verified so user can continue; we also accept verifiedFlag === true as success
-      setVerified(true);
-    } catch (err) {
-      // On any error, fall back to default name but still mark as verified so user can continue
-      setAccountName("Mariam Tukasingura");
-      setVerified(true);
+      if (verifiedFlag) {
+        setVerified(true);
+        setPhoneError(null);
+        if (name) setAccountName(String(name).trim());
+        else setAccountName(null); // do not use default name
+      } else {
+        // Not verified: show server message if provided and do not set a default name
+        setAccountName(null);
+        setVerified(false);
+        setPhoneError(serverMessage ?? "Could not verify the phone number at the moment");
+      }
+    } catch (err: any) {
+      // On any error, do not set a default name; show error message
+      setAccountName(null);
+      setVerified(false);
+      setPhoneError(err?.response?.data?.message ?? err?.message ?? "Could not verify the phone number at the moment");
     } finally {
       setVerifying(false);
     }
@@ -117,12 +125,13 @@ export default function BuyPointsModal({
   const resetState = () => {
     setError(null);
     setSelectedId(null);
-    setPaymentMode("momo");
+    setPaymentMode("mobilemoney");
     setPhone("");
     setStep("select");
     setAccountName(null);
     setVerified(false);
     setVerifying(false);
+    setPhoneError(null);
     setTxId(null);
     setTxStatus("idle");
     setQueryLoading(false);
@@ -164,7 +173,7 @@ export default function BuyPointsModal({
     // Reset UI State
     setError(null);
     setSelectedId(null);
-    setPaymentMode("momo");
+    setPaymentMode("mobilemoney");
     setPhone("");
     setStep("select");
     fetchActivePackages();
@@ -198,145 +207,135 @@ export default function BuyPointsModal({
       requestAnimationFrame(() => scrollerRef.current?.scrollTo({ left: 0, behavior: "smooth" }));
       return;
     }
-    if (paymentMode === "momo" && !/^\d{10}$/.test(String(phone || ""))) {
+    if (paymentMode === "mobilemoney" && !/^\d{10}$/.test(String(phone || ""))) {
       setError("Enter a valid 10-digit phone number (e.g., 0756901234)");
       return;
     }
-    // Ensure the momo number has been verified and recipient name shown
-    if (paymentMode === "momo" && !verified) {
-      setError("Please verify the MoMo number before continuing.");
+    // Ensure the mobilemoney number has been verified and recipient name shown
+    if (paymentMode === "mobilemoney" && !verified) {
+      setError("Please verify the mobilemoney number before continuing.");
       return;
     }
     setStep("confirm");
   };
 
-  /* ---- Real Payment Call ---- */
-  const handleConfirmPayment = async () => {
-    if (!selectedPackage) return;
-    setProcessing(true);
-    setError(null);
-    setTxId(null);
-    setTxStatus("idle");
+  // --- Payment Handlers ---
+const handleConfirmPayment = async () => {
+  if (!selectedPackage) return;
+  setProcessing(true);
+  setError(null);
+  setTxId(null);
+  setTxStatus("idle");
 
-    try {
-      const collectoId = localStorage.getItem('collectoId') ?? undefined;
-      const clientId = localStorage.getItem('clientId') ?? undefined;
+  try {
+    const vaultOTPToken = sessionStorage.getItem('vaultOtpToken') || undefined;
+    const collectoId = localStorage.getItem('collectoId') ?? undefined;
+    const clientId = localStorage.getItem('clientId') ?? undefined;
 
-      const res = await api.post("/buyPoints", {
-        packageId: selectedPackage.id,
-        phoneNumber: phone,
-        paymentMethod: paymentMode,
-        amount: selectedPackage.price,
-        collectoId,
-        clientId,
-      });
+    // Replace leading '0' with '256'
+    const formattedPhone = phone ? phone.replace(/^0/, '256') : phone;
 
-      const data = res?.data?.data ?? res?.data ?? {};
-      const status = String(data?.status ?? data?.state ?? "pending").toLowerCase();
-      const id = data?.transactionId ?? data?.id ?? data?.reference ?? null;
+    const res = await api.post("/buyPoints", {
+      vaultOTPToken,
+      collectoId,
+      clientId,
+      packageId: selectedPackage.id,
+      phone: formattedPhone, 
+      paymentOption: paymentMode,
+      amount: selectedPackage.price,
+      reference: `BUYPOINTS-${Date.now()}`,
+    });
 
-      if (status === "pending" || status === "in_progress" || status === "processing") {
-        setTxId(id);
+    // Accessing flat res.data
+    const data = res?.data; 
+    const apiStatus = String(data?.status || ""); 
+    
+    // Extracting transactionId from the nested data property in the response
+    const transactionId = data?.data?.transactionId || data?.transactionId || null;
+
+    if (apiStatus === "200") {
+      setTxId(transactionId);
+      setTxStatus("pending");
+      setStep("confirm");
+
+      // Check if prompt is active
+      if (data?.data?.requestToPay === true) {
         setTxStatus("pending");
         setStep("confirm");
-      } else if (status === "success" || status === "paid" || status === "completed") {
-        setTxId(id);
+      } else if (String(data?.status_message).toLowerCase() === "success") {
         setTxStatus("success");
         setStep("success");
-        // Inform parent (dashboard) of credited points
         onSuccess?.({ addedPoints: selectedPackage.points });
-      } else {
-        setTxId(id);
-        setTxStatus("failed");
-        setStep("failure");
       }
-    } catch (err: any) {
-      setError(
-        err.response?.data?.message ||
-          "Payment initiation failed. Please try again."
-      );
+    } else {
+      setTxStatus("failed");
       setStep("failure");
-    } finally {
-      setProcessing(false);
+      setError(data?.status_message || "Payment initiation failed.");
     }
-  };
+  } catch (err: any) {
+    setError(err.response?.data?.message || "Payment initiation failed. Please try again.");
+    setStep("failure");
+  } finally {
+    setProcessing(false);
+  }
+};
+// --- Transaction Status Query ---
+// --- Transaction Status Query ---
+const queryTxStatus = async () => {
+  if (!txId) {
+    setQueryError("No transaction ID found to track.");
+    return;
+  }
 
-  const queryTxStatus = async () => {
-    // If we don't have an id, assume success (per fallback requirement) and mark complete
-    if (!txId) {
+  setQueryLoading(true);
+  setQueryError(null);
+
+  try {
+    // Retrieve identifiers for the request
+    const vaultOTPToken = sessionStorage.getItem('vaultOtpToken') || undefined;
+    const collectoId = localStorage.getItem('collectoId') ?? undefined;
+    const clientId = localStorage.getItem('clientId') ?? undefined;
+
+    /** * Calling the updated status endpoint with full context
+     */
+    const res = await api.post("/requestToPayStatus", { 
+       vaultOTPToken,
+      collectoId,
+      clientId,
+      transactionId: String(txId),
+     
+    });
+
+    const data = res?.data;
+    
+    // Normalize status from the response
+    const status = String(data?.status || "pending").toLowerCase();
+
+    if (["confirmed", "success", "paid", "completed"].includes(status)) {
       setTxStatus("success");
       setStep("success");
-      if (selectedPackage) onSuccess?.({ addedPoints: selectedPackage.points });
-      return;
+      
+      if (selectedPackage) {
+        onSuccess?.({ addedPoints: selectedPackage.points });
+      }
+    } else if (["pending", "processing", "in_progress"].includes(status)) {
+      setTxStatus("pending");
+      // UI remains on the "confirm" step waiting for user to finish on phone
+    } else if (status === "failed") {
+      setTxStatus("failed");
+      setStep("failure");
+      setError(data?.message || "Transaction was declined or failed.");
+    } else {
+      setQueryError(data?.message || "Transaction status unknown. Please check your phone.");
     }
-
-    setQueryLoading(true);
-    setQueryError(null);
-
-    try {
-      // Try a few possible endpoints to get status
-      let res;
-      try {
-        res = await api.get(`/transactions/${txId}/status`);
-      } catch (e) {
-        try {
-          res = await api.get(`/transactions/${txId}`);
-        } catch (e2) {
-          // Fallback to listing user's transactions and finding by id
-          const listRes = await (await import("../../api/collecto")).transactionService.getTransactions("me");
-          const list = listRes.data?.transactions ?? listRes.data ?? [];
-          const found = Array.isArray(list) ? list.find((t: any) => String(t.id) === String(txId)) : null;
-          // If nothing is found, we'll create a dummy success response per requirement
-          if (!found) {
-            const dummy = {
-              success: true,
-              status: "success",
-              trxnId: txId ?? `LOCAL-${Date.now()}`,
-              payment: { id: txId ?? `LOCAL-${Date.now()}`, amount: selectedPackage?.price ?? 0 },
-              message: "Assumed success (local fallback)",
-            };
-            res = { data: dummy } as any;
-          } else {
-            res = { data: found } as any;
-          }
-        }
-      }
-
-      const data = res?.data?.data ?? res?.data ?? {};
-
-      // If the response is empty (no keys), treat it as success with dummy data
-      const isEmpty = !data || (typeof data === "object" && Object.keys(data).length === 0);
-      if (isEmpty) {
-        setTxStatus("success");
-        setStep("success");
-        if (selectedPackage) onSuccess?.({ addedPoints: selectedPackage.points });
-        setQueryLoading(false);
-        return;
-      }
-
-      const status = String(data?.status ?? data?.state ?? "pending").toLowerCase();
-      const id = data?.trxnId ?? data?.transactionId ?? data?.id ?? data?.reference ?? null;
-      if (id) setTxId(id);
-
-      if (status === "success" || status === "paid" || status === "completed") {
-        setTxStatus("success");
-        setStep("success");
-        // Award points locally
-        if (selectedPackage) onSuccess?.({ addedPoints: selectedPackage.points });
-      } else if (status === "pending" || status === "in_progress" || status === "processing") {
-        setTxStatus("pending");
-        setQueryError(null);
-      } else {
-        setTxStatus("failed");
-        setStep("failure");
-      }
-    } catch (err: any) {
-      setQueryError(err?.message || "Failed to query status");
-    } finally {
-      setQueryLoading(false);
-    }
-  };
-
+  } catch (err: any) {
+    console.error("Status Query Error:", err);
+    const errorMessage = err?.response?.data?.message || "Unable to reach payment server.";
+    setQueryError(errorMessage);
+  } finally {
+    setQueryLoading(false);
+  }
+};
   // --- UI Content ---
   let content;
 
@@ -372,7 +371,7 @@ export default function BuyPointsModal({
                     className="min-w-[110px] shrink-0 snap-start relative outline-none"
                   >
                     <Card
-                      className={`relative flex flex-col justify-between h-full p-1.5 cursor-pointer transition-all duration-200 bg-white border rounded-md ${
+                      className={`relative flex flex-col justify-between h-full p-1.5 cursor-pointer transition-all duration-200 bg-white border rounded-md width:95% ${
                         isSel
                           ? `border-[${PRIMARY}] ring-1 ring-[${PRIMARY}]/30 shadow-md scale-105`
                           : "border-slate-100 hover:border-slate-200 hover:shadow-md"
@@ -445,9 +444,9 @@ export default function BuyPointsModal({
             </label>
             <div className="flex gap-3">
               <button
-                onClick={() => setPaymentMode("momo")}
+                onClick={() => setPaymentMode("mobilemoney")}
                 className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl border text-sm font-semibold transition-all ${
-                  paymentMode === "momo"
+                  paymentMode === "mobilemoney"
                     ? `bg-[${PRIMARY}]/10 border-[${PRIMARY}] text-[${PRIMARY}] shadow-sm`
                     : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
                 }`}
@@ -465,7 +464,7 @@ export default function BuyPointsModal({
 
           <div className="animate-in fade-in slide-in-from-top-1 duration-200">
             <label className="text-xs font-semibold text-slate-500 uppercase mb-2 block">
-              MoMo Number
+              mobilemoney Number
             </label>
             <input
               value={phone}
@@ -473,10 +472,11 @@ export default function BuyPointsModal({
                 // Allow digits only and limit to 10 characters
                 const digits = String(e.target.value).replace(/\D/g, "").slice(0, 10);
                 setPhone(digits);
-                // Clear previous verification when user edits the number
+                // Clear previous verification and errors when user edits the number
                 setAccountName(null);
                 setVerified(false);
                 setVerifying(false);
+                setPhoneError(null);
               }}
               onBlur={() => {
                 // Trigger verification when user leaves the input and it's exactly 10 digits
@@ -492,8 +492,12 @@ export default function BuyPointsModal({
                 <div className="flex items-center gap-2 text-slate-500">
                   <Loader2 className="w-4 h-4 animate-spin" /> Verifying number...
                 </div>
+              ) : phoneError ? (
+                <div className="text-xs text-red-600">{phoneError}</div>
               ) : accountName ? (
                 <div className="text-slate-700">Recipient: <span className="font-medium text-green-600">{accountName}</span></div>
+              ) : verified ? (
+                <div className="text-xs text-green-600">Number verified</div>
               ) : (
                 <div className="text-slate-400">Enter number and leave the field to verify recipient</div>
               )}
