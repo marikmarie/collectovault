@@ -13,11 +13,12 @@ export type Props = BaseButtonAttrs & {
   children?: React.ReactNode;
 };
 
+// Updated variants to use gray backgrounds and black text
 const variantClasses: Record<Variant, string> = {
-  primary: "bg-emerald-500 hover:bg-emerald-600 text-white",
-  secondary: "bg-white text-slate-900 hover:bg-slate-100",
-  ghost: "bg-transparent text-slate-200 hover:bg-slate-800",
-  danger: "bg-rose-500 hover:bg-rose-600 text-white",
+  primary: "bg-gray-200 hover:bg-gray-300 text-black",
+  secondary: "bg-gray-100 hover:bg-gray-200 text-black",
+  ghost: "bg-transparent hover:bg-gray-100 text-black",
+  danger: "bg-red-100 hover:bg-red-200 text-red-700", // Kept a hint of red for danger, or use gray if preferred
 };
 
 const Button: React.FC<Props> = ({
@@ -29,10 +30,12 @@ const Button: React.FC<Props> = ({
   onClick,
   ...rest
 }) => {
+  // Added 'text-black' to base to ensure it applies everywhere
   const base =
-    "inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md font-semibold shadow-sm transition";
+    "inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md font-semibold shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-400 text-black";
+  
   const disabledOrLoading = disabled || loading;
-  const cls = `${base} ${variantClasses[variant]} ${disabledOrLoading ? "opacity-60 cursor-not-allowed" : ""} ${className}`;
+  const cls = `${base} ${variantClasses[variant]} ${disabledOrLoading ? "opacity-50 cursor-not-allowed" : ""} ${className}`;
 
   return (
     <button

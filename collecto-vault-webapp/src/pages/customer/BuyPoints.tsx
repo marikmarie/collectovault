@@ -156,7 +156,7 @@ export default function BuyPointsModal({
   if (step === "select") {
     content = (
       <>
-        <div className="mt-6 relative">
+        <div className="mt-2 relative">
           <button
             onClick={scrollPrev}
             className="hidden md:inline-flex absolute -left-4 top-1/2 -translate-y-1/2 z-20 items-center justify-center w-8 h-8 rounded-full bg-white border border-slate-200 shadow-md"
@@ -166,7 +166,7 @@ export default function BuyPointsModal({
 
           <div
             ref={scrollerRef}
-            className="flex gap-4 overflow-x-auto scrollbar-hidden py-4 px-1"
+            className="flex gap-2 overflow-x-auto py-2 px-1"
             style={{ scrollSnapType: "x mandatory" }}
           >
             {loadingPackages ? (
@@ -182,30 +182,30 @@ export default function BuyPointsModal({
                     key={String(p.id)}
                     data-card
                     onClick={() => setSelectedId(p.id)}
-                    className="min-w-40 shrink-0 snap-start relative outline-none"
+                    className="min-w-[110px] shrink-0 snap-start relative outline-none"
                   >
                     <Card
-                      className={`relative flex flex-col justify-between h-full p-4 cursor-pointer transition-all duration-200 bg-white border-2 rounded-2xl ${
+                      className={`relative flex flex-col justify-between h-full p-1.5 cursor-pointer transition-all duration-200 bg-white border rounded-md ${
                         isSel
                           ? `border-[${PRIMARY}] ring-1 ring-[${PRIMARY}]/30 shadow-md scale-105`
                           : "border-slate-100 hover:border-slate-200 hover:shadow-md"
                       }`}
                     >
                       <div>
-                        <div className="text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-2 flex items-center gap-1">
+                        <div className="text-[9px] font-semibold uppercase tracking-widest text-slate-600 mb-0.5 flex items-center gap-1">
                           <Zap className="w-3 h-3 text-yellow-500" />{" "}
                           {p.label || "Pack"}
                         </div>
                         <div className="flex items-baseline gap-1">
-                          <span className="text-3xl font-bold text-slate-900">
+                          <span className="text-base font-semibold text-slate-900">
                             {p.points.toLocaleString()}
                           </span>
-                          <span className="text-xs font-semibold text-slate-600">
+                          <span className="text-[10px] font-medium text-slate-600">
                             pts
                           </span>
                         </div>
                       </div>
-                      <div className="mt-3 pt-3 border-t border-slate-200">
+                      <div className="mt-2 pt-2 border-t border-slate-200">
                         <div className="flex items-center justify-between">
                           <span className="text-[10px] text-slate-600 font-medium">
                             Price (UGX)
@@ -248,7 +248,7 @@ export default function BuyPointsModal({
           </button>
         </div>
 
-        <div className="mt-6 space-y-4">
+        <div className="mt-2 space-y-1">
           {error && (
             <p className="text-xs text-red-500 font-medium">⚠️ {error}</p>
           )}
@@ -259,7 +259,7 @@ export default function BuyPointsModal({
             <div className="flex gap-3">
               <button
                 onClick={() => setPaymentMode("momo")}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border text-sm font-semibold transition-all ${
+                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl border text-sm font-semibold transition-all ${
                   paymentMode === "momo"
                     ? `bg-[${PRIMARY}]/10 border-[${PRIMARY}] text-[${PRIMARY}] shadow-sm`
                     : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
@@ -269,7 +269,7 @@ export default function BuyPointsModal({
               </button>
               <button
                 disabled
-                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border border-slate-100 bg-slate-50 text-slate-400 cursor-not-allowed opacity-60"
+                className="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl border border-slate-100 bg-slate-50 text-slate-400 cursor-not-allowed opacity-60"
               >
                 <span>🏦</span> Bank (Soon)
               </button>
@@ -284,18 +284,18 @@ export default function BuyPointsModal({
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="07XXXXXXXX"
-              className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-[#d81b60] outline-none"
+              className="w-full max-w-xs mx-auto px-3 py-1.5 rounded-md border border-slate-300 focus:border-[#d81b60] outline-none text-sm"
             />
           </div>
         </div>
 
-        <div className="mt-8 flex justify-end gap-3 pt-4 border-t border-slate-100">
+        <div className="mt-3 flex justify-end gap-2 pt-2 border-t border-slate-100">
           {/* Cancel Button */}
           <Button
             variant="ghost"
             onClick={onClose}
             disabled={processing}
-            className="text-black hover:bg-gray-100"
+            className="bg-gray-50 text-slate-900 border border-slate-200 px-3 py-1.5 rounded-md hover:bg-gray-100"
           >
             Cancel
           </Button>
@@ -304,7 +304,7 @@ export default function BuyPointsModal({
           <Button
             onClick={handleProceed}
             disabled={!selectedId || loadingPackages}
-            className="bg-gray-200 text-black font-semibold py-2 px-4 rounded-lg hover:bg-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors border-none"
+            className="bg-gray-200 text-slate-900 font-semibold py-1.5 px-3 rounded-md hover:bg-gray-300 disabled:opacity-80 disabled:cursor-not-allowed transition-colors border border-slate-200 shadow-sm"
           >
             {loadingPackages ? "Processing..." : "Continue"}
           </Button>
@@ -313,45 +313,73 @@ export default function BuyPointsModal({
     );
   } else if (step === "confirm") {
     content = (
-      <div className="text-center py-6">
-        <div className="w-16 h-16 bg-yellow-100 text-[#ffa727] rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
+      <div className="text-center py-3">
+        <div className="mx-auto w-14 h-14 rounded-full bg-linear-to-br from-yellow-100 via-yellow-50 to-white flex items-center justify-center mb-2 shadow-sm text-2xl text-[#ffa727]">
           ⚠️
         </div>
-        <h4 className="text-xl font-bold text-slate-900">Check your phone</h4>
-        <p className="text-slate-600 mt-2 max-w-sm mx-auto">
-          Approve the UGX{" "}
-          <span className="font-bold">
-            {selectedPackage?.price.toLocaleString()}
-          </span>{" "}
-          request sent to{" "}
-          <span className="font-semibold text-slate-900">{phone}</span>.
+
+        <h4 className="text-lg font-bold text-slate-900">Confirm payment</h4>
+        <p className="text-slate-600 mt-1 max-w-sm mx-auto text-sm">
+          We've sent a payment request to your phone — approve it to complete the top up.
         </p>
-        <div className="mt-8 space-y-3">
-          <Button
-            onClick={handleConfirmPayment}
-            className="w-full justify-center bg-[#d81b60] text-white"
-            disabled={processing}
-          >
-            {processing ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              "I have approved it"
-            )}
-          </Button>
+
+        <div className="mt-3 mx-auto max-w-sm bg-white border border-slate-100 rounded-xl p-3 shadow-sm text-left">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-xs text-slate-400">Bundle</div>
+              <div className="font-semibold text-slate-900">
+                {selectedPackage?.label ?? `${selectedPackage?.points?.toLocaleString()} pts`}
+              </div>
+            </div>
+
+            <div className="text-right">
+              <div className="text-xs text-slate-400">Amount</div>
+              <div className="font-bold text-[#d81b60]">UGX {selectedPackage?.price?.toLocaleString()}</div>
+            </div>
+          </div>
+
+          <div className="mt-3 text-sm text-slate-500">
+            Mobile: <span className="text-slate-900 font-medium">{phone}</span>
+          </div>
+        </div>
+
+        <div className="mt-6">
+          <div className="flex gap-3 items-center">
+            <Button
+              onClick={() => setStep("select")}
+              variant="ghost"
+              className="bg-gray-50 border border-slate-200 hover:bg-gray-100 text-slate-900 px-4 py-2 rounded-md"
+            >
+              Change details
+            </Button>
+
+            <Button
+              onClick={handleConfirmPayment}
+              className="flex-1 bg-gray-200 text-slate-900 font-semibold hover:bg-gray-300 disabled:opacity-80 disabled:cursor-not-allowed border border-slate-200 shadow-sm px-4 py-2 rounded-md"
+              disabled={processing}
+            >
+              {processing ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                "Confirm"
+              )}
+            </Button>
+          </div>
+
           <button
             onClick={() => setStep("select")}
-            className="text-sm text-slate-500 underline"
+            className="mt-3 text-sm text-slate-800 underline"
           >
-            Change details
+            Didn't receive the request?
           </button>
         </div>
       </div>
     );
   } else if (step === "success") {
     content = (
-      <div className="text-center py-6 animate-in zoom-in-95">
-        <div className="w-16 h-16 bg-pink-100 text-[#d81b60] rounded-full flex items-center justify-center mx-auto mb-4">
-          <Heart className="w-8 h-8 fill-current" />
+      <div className="text-center py-3 animate-in zoom-in-95">
+        <div className="w-12 h-12 bg-pink-100 text-[#d81b60] rounded-full flex items-center justify-center mx-auto mb-2">
+          <Heart className="w-6 h-6 fill-current" />
         </div>
         <h4 className="text-xl font-bold text-slate-900">Top Up Successful!</h4>
         <p className="text-slate-600 mt-2">
@@ -363,7 +391,7 @@ export default function BuyPointsModal({
         </p>
         <Button
           onClick={onClose}
-          className="w-full mt-8 bg-[#d81b60] text-white"
+          className="w-full mt-6 bg-gray-200 text-slate-900 font-semibold"
         >
           Back to Dashboard
         </Button>
@@ -371,9 +399,9 @@ export default function BuyPointsModal({
     );
   } else if (step === "failure") {
     content = (
-      <div className="text-center py-6">
-        <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
-          <X className="w-8 h-8" />
+      <div className="text-center py-3">
+        <div className="w-14 h-14 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-3">
+          <X className="w-7 h-7" />
         </div>
         <h4 className="text-xl font-bold text-red-900">Payment Failed</h4>
         <p className="text-slate-600 mt-2">{error}</p>
@@ -383,7 +411,7 @@ export default function BuyPointsModal({
           </Button>
           <Button
             onClick={() => setStep("select")}
-            className="flex-1 bg-[#d81b60] text-white"
+            className="flex-1 bg-gray-200 text-slate-900 font-semibold px-4 py-2 rounded-md border border-slate-200 shadow-sm"
           >
             Try Again
           </Button>
@@ -393,19 +421,19 @@ export default function BuyPointsModal({
   }
 
   return (
-    <Modal open={open} onClose={() => !processing && onClose()}>
-      <div className="bg-[#fffcf7] w-full max-w-lg mx-auto rounded-3xl shadow-2xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">🛒</span>
-            <h3 className="text-lg font-bold text-slate-800">Buy Points</h3>
-          </div>
-          <button onClick={onClose} className="text-slate-400">
-            ✕
-          </button>
+    <Modal
+      open={open}
+      onClose={() => !processing && onClose()}
+      size="sm"
+      noOverlay
+      title={
+        <div className="flex items-center gap-2">
+          <span className="text-lg">🛒</span>
+          <span className="text-base font-semibold">Buy Points</span>
         </div>
-        <div className="p-6">{content}</div>
-      </div>
+      }
+    >
+      <div className="p-3 max-h-[65vh] overflow-y-auto">{content}</div>
     </Modal>
   );
 }
