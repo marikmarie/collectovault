@@ -389,7 +389,26 @@ const [selectedRedeemOffer, setSelectedRedeemOffer] =
       <BuyPoints
         open={buyPointsOpen}
         onClose={() => setBuyPointsOpen(false)}
-        onSuccess={() => {}}
+        onSuccess={(details) => {
+          const added = typeof details?.addedPoints === 'number' ? details.addedPoints : 0;
+          if (added > 0) {
+            setUser((prev) => ({
+              ...prev,
+              pointsBalance: (prev.pointsBalance ?? 0) + added,
+            }));
+
+            setRecentPoints((prev) => [
+              ...prev,
+              {
+                id: `tx_${Date.now()}`,
+                date: new Date().toISOString(),
+                desc: "Bought points",
+                change: added,
+              },
+            ]);
+          }
+          setBuyPointsOpen(false);
+        }}
       />
 
       <SpendPointsModal

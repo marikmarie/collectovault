@@ -26,7 +26,7 @@ interface ApiPackage {
 type Props = {
   open: boolean;
   onClose: () => void;
-  onSuccess?: () => void;
+  onSuccess?: (details?: { addedPoints?: number }) => void;
 };
 
 type ModalStep = "select" | "confirm" | "success" | "failure";
@@ -57,6 +57,12 @@ export default function BuyPointsModal({
   const [accountName, setAccountName] = useState<string | null>(null);
   const [verifying, setVerifying] = useState(false);
   const [verified, setVerified] = useState(false);
+
+  // Transaction tracking / query states
+  const [txId, setTxId] = useState<string | number | null>(null);
+  const [txStatus, setTxStatus] = useState<"idle" | "pending" | "success" | "failed">("idle");
+  const [queryLoading, setQueryLoading] = useState(false);
+  const [queryError, setQueryError] = useState<string | null>(null);
 
   const verifyPhoneNumber = async () => {
     const trimmed = String(phone || "").trim();
@@ -163,17 +169,35 @@ export default function BuyPointsModal({
     if (!selectedPackage) return;
     setProcessing(true);
     setError(null);
+    setTxId(null);
+    setTxStatus("idle");
 
     try {
-      // Replace this URL with your actual payment initiation endpoint
-      await api.post("/buyPoints", {
+      const res = await api.post("/buyPoints", {
         packageId: selectedPackage.id,
         phoneNumber: phone,
         paymentMethod: paymentMode,
       });
 
-      setStep("success");
-      onSuccess?.();
+      const data = res?.data?.data ?? res?.data ?? {};
+      const status = String(data?.status ?? data?.state ?? "pending").toLowerCase();
+      const id = data?.transactionId ?? data?.id ?? data?.reference ?? null;
+
+      if (status === "pending" || status === "in_progress" || status === "processing") {
+        setTxId(id);
+        setTxStatus("pending");
+        setStep("confirm");
+      } else if (status === "success" || status === "paid" || status === "completed") {
+        setTxId(id);
+        setTxStatus("success");
+        setStep("success");
+        // Inform parent (dashboard) of credited points
+        onSuccess?.({ addedPoints: selectedPackage.points });
+      } else {
+        setTxId(id);
+        setTxStatus("failed");
+        setStep("failure");
+      }
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
@@ -182,6 +206,53 @@ export default function BuyPointsModal({
       setStep("failure");
     } finally {
       setProcessing(false);
+    }
+  };
+
+  const queryTxStatus = async () => {
+    if (!txId) {
+      setQueryError("No transaction to query");
+      return;
+    }
+    setQueryLoading(true);
+    setQueryError(null);
+
+    try {
+      // Try a few possible endpoints to get status
+      let res;
+      try {
+        res = await api.get(`/transactions/${txId}/status`);
+      } catch (e) {
+        try {
+          res = await api.get(`/transactions/${txId}`);
+        } catch (e2) {
+          // Fallback to listing user's transactions and finding by id
+          const listRes = await (await import("../../api/collecto")).transactionService.getTransactions("me");
+          const list = listRes.data?.transactions ?? listRes.data ?? [];
+          const found = Array.isArray(list) ? list.find((t: any) => String(t.id) === String(txId)) : null;
+          res = { data: found ?? {} } as any;
+        }
+      }
+
+      const data = res?.data?.data ?? res?.data ?? {};
+      const status = String(data?.status ?? data?.state ?? "pending").toLowerCase();
+
+      if (status === "success" || status === "paid" || status === "completed") {
+        setTxStatus("success");
+        setStep("success");
+        // Award points locally
+        if (selectedPackage) onSuccess?.({ addedPoints: selectedPackage.points });
+      } else if (status === "pending" || status === "in_progress" || status === "processing") {
+        setTxStatus("pending");
+        setQueryError(null);
+      } else {
+        setTxStatus("failed");
+        setStep("failure");
+      }
+    } catch (err: any) {
+      setQueryError(err?.message || "Failed to query status");
+    } finally {
+      setQueryLoading(false);
     }
   };
 
@@ -398,29 +469,62 @@ export default function BuyPointsModal({
           <div className="mt-3 text-sm text-slate-500">
             Mobile: <span className="text-slate-900 font-medium">{phone}</span>
           </div>
-        </div>
 
-        <div className="mt-6">
-          <div className="flex gap-3 items-center">
-            <Button
+          {/* Transaction status area */}
+          {txStatus !== "idle" && (
+            <div className="mt-3 text-sm">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <div className={`text-xs font-semibold ${
+                    txStatus === "pending" ? "text-amber-600" : txStatus === "success" ? "text-green-600" : "text-red-600"
+                  }`}>Status: {String(txStatus).toUpperCase()}</div>
+                  {queryError && <div className="text-xs text-red-600">{queryError}</div>}
+                </div>
+
+                {txStatus === "pending" && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      disabled={queryLoading}
+                      onClick={queryTxStatus}
+                      className="text-sm font-semibold px-3 py-1 rounded-md bg-white border border-slate-200 shadow-sm"
+                    >
+                      {queryLoading ? 'Checking...' : 'Query status'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="mt-6">
+            <div className="flex gap-3 items-center">
+              <Button
+                onClick={() => setStep("select")}
+                variant="ghost"
+                className="bg-gray-50 border border-slate-200 hover:bg-gray-100 text-slate-900 px-4 py-2 rounded-md"
+              >
+                Change details
+              </Button>
+
+              <Button
+                onClick={handleConfirmPayment}
+                className="flex-1 bg-gray-200 text-slate-900 font-semibold hover:bg-gray-300 disabled:opacity-80 disabled:cursor-not-allowed border border-slate-200 shadow-sm px-4 py-2 rounded-md"
+                disabled={processing}
+              >
+                {processing ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  "Confirm"
+                )}
+              </Button>
+            </div>
+
+            <button
               onClick={() => setStep("select")}
-              variant="ghost"
-              className="bg-gray-50 border border-slate-200 hover:bg-gray-100 text-slate-900 px-4 py-2 rounded-md"
+              className="mt-3 text-sm text-slate-800 underline"
             >
-              Change details
-            </Button>
-
-            <Button
-              onClick={handleConfirmPayment}
-              className="flex-1 bg-gray-200 text-slate-900 font-semibold hover:bg-gray-300 disabled:opacity-80 disabled:cursor-not-allowed border border-slate-200 shadow-sm px-4 py-2 rounded-md"
-              disabled={processing}
-            >
-              {processing ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                "Confirm"
-              )}
-            </Button>
+              Didn't receive the request?
+            </button>
           </div>
 
           <button
