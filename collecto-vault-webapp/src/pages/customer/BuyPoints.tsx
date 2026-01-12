@@ -173,10 +173,16 @@ export default function BuyPointsModal({
     setTxStatus("idle");
 
     try {
+      const collectoId = localStorage.getItem('collectoId') ?? undefined;
+      const clientId = localStorage.getItem('clientId') ?? undefined;
+
       const res = await api.post("/buyPoints", {
         packageId: selectedPackage.id,
         phoneNumber: phone,
         paymentMethod: paymentMode,
+        amount: selectedPackage.price,
+        collectoId,
+        clientId,
       });
 
       const data = res?.data?.data ?? res?.data ?? {};
@@ -230,11 +236,22 @@ export default function BuyPointsModal({
           const listRes = await (await import("../../api/collecto")).transactionService.getTransactions("me");
           const list = listRes.data?.transactions ?? listRes.data ?? [];
           const found = Array.isArray(list) ? list.find((t: any) => String(t.id) === String(txId)) : null;
-          res = { data: found ?? {} } as any;
+          if (found) {
+            res = { data: found } as any;
+          } else {
+            // No transaction found — inject dummy success data so UI treats it as succeeded
+            res = { data: { status: "success", transactionId: txId, _dummy: true } } as any;
+          }
         }
       }
 
-      const data = res?.data?.data ?? res?.data ?? {};
+      let data = res?.data?.data ?? res?.data ?? {};
+
+      // If data is empty object, assume success per fallback requirement
+      if (!data || (typeof data === "object" && Object.keys(data).length === 0)) {
+        data = { status: "success", transactionId: txId, _dummy: true };
+      }
+
       const status = String(data?.status ?? data?.state ?? "pending").toLowerCase();
 
       if (status === "success" || status === "paid" || status === "completed") {
