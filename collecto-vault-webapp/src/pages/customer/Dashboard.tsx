@@ -70,7 +70,7 @@ export default function Dashboard() {
     name: localStorage.getItem('userName') ?? undefined,
     phone: undefined,
     avatar: '/photo.png',
-    pointsBalance: 4000,
+    pointsBalance: Number(localStorage.getItem('pointsBalance') ?? '4000'),
     avatarsize: 120,
     tier: undefined,
     tierProgress: 0,
@@ -392,10 +392,12 @@ const [selectedRedeemOffer, setSelectedRedeemOffer] =
         onSuccess={(details) => {
           const added = typeof details?.addedPoints === 'number' ? details.addedPoints : 0;
           if (added > 0) {
-            setUser((prev) => ({
-              ...prev,
-              pointsBalance: (prev.pointsBalance ?? 0) + added,
-            }));
+            setUser((prev) => {
+              const next = { ...prev, pointsBalance: (prev.pointsBalance ?? 0) + added };
+              // persist so the value is visible on reload/dashboard load
+              try { localStorage.setItem('pointsBalance', String(next.pointsBalance ?? 0)); } catch(e){}
+              return next;
+            });
 
             setRecentPoints((prev) => [
               ...prev,
@@ -407,7 +409,7 @@ const [selectedRedeemOffer, setSelectedRedeemOffer] =
               },
             ]);
           }
-          setBuyPointsOpen(false);
+          // Do not auto-close modal here so user can see the success message and then close manually
         }}
       />
 

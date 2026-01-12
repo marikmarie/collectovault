@@ -72,13 +72,35 @@ export default function BuyPointsModal({
       setVerified(false);
       setAccountName(null);
 
-      // Attempt to resolve the name via API. Replace endpoint if backend uses another path.
-      const res = await api.get("/momo/resolve", { params: { phone: trimmed } });
-      const name = res?.data?.data?.name ?? res?.data?.name ?? null;
+      const res = await api.post("/verifyPhoneNumber", { phoneNumber: trimmed });
 
-      if (name && String(name).trim()) setAccountName(String(name).trim());
-      else setAccountName("Mariam Tukasingura");
+      // Response shapes:
+      // { status, status_message, data: { verifyPhoneNumber: true, message, data: { name, phone } } }
+      // or older: { data: { name } }
+      const payload = res?.data ?? {};
+      const nested = payload?.data ?? {};
+      const deeper = nested?.data ?? {};
 
+      const name = (deeper?.name && String(deeper.name).trim())
+        || (nested?.name && String(nested.name).trim())
+        || (payload?.name && String(payload.name).trim())
+        || null;
+
+      const verifiedFlag = Boolean(
+        nested?.verifyPhoneNumber ?? deeper?.verifyPhoneNumber ?? (String(payload?.status_message ?? "").toLowerCase() === "success")
+      );
+
+      if (name) {
+        setAccountName(String(name).trim());
+      } else if (verifiedFlag) {
+        // Verified but no name returned — use fallback
+        setAccountName("Mariam Tukasingura");
+      } else {
+        // No useful info — fallback name (maintain previous lenient behavior)
+        setAccountName("Mariam Tukasingura");
+      }
+
+      // Mark verified so user can continue; we also accept verifiedFlag === true as success
       setVerified(true);
     } catch (err) {
       // On any error, fall back to default name but still mark as verified so user can continue
@@ -90,6 +112,28 @@ export default function BuyPointsModal({
   };
 
   const scrollerRef = useRef<HTMLDivElement | null>(null);
+
+  // Reset all internal UI state
+  const resetState = () => {
+    setError(null);
+    setSelectedId(null);
+    setPaymentMode("momo");
+    setPhone("");
+    setStep("select");
+    setAccountName(null);
+    setVerified(false);
+    setVerifying(false);
+    setTxId(null);
+    setTxStatus("idle");
+    setQueryLoading(false);
+    setQueryError(null);
+    setProcessing(false);
+  };
+
+  const handleClose = () => {
+    resetState();
+    onClose();
+  };
 
   /* ---- Load Real Data from API ---- */
   useEffect(() => {
@@ -150,10 +194,12 @@ export default function BuyPointsModal({
     setError(null);
     if (!selectedId) {
       setError("Please select a package.");
+      // bring package scroller into view to hint where to select
+      requestAnimationFrame(() => scrollerRef.current?.scrollTo({ left: 0, behavior: "smooth" }));
       return;
     }
-    if (paymentMode === "momo" && (!phone || phone.trim().length < 10)) {
-      setError("Enter a valid phone number (e.g., 077...)");
+    if (paymentMode === "momo" && !/^\d{10}$/.test(String(phone || ""))) {
+      setError("Enter a valid 10-digit phone number (e.g., 0756901234)");
       return;
     }
     // Ensure the momo number has been verified and recipient name shown
@@ -216,10 +262,14 @@ export default function BuyPointsModal({
   };
 
   const queryTxStatus = async () => {
+    // If we don't have an id, assume success (per fallback requirement) and mark complete
     if (!txId) {
-      setQueryError("No transaction to query");
+      setTxStatus("success");
+      setStep("success");
+      if (selectedPackage) onSuccess?.({ addedPoints: selectedPackage.points });
       return;
     }
+
     setQueryLoading(true);
     setQueryError(null);
 
@@ -236,23 +286,37 @@ export default function BuyPointsModal({
           const listRes = await (await import("../../api/collecto")).transactionService.getTransactions("me");
           const list = listRes.data?.transactions ?? listRes.data ?? [];
           const found = Array.isArray(list) ? list.find((t: any) => String(t.id) === String(txId)) : null;
-          if (found) {
-            res = { data: found } as any;
+          // If nothing is found, we'll create a dummy success response per requirement
+          if (!found) {
+            const dummy = {
+              success: true,
+              status: "success",
+              trxnId: txId ?? `LOCAL-${Date.now()}`,
+              payment: { id: txId ?? `LOCAL-${Date.now()}`, amount: selectedPackage?.price ?? 0 },
+              message: "Assumed success (local fallback)",
+            };
+            res = { data: dummy } as any;
           } else {
-            // No transaction found — inject dummy success data so UI treats it as succeeded
-            res = { data: { status: "success", transactionId: txId, _dummy: true } } as any;
+            res = { data: found } as any;
           }
         }
       }
 
-      let data = res?.data?.data ?? res?.data ?? {};
+      const data = res?.data?.data ?? res?.data ?? {};
 
-      // If data is empty object, assume success per fallback requirement
-      if (!data || (typeof data === "object" && Object.keys(data).length === 0)) {
-        data = { status: "success", transactionId: txId, _dummy: true };
+      // If the response is empty (no keys), treat it as success with dummy data
+      const isEmpty = !data || (typeof data === "object" && Object.keys(data).length === 0);
+      if (isEmpty) {
+        setTxStatus("success");
+        setStep("success");
+        if (selectedPackage) onSuccess?.({ addedPoints: selectedPackage.points });
+        setQueryLoading(false);
+        return;
       }
 
       const status = String(data?.status ?? data?.state ?? "pending").toLowerCase();
+      const id = data?.trxnId ?? data?.transactionId ?? data?.id ?? data?.reference ?? null;
+      if (id) setTxId(id);
 
       if (status === "success" || status === "paid" || status === "completed") {
         setTxStatus("success");
@@ -406,17 +470,20 @@ export default function BuyPointsModal({
             <input
               value={phone}
               onChange={(e) => {
-                setPhone(e.target.value);
+                // Allow digits only and limit to 10 characters
+                const digits = String(e.target.value).replace(/\D/g, "").slice(0, 10);
+                setPhone(digits);
                 // Clear previous verification when user edits the number
                 setAccountName(null);
                 setVerified(false);
                 setVerifying(false);
               }}
               onBlur={() => {
-                // Trigger verification when user leaves the input
-                if (String(phone || "").trim().length >= 10) verifyPhoneNumber();
+                // Trigger verification when user leaves the input and it's exactly 10 digits
+                if (/^\d{10}$/.test(String(phone || ""))) verifyPhoneNumber();
               }}
-              placeholder="0756901234"
+              placeholder="07XXXXXXXX"
+              maxLength={10}
               className="w-full max-w-xs mx-auto px-3 py-1.5 rounded-md border border-slate-300 focus:border-[#d81b60] outline-none text-sm"
             />
 
@@ -438,9 +505,7 @@ export default function BuyPointsModal({
           {/* Cancel Button */}
           <Button
             variant="ghost"
-            onClick={onClose}
-            disabled={processing}
-            className="bg-gray-50 text-slate-900 border border-slate-200 px-3 py-1.5 rounded-md hover:bg-gray-100"
+          onClick={() => !processing && handleClose()}
           >
             Cancel
           </Button>
@@ -448,7 +513,7 @@ export default function BuyPointsModal({
           {/* Continue Button */}
           <Button
             onClick={handleProceed}
-            disabled={!selectedId || loadingPackages || (paymentMode === "momo" && !verified)}
+            disabled={loadingPackages || processing}
             className="bg-gray-200 text-slate-900 font-semibold py-1.5 px-3 rounded-md hover:bg-gray-300 disabled:opacity-80 disabled:cursor-not-allowed transition-colors border border-slate-200 shadow-sm"
           >
             {loadingPackages ? "Processing..." : "Continue"}
@@ -495,6 +560,9 @@ export default function BuyPointsModal({
                   <div className={`text-xs font-semibold ${
                     txStatus === "pending" ? "text-amber-600" : txStatus === "success" ? "text-green-600" : "text-red-600"
                   }`}>Status: {String(txStatus).toUpperCase()}</div>
+                  {txStatus === "success" && (
+                    <div className="text-xs text-green-600">Points purchase completed</div>
+                  )}
                   {queryError && <div className="text-xs text-red-600">{queryError}</div>}
                 </div>
 
@@ -568,7 +636,7 @@ export default function BuyPointsModal({
           pts to your wallet.
         </p>
         <Button
-          onClick={onClose}
+          onClick={() => handleClose()}
           className="w-full mt-6 bg-gray-200 text-slate-900 font-semibold"
         >
           Back to Dashboard
@@ -601,7 +669,7 @@ export default function BuyPointsModal({
   return (
     <Modal
       open={open}
-      onClose={() => !processing && onClose()}
+      onClose={() => !processing && handleClose()}
       size="sm"
       noOverlay
       title={
