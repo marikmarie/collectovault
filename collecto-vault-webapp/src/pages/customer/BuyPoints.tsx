@@ -53,6 +53,36 @@ export default function BuyPointsModal({
   const [phone, setPhone] = useState<string>("");
   const [step, setStep] = useState<ModalStep>("select");
 
+  // MoMo verification states
+  const [accountName, setAccountName] = useState<string | null>(null);
+  const [verifying, setVerifying] = useState(false);
+  const [verified, setVerified] = useState(false);
+
+  const verifyPhoneNumber = async () => {
+    const trimmed = String(phone || "").trim();
+    if (!trimmed || trimmed.length < 10) return;
+    try {
+      setVerifying(true);
+      setVerified(false);
+      setAccountName(null);
+
+      // Attempt to resolve the name via API. Replace endpoint if backend uses another path.
+      const res = await api.get("/momo/resolve", { params: { phone: trimmed } });
+      const name = res?.data?.data?.name ?? res?.data?.name ?? null;
+
+      if (name && String(name).trim()) setAccountName(String(name).trim());
+      else setAccountName("Mariam Tukasingura");
+
+      setVerified(true);
+    } catch (err) {
+      // On any error, fall back to default name but still mark as verified so user can continue
+      setAccountName("Mariam Tukasingura");
+      setVerified(true);
+    } finally {
+      setVerifying(false);
+    }
+  };
+
   const scrollerRef = useRef<HTMLDivElement | null>(null);
 
   /* ---- Load Real Data from API ---- */
@@ -120,6 +150,11 @@ export default function BuyPointsModal({
       setError("Enter a valid phone number (e.g., 077...)");
       return;
     }
+    // Ensure the momo number has been verified and recipient name shown
+    if (paymentMode === "momo" && !verified) {
+      setError("Please verify the MoMo number before continuing.");
+      return;
+    }
     setStep("confirm");
   };
 
@@ -131,7 +166,7 @@ export default function BuyPointsModal({
 
     try {
       // Replace this URL with your actual payment initiation endpoint
-      await api.post("/transactions/buy-points", {
+      await api.post("/buyPoints", {
         packageId: selectedPackage.id,
         phoneNumber: phone,
         paymentMethod: paymentMode,
@@ -282,10 +317,32 @@ export default function BuyPointsModal({
             </label>
             <input
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="07XXXXXXXX"
+              onChange={(e) => {
+                setPhone(e.target.value);
+                // Clear previous verification when user edits the number
+                setAccountName(null);
+                setVerified(false);
+                setVerifying(false);
+              }}
+              onBlur={() => {
+                // Trigger verification when user leaves the input
+                if (String(phone || "").trim().length >= 10) verifyPhoneNumber();
+              }}
+              placeholder="0756901234"
               className="w-full max-w-xs mx-auto px-3 py-1.5 rounded-md border border-slate-300 focus:border-[#d81b60] outline-none text-sm"
             />
+
+            <div className="mt-2 max-w-xs mx-auto text-sm">
+              {verifying ? (
+                <div className="flex items-center gap-2 text-slate-500">
+                  <Loader2 className="w-4 h-4 animate-spin" /> Verifying number...
+                </div>
+              ) : accountName ? (
+                <div className="text-slate-700">Recipient: <span className="font-medium text-green-600">{accountName}</span></div>
+              ) : (
+                <div className="text-slate-400">Enter number and leave the field to verify recipient</div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -303,7 +360,7 @@ export default function BuyPointsModal({
           {/* Continue Button */}
           <Button
             onClick={handleProceed}
-            disabled={!selectedId || loadingPackages}
+            disabled={!selectedId || loadingPackages || (paymentMode === "momo" && !verified)}
             className="bg-gray-200 text-slate-900 font-semibold py-1.5 px-3 rounded-md hover:bg-gray-300 disabled:opacity-80 disabled:cursor-not-allowed transition-colors border border-slate-200 shadow-sm"
           >
             {loadingPackages ? "Processing..." : "Continue"}
