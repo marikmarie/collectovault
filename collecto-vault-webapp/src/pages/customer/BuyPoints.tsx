@@ -486,7 +486,7 @@ const queryTxStatus = async () => {
               className="w-full max-w-xs mx-auto px-3 py-1.5 rounded-md border border-slate-300 focus:border-[#d81b60] outline-none text-sm"
             />
 
-            <div className="mt-2 max-w-xs mx-auto text-sm">
+            <div className="mt-2 max-w-xs mx-auto text-sm text-left">
               {verifying ? (
                 <div className="flex items-center gap-2 text-slate-500">
                   <Loader2 className="w-4 h-4 animate-spin" /> Verifying number...
@@ -498,7 +498,7 @@ const queryTxStatus = async () => {
               ) : verified ? (
                 <div className="text-xs text-green-600">Number verified</div>
               ) : (
-                <div className="text-slate-400">Enter number and leave the field to verify recipient</div>
+                <div className="text-slate-400 justify-start">Enter number and leave the field to verify recipient</div>
               )}
             </div>
           </div>
