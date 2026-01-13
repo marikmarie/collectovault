@@ -7,11 +7,9 @@ import BuyPoints from "../customer/BuyPoints";
 import SpendPointsModal from "./SpendPoints";
 import TierDetailsModal from "./TierDetails";
 import Slider from "../../components/Slider";
-// Added CheckCircle, Clock for status icons
 import { X } from "lucide-react";
 import { customerService } from "../../api/customer";
 import { mockUser } from "../../data/mockUser";
-
 
 type TabType = "points" | "tier";
 
@@ -107,14 +105,13 @@ const [selectedRedeemOffer, setSelectedRedeemOffer] =
           tiers = DUMMY_TIERS;
         }
         
-        // For now, use the first/highest tier as current tier
         // In production, this should come from user's account data
         if (Array.isArray(tiers) && tiers.length > 0) {
-          const currentTier = tiers[tiers.length - 1]; // Get highest tier
+          const currentTier = tiers[tiers.length - 1];
           setUser((prev) => ({
             ...prev,
             tier: currentTier.name || 'Standard',
-            tierProgress: 65, // Default progress - should come from actual user data
+            tierProgress: 65, 
           }));
         }
       } catch (err) {
