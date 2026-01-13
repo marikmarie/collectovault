@@ -11,11 +11,20 @@ export const transactionService = {
 
 export const invoiceService = {
   createInvoice: (payload: any) => api.post("/invoice", payload),
-  getInvoices: () => api.get("/invoices"),
+  // getInvoices: () => api.post("/invoices"),
+  // Updated Service Definition
+  
+  getInvoices: (payload: {
+    vaultOTPToken?: string;
+    clientId?: string;
+    collectoId?: string;
+    invoiceId?: string;
+  }) => api.post("/invoiceDetails", payload),
+
 
   payInvoice: (payload: {
     invoiceId?: string;
-    reference?: string; // Used for /buyPoints logic
+    reference?: string;
     paymentOption: string;
     phone?: string;
     vaultOTPToken?: string;

@@ -148,7 +148,7 @@ export default function Statement() {
       const vaultOTPToken =sessionStorage.getItem("vaultOtpToken") || undefined;
       const collectoId = localStorage.getItem("collectoId") ?? undefined;
       const clientId = localStorage.getItem("clientId") ?? undefined;
-
+     
       // 2. Format phone: replace leading '0' with '256'
       const formattedPhone = payPhone
         ? payPhone.replace(/^0/, "256")
@@ -163,7 +163,6 @@ export default function Statement() {
         reference: invoiceId,
       };
       // 3. Call the same buyPoints logic/endpoint but using invoiceId as reference
-      // Note: Assuming invoiceService.payInvoice maps to your "/buyPoints" endpoint logic
       await invoiceService.payInvoice(payload);
 
       // 4. Refresh invoices list

@@ -232,7 +232,6 @@ const handleConfirmPayment = async () => {
     const collectoId = localStorage.getItem('collectoId') ?? undefined;
     const clientId = localStorage.getItem('clientId') ?? undefined;
 
-    // Replace leading '0' with '256'
     const formattedPhone = phone ? phone.replace(/^0/, '256') : phone;
 
     const res = await api.post("/requestToPay", {
