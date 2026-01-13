@@ -83,6 +83,11 @@ interface Transaction {
   date: string;
 }
 
+const vaultOTPToken = sessionStorage.getItem("vaultOtpToken") || undefined;
+const collectoId = localStorage.getItem("collectoId") || undefined;
+const clientId = localStorage.getItem("clientId") || undefined;
+
+
 export default function Statement() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
@@ -96,20 +101,31 @@ export default function Statement() {
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
   const { toast, showToast } = useLocalToast();
 
-  const fetchInvoices = async () => {
-    setLoading(true);
-    try {
-      const res = await invoiceService.getInvoices();
-      const data = res.data?.data ?? res.data ?? [];
-      setInvoices(Array.isArray(data) ? data : []);
-      return data;
-    } catch (err) {
-      setInvoices([]);
-      return [];
-    } finally {
-      setLoading(false);
-    }
-  };
+ // Inside export default function Statement() { ...
+
+const fetchInvoices = async () => {
+  setLoading(true);
+  try {
+    // 1. Retrieve identifiers from storage
+
+    // 2. Pass the payload to the service
+    const res = await invoiceService.getInvoices({
+      vaultOTPToken,
+      collectoId,
+      clientId
+    });
+
+    const data = res.data?.data ?? res.data ?? [];
+    setInvoices(Array.isArray(data) ? data : []);
+    return data;
+  } catch (err) {
+    console.error("Fetch Invoices Error:", err);
+    setInvoices([]);
+    return [];
+  } finally {
+    setLoading(false);
+  }
+};
 
   const fetchTransactions = async () => {
     setLoading(true);
@@ -166,7 +182,7 @@ export default function Statement() {
       await invoiceService.payInvoice(payload);
 
       // 4. Refresh invoices list
-      const res = await invoiceService.getInvoices();
+      const res = await invoiceService.getInvoices({vaultOTPToken, collectoId,clientId,invoiceId});
       const data = res.data?.data ?? res.data ?? [];
       setInvoices(Array.isArray(data) ? data : []);
 

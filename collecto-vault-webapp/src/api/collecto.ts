@@ -1,5 +1,7 @@
 import api from "./index";
 
+
+
 export const transactionService = {
   buyPoints: (customerId: string, data: any) =>
     api.post(`/transactions/${customerId}/buy-points`, data),
@@ -11,8 +13,6 @@ export const transactionService = {
 
 export const invoiceService = {
   createInvoice: (payload: any) => api.post("/invoice", payload),
-  // getInvoices: () => api.post("/invoices"),
-  // Updated Service Definition
   
   getInvoices: (payload: {
     vaultOTPToken?: string;
@@ -20,8 +20,7 @@ export const invoiceService = {
     collectoId?: string;
     invoiceId?: string;
   }) => api.post("/invoiceDetails", payload),
-
-
+  
   payInvoice: (payload: {
     invoiceId?: string;
     reference?: string;

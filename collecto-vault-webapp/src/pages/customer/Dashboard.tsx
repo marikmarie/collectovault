@@ -22,29 +22,29 @@ interface RedeemableOffer {
 
 // Dummy tiers data fallback
 const DUMMY_TIERS = [
-  { id: '1', name: 'Silver', minPoints: 0, maxPoints: 5000 },
-  { id: '2', name: 'Gold', minPoints: 5000, maxPoints: 10000 },
-  { id: '3', name: 'Platinum', minPoints: 10000, maxPoints: Infinity },
+  { id: "1", name: "Silver", minPoints: 0, maxPoints: 5000 },
+  { id: "2", name: "Gold", minPoints: 5000, maxPoints: 10000 },
+  { id: "3", name: "Platinum", minPoints: 10000, maxPoints: Infinity },
 ];
 
 // Dummy redeemable offers fallback
 const DUMMY_OFFERS: RedeemableOffer[] = [
   {
-    id: 'offer_1',
-    title: '10% Discount on Next Purchase',
-    desc: 'Get 10% off your next purchase over 15%',
+    id: "offer_1",
+    title: "10% Discount on Next Purchase",
+    desc: "Get 10% off your next purchase over 15%",
     pointsCost: 500,
   },
   {
-    id: 'offer_2',
-    title: 'Free concert ticket',
-    desc: 'Redeem for a free ticket to a local concert event',
+    id: "offer_2",
+    title: "Free concert ticket",
+    desc: "Redeem for a free ticket to a local concert event",
     pointsCost: 250,
   },
   {
-    id: 'offer_3',
-    title: 'Exclusive Member Offer',
-    desc: 'Special discount available only to tier members',
+    id: "offer_3",
+    title: "Exclusive Member Offer",
+    desc: "Special discount available only to tier members",
     pointsCost: 1000,
   },
 ];
@@ -65,10 +65,10 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabType>("tier");
   // Initialize user with any name stored at login and sensible defaults
   const [user, setUser] = useState<UserProfile>(() => ({
-    name: localStorage.getItem('userName') ?? undefined,
+    name: localStorage.getItem("userName") ?? undefined,
     phone: undefined,
-    avatar: '/photo.png',
-    pointsBalance: Number(localStorage.getItem('pointsBalance') ?? '4000'),
+    avatar: "/photo.png",
+    pointsBalance: Number(localStorage.getItem("pointsBalance") ?? "4000"),
     avatarsize: 120,
     tier: undefined,
     tierProgress: 0,
@@ -80,38 +80,45 @@ export default function Dashboard() {
   const [spendPointsOpen, setSpendPointsOpen] = useState<boolean>(false);
   const [tierDetailsOpen, setTierDetailsOpen] = useState<boolean>(false);
 
-const [selectedRedeemOffer, setSelectedRedeemOffer] =
+  const [selectedRedeemOffer, setSelectedRedeemOffer] =
     useState<RedeemableOffer | null>(null);
 
   // Offers state
-  const [redeemableOffers, setRedeemableOffers] = useState<RedeemableOffer[]>([]);
+  const [redeemableOffers, setRedeemableOffers] = useState<RedeemableOffer[]>(
+    []
+  );
   const [offersLoading, setOffersLoading] = useState<boolean>(false);
 
   // Recent points activity (ascending order)
-  interface LedgerItem { id: string; date: string; desc: string; change: number }
+  interface LedgerItem {
+    id: string;
+    date: string;
+    desc: string;
+    change: number;
+  }
   const [recentPoints, setRecentPoints] = useState<LedgerItem[]>([]);
 
   useEffect(() => {
     const fetchPointsAndTier = async () => {
       try {
-        const vendorId = localStorage.getItem('collectoId') || '141122';
+        const vendorId = localStorage.getItem("collectoId") || "141122";
         // Fetch tier information
         const tierRes = await customerService.getTierInfo(vendorId);
         let tiers = tierRes.data?.data ?? tierRes.data ?? [];
-        
+
         // Use dummy data if no tiers found
         if (!Array.isArray(tiers) || tiers.length === 0) {
           console.warn("No tier data from API, using dummy data");
           tiers = DUMMY_TIERS;
         }
-        
+
         // In production, this should come from user's account data
         if (Array.isArray(tiers) && tiers.length > 0) {
           const currentTier = tiers[tiers.length - 1];
           setUser((prev) => ({
             ...prev,
-            tier: currentTier.name || 'Standard',
-            tierProgress: 65, 
+            tier: currentTier.name || "Standard",
+            tierProgress: 65,
           }));
         }
       } catch (err) {
@@ -121,7 +128,7 @@ const [selectedRedeemOffer, setSelectedRedeemOffer] =
           const currentTier = DUMMY_TIERS[DUMMY_TIERS.length - 1];
           setUser((prev) => ({
             ...prev,
-            tier: currentTier.name || 'Standard',
+            tier: currentTier.name || "Standard",
             tierProgress: 65,
           }));
         }
@@ -133,7 +140,7 @@ const [selectedRedeemOffer, setSelectedRedeemOffer] =
       try {
         const res = await customerService.getRedeemableOffers();
         const offers = res.data?.offers ?? res.data ?? [];
-        
+
         // Use dummy offers if no offers found
         if (!Array.isArray(offers) || offers.length === 0) {
           console.warn("No offers from API, using dummy offers");
@@ -142,8 +149,10 @@ const [selectedRedeemOffer, setSelectedRedeemOffer] =
           setRedeemableOffers(offers);
         }
       } catch (err) {
-        console.warn("Failed to fetch redeemable offers, using dummy offers", err);
-        // Use dummy offers on error
+        console.warn(
+          "Failed to fetch redeemable offers, using dummy offers",
+          err
+        );
         setRedeemableOffers(DUMMY_OFFERS);
       } finally {
         setOffersLoading(false);
@@ -158,7 +167,10 @@ const [selectedRedeemOffer, setSelectedRedeemOffer] =
   // Load recent points activity from mock data (ascending by date)
   useEffect(() => {
     const ledger = (mockUser.ledger ?? []).slice();
-    ledger.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    ledger.sort(
+      (a: any, b: any) =>
+        new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
     setRecentPoints(ledger as any);
   }, []);
 
@@ -171,22 +183,20 @@ const [selectedRedeemOffer, setSelectedRedeemOffer] =
     setSpendPointsOpen(true);
   };
 
-
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-50 to-[#faf9f7] font-sans">
-      
       <TopNav />
       <Header
-        name={user.name ?? localStorage.getItem('userName') ?? 'User'}
-        phone={user.phone ?? ''}
-        avatar={user.avatar ?? '/photo.png'}
+        name={user.name ?? localStorage.getItem("userName") ?? "User"}
+        phone={user.phone ?? ""}
+        avatar={user.avatar ?? "/photo.png"}
         useVideo={false}
         onAvatarFileChange={() => {}}
       />
 
       <main className="px-0">
         {/* --- TABS SECTION --- */}
-       
+
         <div className="bg-white shadow-lg flex divide-x divide-gray-100">
           {/* TAB 1: POINTS */}
           <button
@@ -214,7 +224,7 @@ const [selectedRedeemOffer, setSelectedRedeemOffer] =
             }`}
           >
             <span className="text-3xl text-gray-800 font-light tracking-tight">
-              {user.tier ?? 'N/A'}
+              {user.tier ?? "N/A"}
             </span>
             <span className="text-xs font-medium text-gray-500 uppercase mt-1">
               Tier
@@ -223,8 +233,6 @@ const [selectedRedeemOffer, setSelectedRedeemOffer] =
               <div className="absolute bottom-0 w-full h-[3px] bg-[#cb0d6c] animate-in fade-in zoom-in duration-200" />
             )}
           </button>
-
-
         </div>
 
         {/* --- MAIN CONTENT AREA --- */}
@@ -253,7 +261,7 @@ const [selectedRedeemOffer, setSelectedRedeemOffer] =
           <div className="animate-in slide-in-from-bottom-2 fade-in duration-300">
             {activeTab === "tier" && (
               <TierProgress
-                currentTier={user.tier ?? 'N/A'}
+                currentTier={user.tier ?? "N/A"}
                 progress={user.tierProgress ?? 0}
               />
             )}
@@ -265,7 +273,7 @@ const [selectedRedeemOffer, setSelectedRedeemOffer] =
           {/* 1. VIEW: POINTS TAB */}
           {activeTab === "points" && (
             <>
-                  <div className="px-4 mb-3">
+              <div className="px-4 mb-3">
                 <h3 className="text-lg font-semibold text-gray-800">
                   Redeemable Offers
                 </h3>
@@ -273,9 +281,13 @@ const [selectedRedeemOffer, setSelectedRedeemOffer] =
 
               <div className="px-4 pb-4">
                 {offersLoading ? (
-                  <div className="text-center py-6 text-sm text-gray-500">Loading offers…</div>
+                  <div className="text-center py-6 text-sm text-gray-500">
+                    Loading offers…
+                  </div>
                 ) : redeemableOffers.length === 0 ? (
-                  <div className="text-center py-6 text-sm text-gray-500">No redeemable offers found.</div>
+                  <div className="text-center py-6 text-sm text-gray-500">
+                    No redeemable offers found.
+                  </div>
                 ) : (
                   <Slider
                     slides={redeemableOffers.map((offer) => ({
@@ -283,12 +295,18 @@ const [selectedRedeemOffer, setSelectedRedeemOffer] =
                       node: (
                         <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-2 h-full flex flex-col justify-between">
                           <div>
-                            <div className="font-semibold text-gray-900 text-sm">{offer.title}</div>
-                            <div className="text-xs text-gray-500 mt-1">{offer.desc}</div>
+                            <div className="font-semibold text-gray-900 text-sm">
+                              {offer.title}
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              {offer.desc}
+                            </div>
                           </div>
 
                           <div className="flex items-center justify-between mt-2">
-                            <div className="text-xs text-gray-700 font-semibold">{offer.pointsCost.toLocaleString()} pts</div>
+                            <div className="text-xs text-gray-700 font-semibold">
+                              {offer.pointsCost.toLocaleString()} pts
+                            </div>
                             <div className="flex items-center gap-2">
                               <button
                                 onClick={() => handleViewRedeemOffer(offer)}
@@ -298,8 +316,12 @@ const [selectedRedeemOffer, setSelectedRedeemOffer] =
                               </button>
 
                               <button
-                                onClick={() => { setSelectedRedeemOffer(offer); }}
-                                disabled={(user.pointsBalance ?? 0) < offer.pointsCost}
+                                onClick={() => {
+                                  setSelectedRedeemOffer(offer);
+                                }}
+                                disabled={
+                                  (user.pointsBalance ?? 0) < offer.pointsCost
+                                }
                                 className={`text-[10px] px-2 py-1 rounded-full font-semibold transition-all ${
                                   (user.pointsBalance ?? 0) >= offer.pointsCost
                                     ? "bg-[#ef4155] text-white hover:bg-[#cb0d6c]"
@@ -311,7 +333,7 @@ const [selectedRedeemOffer, setSelectedRedeemOffer] =
                             </div>
                           </div>
                         </div>
-                      )
+                      ),
                     }))}
                     height="h-32"
                     className="pb-1"
@@ -320,19 +342,37 @@ const [selectedRedeemOffer, setSelectedRedeemOffer] =
 
                 {/* Recent Points Activity (ascending) */}
                 <div className="mt-6">
-                  <h4 className="text-md font-semibold text-gray-800">Recent Points Activity</h4>
+                  <h4 className="text-md font-semibold text-gray-800">
+                    Recent Points Activity
+                  </h4>
                   <div className="mt-3 space-y-3">
                     {recentPoints.length === 0 ? (
-                      <div className="text-sm text-gray-500">No recent points activity.</div>
+                      <div className="text-sm text-gray-500">
+                        No recent points activity.
+                      </div>
                     ) : (
                       recentPoints.map((item) => (
-                        <div key={item.id} className="bg-white p-3 rounded-lg border border-gray-100 flex items-center justify-between">
+                        <div
+                          key={item.id}
+                          className="bg-white p-3 rounded-lg border border-gray-100 flex items-center justify-between"
+                        >
                           <div>
-                            <p className="font-medium text-gray-800">{item.desc}</p>
-                            <p className="text-xs text-gray-400">{new Date(item.date).toLocaleDateString()}</p>
+                            <p className="font-medium text-gray-800">
+                              {item.desc}
+                            </p>
+                            <p className="text-xs text-gray-400">
+                              {new Date(item.date).toLocaleDateString()}
+                            </p>
                           </div>
-                          <div className={`font-black ${item.change > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {item.change > 0 ? '+' : ''}{item.change.toLocaleString()} pts
+                          <div
+                            className={`font-black ${
+                              item.change > 0
+                                ? "text-green-600"
+                                : "text-red-600"
+                            }`}
+                          >
+                            {item.change > 0 ? "+" : ""}
+                            {item.change.toLocaleString()} pts
                           </div>
                         </div>
                       ))
@@ -376,9 +416,6 @@ const [selectedRedeemOffer, setSelectedRedeemOffer] =
               </div>
             </>
           )}
-
-
-
         </div>
       </main>
 
@@ -387,12 +424,21 @@ const [selectedRedeemOffer, setSelectedRedeemOffer] =
         open={buyPointsOpen}
         onClose={() => setBuyPointsOpen(false)}
         onSuccess={(details) => {
-          const added = typeof details?.addedPoints === 'number' ? details.addedPoints : 0;
+          const added =
+            typeof details?.addedPoints === "number" ? details.addedPoints : 0;
           if (added > 0) {
             setUser((prev) => {
-              const next = { ...prev, pointsBalance: (prev.pointsBalance ?? 0) + added };
+              const next = {
+                ...prev,
+                pointsBalance: (prev.pointsBalance ?? 0) + added,
+              };
               // persist so the value is visible on reload/dashboard load
-              try { localStorage.setItem('pointsBalance', String(next.pointsBalance ?? 0)); } catch(e){}
+              try {
+                localStorage.setItem(
+                  "pointsBalance",
+                  String(next.pointsBalance ?? 0)
+                );
+              } catch (e) {}
               return next;
             });
 
@@ -406,7 +452,6 @@ const [selectedRedeemOffer, setSelectedRedeemOffer] =
               },
             ]);
           }
-          // Do not auto-close modal here so user can see the success message and then close manually
         }}
       />
 
@@ -419,11 +464,10 @@ const [selectedRedeemOffer, setSelectedRedeemOffer] =
       <TierDetailsModal
         open={tierDetailsOpen}
         onClose={() => setTierDetailsOpen(false)}
-        tier={user.tier ?? 'N/A'}
-        expiry={user.expiryDate ?? ''}
+        tier={user.tier ?? "N/A"}
+        expiry={user.expiryDate ?? ""}
         pointsToNextTier={1500}
       />
-
 
       {/* --- REDEEM OFFER MODAL --- */}
       {selectedRedeemOffer && (
@@ -470,7 +514,6 @@ const [selectedRedeemOffer, setSelectedRedeemOffer] =
               <button
                 onClick={() => handleSpendFromDetails()}
                 disabled={
-
                   (user.pointsBalance ?? 0) < selectedRedeemOffer.pointsCost
                 }
                 className={`flex-1 text-sm font-semibold px-4 py-2 rounded-full transition-all ${
@@ -488,4 +531,3 @@ const [selectedRedeemOffer, setSelectedRedeemOffer] =
     </div>
   );
 }
-
