@@ -178,39 +178,80 @@ const paginatedServices = filteredServices;
   };
 
   // Place order helper (creates invoice)
-  const handlePlaceOrder = async () => {
-    if (cart.length === 0) { showToast('Cart is empty', 'error'); return; }
-    setLoading(true);
-    try {
-      const collectoId = localStorage.getItem("collectoId") || "141122";
-      if (!clientId) { showToast('Unable to determine your customer id. Please login or refresh your profile.', 'error'); setLoading(false); return; }
-      const vaultOTPToken = sessionStorage.getItem('vaultOtpToken') || undefined;
+const handlePlaceOrder = async () => {
+  if (cart.length === 0) {
+    showToast('Cart is empty', 'error');
+    return;
+  }
 
-      const payload = {
-        vaultOTPToken,
-        collectoId,
-        clientId,
-        totalAmount: Number(cartTotal),
-        items: cart.map((c) => ({
-          serviceId: c.id,
-          serviceName: c.name,
-          quantity: c.quantity,
-          totalAmount: Number(c.unitAmount * c.quantity),
-        })),
-      }; 
-      const { data } = await invoiceService.createInvoice(payload);
-      showToast(`Order placed: ${data.invoiceId ?? 'unknown'}`, 'success');
-      try { window.dispatchEvent(new CustomEvent('invoice:created', { detail: data?.invoiceId ?? data?.id ?? null })); } catch (e) { /* noop */ }
+  setLoading(true);
+
+  try {
+    const collectoId = localStorage.getItem("collectoId") || "141122";
+    if (!clientId) {
+      showToast('Customer ID missing. Please login.', 'error');
+      setLoading(false);
+      return;
+    }
+
+    const payload = {
+      vaultOTPToken: sessionStorage.getItem('vaultOtpToken') || undefined,
+      collectoId,
+      clientId,
+      totalAmount: Number(cartTotal),
+      items: cart.map((c) => ({
+        serviceId: c.id,
+        serviceName: c.name,
+        quantity: c.quantity,
+        totalAmount: Number(c.unitAmount * c.quantity),
+      })),
+    };
+
+    const response = await invoiceService.createInvoice(payload);
+
+    // --- CAREFUL EXTRACTION ---
+    // 1. Get the main body (Axios .data)
+    const apiRoot = response.data; 
+    // 2. Get the nested data (Your API .data)
+    const nestedData = apiRoot?.data;
+    // 3. Get the ID
+    const invoiceId = nestedData?.invoiceId;
+
+    // LOGGING FOR DEBUGGING
+    console.log("Full API Root:", apiRoot);
+    console.log("Extracted Invoice ID:", invoiceId);
+
+    // --- STRICT VALIDATION ---
+    // We check if invoiceId exists first. 
+    // We use toString() on status to handle both "200" and 200.
+    if (invoiceId && apiRoot?.status?.toString() === "200") {
+      
+      // Success: We have a valid ID and a 200 status
+      showToast(`Order placed: ${invoiceId}`, 'success');
+
+      try {
+        window.dispatchEvent(new CustomEvent('invoice:created', { 
+          detail: invoiceId 
+        }));
+      } catch (e) { /* silent fail */ }
+
       setCart([]);
       setCartOpen(false);
-    } catch (err: any) {
-      console.error('Place order failed:', err);
-      showToast(err?.message || 'Failed to place order', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
 
+    } else {
+      // Failure: ID is missing or status is not 200
+      const errorMsg = nestedData?.message || "Invoice ID was not returned by the server.";
+      showToast(errorMsg, 'error');
+    }
+
+  } catch (err: any) {
+    console.error('Place order failed:', err);
+    const msg = err?.response?.data?.data?.message || err.message || 'Failed to place order';
+    showToast(msg, 'error');
+  } finally {
+    setLoading(false);
+  }
+};
   const cartCount = cart.reduce((acc, it) => acc + it.quantity, 0);
   const cartTotal = cart.reduce((acc, it) => acc + it.unitAmount * it.quantity, 0);
 
