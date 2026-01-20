@@ -116,7 +116,8 @@ export default function Statement() {
 
   useEffect(() => {
     (async () => {
-      const invData = await fetchInvoices();
+      let invoiceId: string | undefined = undefined;
+      const invData = await fetchInvoices(invoiceId);
       const txData = await fetchTransactions();
       // Use dummy data if API returns empty
       if (!invData || invData.length === 0) {
