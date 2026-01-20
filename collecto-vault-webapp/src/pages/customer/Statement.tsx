@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import TopNav from "../../components/TopNav";
-import { ArrowDownLeft, ChevronRight } from "lucide-react";
+import { ArrowDownLeft, ChevronRight, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { transactionService, invoiceService } from "../../api/collecto";
+import api from "../../api"; 
 import InvoiceDetailModal from "./InvoiceDetailModal";
 import Button from "../../components/Button";
 
@@ -29,14 +30,64 @@ export default function Statement() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<"invoices" | "payments">(
-    "invoices",
-  );
+  const [activeTab, setActiveTab] = useState<"invoices" | "payments">("invoices");
   const [payingInvoice, setPayingInvoice] = useState<string | null>(null);
   const [payMethod, setPayMethod] = useState<"points" | "mobilemoney">("points");
   const [payPhone, setPayPhone] = useState("");
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
   const { toast, showToast } = useLocalToast();
+
+  // Verification States
+  const [verifying, setVerifying] = useState(false);
+  const [verified, setVerified] = useState(false);
+  const [accountName, setAccountName] = useState<string | null>(null);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+
+  const verifyPhoneNumber = useCallback(async (number: string) => {
+    const trimmed = number.trim();
+    if (trimmed.length < 10) return;
+
+    try {
+      setVerifying(true);
+      setVerified(false);
+      setAccountName(null);
+      setPhoneError(null);
+
+      const res = await api.post("/verifyPhoneNumber", {
+        vaultOTPToken,
+        collectoId,
+        clientId,
+        phoneNumber: trimmed,
+      });
+
+      const payload = res?.data ?? {};
+      const nested = payload?.data ?? {};
+      const deeper = nested?.data ?? {};
+
+      const name =
+        (deeper?.name && String(deeper.name).trim()) ||
+        (nested?.name && String(nested.name).trim()) ||
+        (payload?.name && String(payload.name).trim()) ||
+        null;
+
+      const verifiedFlag = Boolean(
+        nested?.verifyPhoneNumber ??
+          deeper?.verifyPhoneNumber ??
+          String(payload?.status_message ?? "").toLowerCase() === "success"
+      );
+
+      if (verifiedFlag) {
+        setVerified(true);
+        if (name) setAccountName(name);
+      } else {
+        setPhoneError(nested?.message || payload?.message || "Verification failed");
+      }
+    } catch (err: any) {
+      setPhoneError(err?.response?.data?.message || err?.message || "Error verifying number");
+    } finally {
+      setVerifying(false);
+    }
+  }, []);
 
   const fetchInvoices = async (invoiceId?: string | null) => {
     setLoading(true);
@@ -45,14 +96,11 @@ export default function Statement() {
         vaultOTPToken,
         collectoId,
         clientId,
-        // invoiceId: invoiceId ?? "CINV:00000003425",
         invoiceId: invoiceId ?? null,
       });
 
-      // Based on your JSON: res.data (top) -> .data (middle) -> .data (array)
       const invoiceArray = res.data?.data?.data;
       const validatedData = Array.isArray(invoiceArray) ? invoiceArray : [];
-
       setInvoices(validatedData);
       return validatedData;
     } catch (err) {
@@ -68,7 +116,6 @@ export default function Statement() {
     setLoading(true);
     try {
       const res = await transactionService.getTransactions("me");
-      // Adjust this path if your transaction API has a similar nested structure
       const data = res.data?.data?.data ?? res.data?.transactions ?? [];
       setTransactions(Array.isArray(data) ? data : []);
       return data;
@@ -89,9 +136,12 @@ export default function Statement() {
   const handlePayInvoice = async (invoiceId: string) => {
     try {
       setLoading(true);
-      const formattedPhone = payPhone
-        ? payPhone.replace(/^0/, "256")
-        : payPhone;
+
+      // Extract amount_less for the payload
+      const targetInvoice = invoices.find(inv => inv.details?.id === invoiceId);
+      const balanceDue = targetInvoice?.amount_less ?? 0;
+
+      const formattedPhone = payPhone ? payPhone.replace(/^0/, "256") : payPhone;
 
       const payload = {
         vaultOTPToken,
@@ -100,24 +150,15 @@ export default function Statement() {
         phone: formattedPhone,
         paymentOption: payMethod,
         reference: invoiceId,
+        amount: balanceDue, 
       };
 
       await invoiceService.payInvoice(payload);
-
-      // Refresh list after payment
       await fetchInvoices();
-
       setPayingInvoice(null);
-      showToast(
-        "Payment initiated. Please check your phone for the prompt.",
-        "success",
-      );
+      showToast("Payment initiated. Check your phone for the prompt.", "success");
     } catch (err: any) {
-      console.error("Invoice Payment Error:", err);
-      showToast(
-        err.response?.data?.message || err?.message || "Payment failed",
-        "error",
-      );
+      showToast(err.response?.data?.message || "Payment failed", "error");
     } finally {
       setLoading(false);
     }
@@ -136,30 +177,18 @@ export default function Statement() {
       <div className="w-full bg-white shadow-md flex divide-x divide-gray-100 border-b border-gray-100">
         <button
           onClick={() => setActiveTab("invoices")}
-          className={`flex-1 py-6 flex flex-col items-center justify-center relative transition-colors ${
-            activeTab === "invoices" ? "bg-white" : "bg-gray-50/30"
-          }`}
+          className={`flex-1 py-6 flex flex-col items-center justify-center relative transition-colors ${activeTab === "invoices" ? "bg-white" : "bg-gray-50/30"}`}
         >
-          <span className="text-xs font-bold text-gray-400 uppercase mt-1 tracking-widest">
-            Invoices
-          </span>
-          {activeTab === "invoices" && (
-            <div className="absolute bottom-0 w-full h-1 bg-[#cb0d6c]" />
-          )}
+          <span className="text-xs font-bold text-gray-400 uppercase mt-1 tracking-widest">Invoices</span>
+          {activeTab === "invoices" && <div className="absolute bottom-0 w-full h-1 bg-[#cb0d6c]" />}
         </button>
 
         <button
           onClick={() => setActiveTab("payments")}
-          className={`flex-1 py-6 flex flex-col items-center justify-center relative transition-colors ${
-            activeTab === "payments" ? "bg-white" : "bg-gray-50/30"
-          }`}
+          className={`flex-1 py-6 flex flex-col items-center justify-center relative transition-colors ${activeTab === "payments" ? "bg-white" : "bg-gray-50/30"}`}
         >
-          <span className="text-xs font-bold text-gray-400 uppercase mt-1 tracking-widest">
-            Payments
-          </span>
-          {activeTab === "payments" && (
-            <div className="absolute bottom-0 w-full h-1 bg-[#cb0d6c]" />
-          )}
+          <span className="text-xs font-bold text-gray-400 uppercase mt-1 tracking-widest">Payments</span>
+          {activeTab === "payments" && <div className="absolute bottom-0 w-full h-1 bg-[#cb0d6c]" />}
         </button>
       </div>
 
@@ -167,9 +196,7 @@ export default function Statement() {
         <div className="mt-6 mb-6 text-center">
           {!loading && (
             <p className="text-gray-400 text-sm font-medium">
-              {activeTab === "invoices"
-                ? `${invoices.length} invoices found`
-                : `${transactions.length} payments found`}
+              {activeTab === "invoices" ? `${invoices.length} invoices found` : `${transactions.length} payments found`}
             </p>
           )}
         </div>
@@ -179,13 +206,10 @@ export default function Statement() {
             <div className="text-center py-10 text-gray-400">Loading...</div>
           ) : activeTab === "invoices" ? (
             invoices.map((inv: any) => {
-              // Extracting data from your specific JSON structure
               const invId = inv.details?.id || "N/A";
-              const dateRaw =
-                inv.details?.invoice_date_formarted ||
-                inv.details?.invoice_date;
-              const amount = inv.details?.invoice_details?.[0]?.amount || 0;
-              const status = inv.details?.status || "PENDING";
+              const dateRaw = inv.details?.invoice_date || "N/A";
+              const amount = inv.amount_less ?? 0;
+              const isPaid = Number(inv.amount_less) === 0;
 
               return (
                 <div
@@ -198,37 +222,20 @@ export default function Statement() {
                       <ArrowDownLeft className="w-6 h-6 text-gray-300" />
                     </div>
                     <div>
-                   
-                      <div>
-                        <p className="font-bold text-gray-800 text-base">
-                          {invId}
-                        </p>
-                        <div className="flex items-center gap-1 text-[11px] uppercase font-extrabold tracking-wider">
-                          {/* Date is now explicitly black/dark gray */}
-                          <span className="text-gray-900">{dateRaw}</span>
-
-                          <span className="text-gray-400">•</span>
-
-                          {/* Status remains color-coded */}
-                          <span
-                            className={
-                              status === "PAID"
-                                ? "text-green-600"
-                                : "text-red-600"
-                            }
-                          >
-                            {status}
-                          </span>
-                        </div>
+                      <p className="font-bold text-gray-800 text-base">{invId}</p>
+                      <div className="flex items-center gap-1 text-[11px] uppercase font-extrabold tracking-wider">
+                        <span className="text-gray-500">{dateRaw}</span>
+                        <span className="text-gray-400">•</span>
+                        <span className={isPaid ? "text-green-600" : "text-red-600"}>
+                          {isPaid ? "PAID" : "PENDING"}
+                        </span>
                       </div>
                     </div>
                   </div>
                   <div className="text-right flex items-center gap-4">
                     <div>
-                      <p className="font-black text-gray-900 text-lg">
-                        UGX {Number(amount).toLocaleString()}
-                      </p>
-                      {status !== "PAID" && (
+                      <p className="font-black text-gray-900 text-lg">UGX {Number(amount).toLocaleString()}</p>
+                      {!isPaid && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -247,27 +254,18 @@ export default function Statement() {
             })
           ) : (
             transactions.map((tx: any) => (
-              <div
-                key={tx.id}
-                className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between"
-              >
+              <div key={tx.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-full flex items-center justify-center bg-blue-50">
                     <ArrowDownLeft className="w-6 h-6 text-blue-600" />
                   </div>
                   <div>
-                    <p className="font-bold text-gray-800 text-base">
-                      {tx.description || "Payment"}
-                    </p>
-                    <p className="text-[11px] text-gray-400 font-extrabold uppercase tracking-wider">
-                      {tx.method} • {tx.date}
-                    </p>
+                    <p className="font-bold text-gray-800 text-base">{tx.description || "Payment"}</p>
+                    <p className="text-[11px] text-gray-400 font-extrabold uppercase tracking-wider">{tx.method} • {tx.date}</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-black text-lg text-gray-900">
-                    UGX {Number(tx.amount || 0).toLocaleString()}
-                  </p>
+                  <p className="font-black text-lg text-gray-900">UGX {Number(tx.amount || 0).toLocaleString()}</p>
                 </div>
               </div>
             ))
@@ -280,42 +278,34 @@ export default function Statement() {
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 border border-gray-100">
             <div className="flex items-center justify-between mb-6">
-              <h4 className="text-2xl font-black text-gray-900">
-                Payment Details
-              </h4>
-              <button
-                onClick={() => setPayingInvoice(null)}
+              <h4 className="text-2xl font-black text-gray-900">Payment Details</h4>
+              <button 
+                onClick={() => { setPayingInvoice(null); setAccountName(null); setVerified(false); setPayPhone(""); setPhoneError(null); }} 
                 className="text-gray-400 hover:text-gray-600"
               >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
             <div className="bg-linear-to-br from-pink-50 to-orange-50 rounded-xl p-4 mb-5 border border-pink-100">
-              <p className="text-xs text-gray-600 font-medium mb-1">
-                Invoice Reference
-              </p>
-              <p className="text-xl font-black text-gray-900">
-                {payingInvoice}
-              </p>
+              <div className="flex justify-between items-end">
+                <div>
+                  <p className="text-xs text-gray-600 font-medium mb-1">Invoice Reference</p>
+                  <p className="text-lg font-black text-gray-900">{payingInvoice}</p>
+                </div>
+                <div className="text-right">
+                   <p className="text-xs text-gray-600 font-medium mb-1">Balance Due</p>
+                   <p className="text-lg font-black text-[#D81B60]">
+                    UGX {Number(invoices.find(i => i.details?.id === payingInvoice)?.amount_less || 0).toLocaleString()}
+                   </p>
+                </div>
+              </div>
             </div>
 
             <div className="mb-6">
-              <p className="text-sm font-bold text-gray-700 uppercase mb-3">
-                Select Method
-              </p>
+              <p className="text-sm font-bold text-gray-700 uppercase mb-3">Select Method</p>
               <div className="flex gap-3 bg-gray-100 p-1 rounded-2xl">
                 <button
                   onClick={() => setPayMethod("points")}
@@ -334,28 +324,45 @@ export default function Statement() {
 
             {payMethod === "mobilemoney" && (
               <div className="mb-6">
-                <label className="text-sm font-bold text-gray-700 uppercase block mb-2">
-                  Phone Number
-                </label>
-                <input
-                  value={payPhone}
-                  onChange={(e) => setPayPhone(e.target.value)}
-                  placeholder="07XX XXX XXX"
-                  className="w-full p-4 bg-gray-50 border-2 border-gray-200 rounded-xl outline-none focus:border-[#D81B60]"
-                />
+                <label className="text-xs font-bold text-gray-500 uppercase block mb-2">Phone Number</label>
+                <div className="relative">
+                  <input
+                    value={payPhone}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
+                      setPayPhone(digits);
+                      setAccountName(null);
+                      setVerified(false);
+                      setPhoneError(null);
+                      if (digits.length === 10) verifyPhoneNumber(digits);
+                    }}
+                    placeholder="07XXXXXXXX"
+                    maxLength={10}
+                    className={`w-full p-4 bg-gray-50 border-2 rounded-xl outline-none focus:border-[#D81B60] transition-all ${verified ? 'border-green-500' : phoneError ? 'border-red-500' : 'border-gray-200'}`}
+                  />
+                  {verifying && <div className="absolute right-4 top-4"><Loader2 className="w-5 h-5 animate-spin text-[#D81B60]" /></div>}
+                </div>
+                
+                {accountName && (
+                  <div className="mt-2 flex items-center gap-2 text-green-600 bg-green-50 p-2 rounded-lg border border-green-100">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span className="text-xs font-bold uppercase">{accountName}</span>
+                  </div>
+                )}
+                {phoneError && (
+                  <div className="mt-2 flex items-center gap-2 text-red-600 bg-red-50 p-2 rounded-lg border border-red-100">
+                    <AlertCircle className="w-4 h-4" />
+                    <span className="text-xs font-medium">{phoneError}</span>
+                  </div>
+                )}
               </div>
             )}
 
             <div className="mt-8 flex justify-end gap-3 pt-4 border-t border-slate-100">
-              <button
-                onClick={() => setPayingInvoice(null)}
-                className="bg-gray-200 text-black font-semibold py-2 px-6 rounded-lg"
-              >
-                Cancel
-              </button>
+              <button onClick={() => setPayingInvoice(null)} className="bg-gray-200 text-black font-semibold py-2 px-6 rounded-lg">Cancel</button>
               <Button
                 onClick={() => handlePayInvoice(payingInvoice)}
-                disabled={loading || (payMethod === "mobilemoney" && !payPhone)}
+                disabled={loading || verifying || (payMethod === "mobilemoney" && !verified)}
                 className="bg-[#D81B60] text-white font-semibold py-2 px-4 rounded-lg"
               >
                 {loading ? "Processing..." : "Pay Now"}
