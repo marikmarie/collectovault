@@ -67,6 +67,7 @@ export default function Services() {
     fetchServices();
 
     // Initialize clientId from the login step if available
+    
     const storedClientId = localStorage.getItem('clientId');
     if (storedClientId) setClientId(storedClientId);
   }, [page]);
@@ -108,9 +109,10 @@ export default function Services() {
   async function fetchServices() {
     setLoading(true);
     try {
-      const collectoId = localStorage.getItem("collectoId") || "141122";
+      const vaultOTPToken = sessionStorage.getItem("vaultOTPToken") || undefined;
+      const collectoId = localStorage.getItem("collectoId") || undefined;
       // send page (1-indexed) and limit to avoid huge responses from API
-      const response = await customerService.getServices(collectoId, page + 1, itemsPerPage);
+      const response = await customerService.getServices(vaultOTPToken,collectoId, page + 1, itemsPerPage);
       const payload = response.data?.data;
       const innerData = payload?.data;
       const records = innerData?.records || [];

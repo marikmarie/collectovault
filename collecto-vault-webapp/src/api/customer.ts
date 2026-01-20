@@ -23,7 +23,7 @@ export const customerService = {
   getServicesById: (customerId?: string) =>
     api.post(`/customers/${customerId}/services`),
 
-  getServices: (vaultOTPToken?: string,collectoId?: string, page?: number, limit?: number) => 
+  getServices: (vaultOTPToken?: string, collectoId?: string, page?: number, limit?: number) => 
     api.post('/services', { vaultOTPToken,collectoId, page, limit }),
 
   // Create or upsert a customer on login
