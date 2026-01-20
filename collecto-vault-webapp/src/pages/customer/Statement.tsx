@@ -14,38 +14,13 @@ const useLocalToast = () => {
   } | null>(null);
   const showToast = (
     message: string,
-    type: "success" | "error" | "info" = "info"
+    type: "success" | "error" | "info" = "info",
   ) => {
     setToast({ message, type });
     window.setTimeout(() => setToast(null), 3500);
   };
   return { toast, showToast };
 };
-
-// Dummy data for demo
-const dummyInvoices = [
-  {
-    id: "INV-001",
-    invoiceId: "INV-001",
-    amount: 250000,
-    status: "PAID",
-    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "INV-002",
-    invoiceId: "INV-002",
-    amount: 500000,
-    status: "PENDING",
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "INV-003",
-    invoiceId: "INV-003",
-    amount: 150000,
-    status: "PAID",
-    createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-];
 
 const dummyTransactions = [
   {
@@ -87,13 +62,12 @@ const vaultOTPToken = sessionStorage.getItem("vaultOtpToken") || undefined;
 const collectoId = localStorage.getItem("collectoId") || undefined;
 const clientId = localStorage.getItem("clientId") || undefined;
 
-
 export default function Statement() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<"invoices" | "payments">(
-    "invoices"
+    "invoices",
   );
   const [payingInvoice, setPayingInvoice] = useState<string | null>(null);
   const [payMethod, setPayMethod] = useState<"points" | "mm">("points");
@@ -101,31 +75,29 @@ export default function Statement() {
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
   const { toast, showToast } = useLocalToast();
 
- // Inside export default function Statement() { ...
+  // Inside export default function Statement() { ...
 
-const fetchInvoices = async () => {
-  setLoading(true);
-  try {
-    // 1. Retrieve identifiers from storage
+  const fetchInvoices = async (invoiceId?: string) => {
+    setLoading(true);
+    try {
+      const res = await invoiceService.getInvoices({
+        vaultOTPToken,
+        collectoId,
+        clientId,
+        invoiceId,
+      });
 
-    // 2. Pass the payload to the service
-    const res = await invoiceService.getInvoices({
-      vaultOTPToken,
-      collectoId,
-      clientId
-    });
-
-    const data = res.data?.data ?? res.data ?? [];
-    setInvoices(Array.isArray(data) ? data : []);
-    return data;
-  } catch (err) {
-    console.error("Fetch Invoices Error:", err);
-    setInvoices([]);
-    return [];
-  } finally {
-    setLoading(false);
-  }
-};
+      const data = res.data?.data ?? res.data ?? [];
+      setInvoices(Array.isArray(data) ? data : []);
+      return data;
+    } catch (err) {
+      console.error("Fetch Invoices Error:", err);
+      setInvoices([]);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchTransactions = async () => {
     setLoading(true);
@@ -148,7 +120,7 @@ const fetchInvoices = async () => {
       const txData = await fetchTransactions();
       // Use dummy data if API returns empty
       if (!invData || invData.length === 0) {
-        setInvoices(dummyInvoices);
+        setInvoices(dummyTransactions);
       }
       if (!txData || txData.length === 0) {
         setTransactions(dummyTransactions);
@@ -161,10 +133,11 @@ const fetchInvoices = async () => {
       setLoading(true);
 
       // 1. Retrieve identifiers from storage
-      const vaultOTPToken =sessionStorage.getItem("vaultOtpToken") || undefined;
+      const vaultOTPToken =
+        sessionStorage.getItem("vaultOtpToken") || undefined;
       const collectoId = localStorage.getItem("collectoId") ?? undefined;
       const clientId = localStorage.getItem("clientId") ?? undefined;
-     
+
       // 2. Format phone: replace leading '0' with '256'
       const formattedPhone = payPhone
         ? payPhone.replace(/^0/, "256")
@@ -182,20 +155,25 @@ const fetchInvoices = async () => {
       await invoiceService.payInvoice(payload);
 
       // 4. Refresh invoices list
-      const res = await invoiceService.getInvoices({vaultOTPToken, collectoId,clientId,invoiceId});
+      const res = await invoiceService.getInvoices({
+        vaultOTPToken,
+        collectoId,
+        clientId,
+        invoiceId,
+      });
       const data = res.data?.data ?? res.data ?? [];
       setInvoices(Array.isArray(data) ? data : []);
 
       setPayingInvoice(null);
       showToast(
         "Payment initiated. Please check your phone for the prompt.",
-        "success"
+        "success",
       );
     } catch (err: any) {
       console.error("Invoice Payment Error:", err);
       showToast(
         err.response?.data?.message || err?.message || "Payment failed",
-        "error"
+        "error",
       );
     } finally {
       setLoading(false);
@@ -255,8 +233,8 @@ const fetchInvoices = async () => {
                   ? `${invoices.length} invoices found`
                   : "No invoices found"
                 : transactions.length > 0
-                ? `${transactions.length} payments found`
-                : "No payments found"}
+                  ? `${transactions.length} payments found`
+                  : "No payments found"}
             </p>
           )}
         </div>
@@ -380,7 +358,7 @@ const fetchInvoices = async () => {
                 UGX{" "}
                 {invoices
                   .find(
-                    (inv: any) => (inv.invoiceId ?? inv.id) === payingInvoice
+                    (inv: any) => (inv.invoiceId ?? inv.id) === payingInvoice,
                   )
                   ?.amount?.toLocaleString() ?? 0}
               </p>
@@ -457,10 +435,14 @@ const fetchInvoices = async () => {
           invoice={selectedInvoice}
           onClose={() => setSelectedInvoice(null)}
           onPaid={async (invoiceId: string) => {
-            const data = await fetchInvoices();
-            const updated = (data ?? []).find(
-              (inv: any) => (inv.invoiceId ?? inv.id) === invoiceId
+            // 1. Fetch the updated data (the function now passes invoiceId to the API)
+            const data = await fetchInvoices(invoiceId);
+
+            // 2. Update the modal's state with the fresh record
+            const updated = data.find(
+              (inv: any) => (inv.invoiceId ?? inv.id) === invoiceId,
             );
+
             setSelectedInvoice(updated ?? null);
             showToast("Payment successful", "success");
           }}
