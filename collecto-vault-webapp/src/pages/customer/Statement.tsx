@@ -4,7 +4,6 @@ import { ArrowDownLeft, ChevronRight } from "lucide-react";
 import { transactionService, invoiceService } from "../../api/collecto";
 import InvoiceDetailModal from "./InvoiceDetailModal";
 import Button from "../../components/Button";
-// import api from "../../api";
 
 // Local toast helper
 const useLocalToast = () => {
@@ -22,74 +21,40 @@ const useLocalToast = () => {
   return { toast, showToast };
 };
 
-const dummyTransactions = [
-  {
-    id: "1",
-    type: "Payment" as const,
-    description: "Mobile Phone Service Purchase",
-    amount: 50000,
-    method: "Mobile Money",
-    date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "2",
-    type: "Payment" as const,
-    description: "Internet Bundle",
-    amount: 75000,
-    method: "Points Redeemed",
-    date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "3",
-    type: "Payment" as const,
-    description: "Utility Payment",
-    amount: 120000,
-    method: "Mobile Money",
-    date: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-];
-
-interface Transaction {
-  id: string | number;
-  type: "Payment";
-  description: string;
-  amount: number;
-  method: string;
-  date: string;
-}
-
 const vaultOTPToken = sessionStorage.getItem("vaultOtpToken") || undefined;
 const collectoId = localStorage.getItem("collectoId") || undefined;
 const clientId = localStorage.getItem("clientId") || undefined;
 
 export default function Statement() {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [transactions, setTransactions] = useState<any[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<"invoices" | "payments">(
     "invoices",
   );
   const [payingInvoice, setPayingInvoice] = useState<string | null>(null);
-  const [payMethod, setPayMethod] = useState<"points" | "mm">("points");
+  const [payMethod, setPayMethod] = useState<"points" | "mobilemoney">("points");
   const [payPhone, setPayPhone] = useState("");
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
   const { toast, showToast } = useLocalToast();
 
-  // Inside export default function Statement() { ...
-
-  const fetchInvoices = async (invoiceId?: string) => {
+  const fetchInvoices = async (invoiceId?: string | null) => {
     setLoading(true);
     try {
       const res = await invoiceService.getInvoices({
         vaultOTPToken,
         collectoId,
         clientId,
-        invoiceId,
+        // invoiceId: invoiceId ?? "CINV:00000003425",
+        invoiceId: invoiceId ?? null,
       });
 
-      const data = res.data?.data ?? res.data ?? [];
-      setInvoices(Array.isArray(data) ? data : []);
-      return data;
+      // Based on your JSON: res.data (top) -> .data (middle) -> .data (array)
+      const invoiceArray = res.data?.data?.data;
+      const validatedData = Array.isArray(invoiceArray) ? invoiceArray : [];
+
+      setInvoices(validatedData);
+      return validatedData;
     } catch (err) {
       console.error("Fetch Invoices Error:", err);
       setInvoices([]);
@@ -103,10 +68,12 @@ export default function Statement() {
     setLoading(true);
     try {
       const res = await transactionService.getTransactions("me");
-      const data = res.data?.transactions ?? res.data ?? [];
+      // Adjust this path if your transaction API has a similar nested structure
+      const data = res.data?.data?.data ?? res.data?.transactions ?? [];
       setTransactions(Array.isArray(data) ? data : []);
       return data;
     } catch (err) {
+      console.error("Fetch Transactions Error:", err);
       setTransactions([]);
       return [];
     } finally {
@@ -115,31 +82,13 @@ export default function Statement() {
   };
 
   useEffect(() => {
-    (async () => {
-      let invoiceId: string | undefined = undefined;
-      const invData = await fetchInvoices(invoiceId);
-      const txData = await fetchTransactions();
-      // Use dummy data if API returns empty
-      if (!invData || invData.length === 0) {
-        setInvoices(dummyTransactions);
-      }
-      if (!txData || txData.length === 0) {
-        setTransactions(dummyTransactions);
-      }
-    })();
+    fetchInvoices();
+    fetchTransactions();
   }, []);
 
   const handlePayInvoice = async (invoiceId: string) => {
     try {
       setLoading(true);
-
-      // 1. Retrieve identifiers from storage
-      const vaultOTPToken =
-        sessionStorage.getItem("vaultOtpToken") || undefined;
-      const collectoId = localStorage.getItem("collectoId") ?? undefined;
-      const clientId = localStorage.getItem("clientId") ?? undefined;
-
-      // 2. Format phone: replace leading '0' with '256'
       const formattedPhone = payPhone
         ? payPhone.replace(/^0/, "256")
         : payPhone;
@@ -152,18 +101,11 @@ export default function Statement() {
         paymentOption: payMethod,
         reference: invoiceId,
       };
-      // 3. Call the same buyPoints logic/endpoint but using invoiceId as reference
+
       await invoiceService.payInvoice(payload);
 
-      // 4. Refresh invoices list
-      const res = await invoiceService.getInvoices({
-        vaultOTPToken,
-        collectoId,
-        clientId,
-        invoiceId,
-      });
-      const data = res.data?.data ?? res.data ?? [];
-      setInvoices(Array.isArray(data) ? data : []);
+      // Refresh list after payment
+      await fetchInvoices();
 
       setPayingInvoice(null);
       showToast(
@@ -191,7 +133,6 @@ export default function Statement() {
         </div>
       )}
 
-      {/* --- FULL WIDTH DASHBOARD TABS IMMEDIATELY BELOW NAV --- */}
       <div className="w-full bg-white shadow-md flex divide-x divide-gray-100 border-b border-gray-100">
         <button
           onClick={() => setActiveTab("invoices")}
@@ -199,7 +140,6 @@ export default function Statement() {
             activeTab === "invoices" ? "bg-white" : "bg-gray-50/30"
           }`}
         >
-          {/* <span className="text-4xl text-gray-800 font-light tracking-tight">{invoices.length}</span> */}
           <span className="text-xs font-bold text-gray-400 uppercase mt-1 tracking-widest">
             Invoices
           </span>
@@ -214,7 +154,6 @@ export default function Statement() {
             activeTab === "payments" ? "bg-white" : "bg-gray-50/30"
           }`}
         >
-          {/* <span className="text-4xl text-gray-800 font-light tracking-tight">{transactions.length}</span> */}
           <span className="text-xs font-bold text-gray-400 uppercase mt-1 tracking-widest">
             Payments
           </span>
@@ -224,18 +163,13 @@ export default function Statement() {
         </button>
       </div>
 
-      {/* Centered Content Below Tabs */}
       <main className="w-full px-4 mt-0">
         <div className="mt-6 mb-6 text-center">
           {!loading && (
             <p className="text-gray-400 text-sm font-medium">
               {activeTab === "invoices"
-                ? invoices.length > 0
-                  ? `${invoices.length} invoices found`
-                  : "No invoices found"
-                : transactions.length > 0
-                  ? `${transactions.length} payments found`
-                  : "No payments found"}
+                ? `${invoices.length} invoices found`
+                : `${transactions.length} payments found`}
             </p>
           )}
         </div>
@@ -244,55 +178,75 @@ export default function Statement() {
           {loading ? (
             <div className="text-center py-10 text-gray-400">Loading...</div>
           ) : activeTab === "invoices" ? (
-            invoices.map((inv: any) => (
-              <div
-                key={inv.id || inv.invoiceId}
-                onClick={() => setSelectedInvoice(inv)}
-                className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between active:scale-[0.98] transition-transform cursor-pointer"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center">
-                    <ArrowDownLeft className="w-6 h-6 text-gray-300" />
+            invoices.map((inv: any) => {
+              // Extracting data from your specific JSON structure
+              const invId = inv.details?.id || "N/A";
+              const dateRaw =
+                inv.details?.invoice_date_formarted ||
+                inv.details?.invoice_date;
+              const amount = inv.details?.invoice_details?.[0]?.amount || 0;
+              const status = inv.details?.status || "PENDING";
+
+              return (
+                <div
+                  key={invId}
+                  onClick={() => setSelectedInvoice(inv)}
+                  className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between active:scale-[0.98] transition-transform cursor-pointer"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center">
+                      <ArrowDownLeft className="w-6 h-6 text-gray-300" />
+                    </div>
+                    <div>
+                   
+                      <div>
+                        <p className="font-bold text-gray-800 text-base">
+                          {invId}
+                        </p>
+                        <div className="flex items-center gap-1 text-[11px] uppercase font-extrabold tracking-wider">
+                          {/* Date is now explicitly black/dark gray */}
+                          <span className="text-gray-900">{dateRaw}</span>
+
+                          <span className="text-gray-400">•</span>
+
+                          {/* Status remains color-coded */}
+                          <span
+                            className={
+                              status === "PAID"
+                                ? "text-green-600"
+                                : "text-red-600"
+                            }
+                          >
+                            {status}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-bold text-gray-800 text-base">
-                      {inv.invoiceId ?? inv.id}
-                    </p>
-                    <p
-                      className={`text-[11px] uppercase font-extrabold tracking-wider ${
-                        (inv.status ?? "PENDING") === "PAID"
-                          ? "text-green-600"
-                          : "text-red-600"
-                      }`}
-                    >
-                      {new Date(inv.createdAt || inv.date).toLocaleDateString()}{" "}
-                      • {inv.status ?? "Pending"}
-                    </p>
+                  <div className="text-right flex items-center gap-4">
+                    <div>
+                      <p className="font-black text-gray-900 text-lg">
+                        UGX {Number(amount).toLocaleString()}
+                      </p>
+                      {status !== "PAID" && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPayingInvoice(invId);
+                          }}
+                          className="text-[11px] text-gray-800 font-black uppercase underline"
+                        >
+                          Pay Now
+                        </button>
+                      )}
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-gray-300" />
                   </div>
                 </div>
-                <div className="text-right flex items-center gap-4">
-                  <div>
-                    <p className="font-black text-gray-900 text-lg">
-                      UGX {Number(inv.amount ?? 0).toLocaleString()}
-                    </p>
-                    {(inv.status ?? inv.state) !== "PAID" && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setPayingInvoice(inv.invoiceId ?? inv.id);
-                        }}
-                        className="text-[11px] text-gray-800 font-black uppercase underline"
-                      >
-                        Pay Now
-                      </button>
-                    )}
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-gray-300" />
-                </div>
-              </div>
-            ))
+              );
+            })
           ) : (
-            transactions.map((tx) => (
+            transactions.map((tx: any) => (
               <div
                 key={tx.id}
                 className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between"
@@ -303,16 +257,16 @@ export default function Statement() {
                   </div>
                   <div>
                     <p className="font-bold text-gray-800 text-base">
-                      {tx.description}
+                      {tx.description || "Payment"}
                     </p>
                     <p className="text-[11px] text-gray-400 font-extrabold uppercase tracking-wider">
-                      {tx.method} • {new Date(tx.date).toLocaleDateString()}
+                      {tx.method} • {tx.date}
                     </p>
                   </div>
                 </div>
                 <div className="text-right">
                   <p className="font-black text-lg text-gray-900">
-                    UGX {tx.amount.toLocaleString()}
+                    UGX {Number(tx.amount || 0).toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -321,18 +275,17 @@ export default function Statement() {
         </div>
       </main>
 
-      {/* Payment Sheet */}
+      {/* Payment Modal */}
       {payingInvoice && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 animate-in fade-in scale-in duration-300 border border-gray-100">
-            {/* Header */}
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 border border-gray-100">
             <div className="flex items-center justify-between mb-6">
               <h4 className="text-2xl font-black text-gray-900">
                 Payment Details
               </h4>
               <button
                 onClick={() => setPayingInvoice(null)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="text-gray-400 hover:text-gray-600"
               >
                 <svg
                   className="w-6 h-6"
@@ -350,79 +303,60 @@ export default function Statement() {
               </button>
             </div>
 
-            {/* Invoice Amount Display */}
             <div className="bg-linear-to-br from-pink-50 to-orange-50 rounded-xl p-4 mb-5 border border-pink-100">
               <p className="text-xs text-gray-600 font-medium mb-1">
-                Amount to Pay
+                Invoice Reference
               </p>
-              <p className="text-2xl font-black text-gray-900">
-                UGX{" "}
-                {invoices
-                  .find(
-                    (inv: any) => (inv.invoiceId ?? inv.id) === payingInvoice,
-                  )
-                  ?.amount?.toLocaleString() ?? 0}
+              <p className="text-xl font-black text-gray-900">
+                {payingInvoice}
               </p>
             </div>
 
-            {/* Payment Method Tabs */}
             <div className="mb-6">
-              <p className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">
-                Select Payment Method
+              <p className="text-sm font-bold text-gray-700 uppercase mb-3">
+                Select Method
               </p>
               <div className="flex gap-3 bg-gray-100 p-1 rounded-2xl">
                 <button
                   onClick={() => setPayMethod("points")}
-                  className={`flex-1 py-3 px-4 rounded-xl font-bold text-sm transition-all duration-200 ${
-                    payMethod === "points"
-                      ? "bg-white text-[#D81B60] shadow-md"
-                      : "bg-transparent text-gray-600 hover:text-gray-900"
-                  }`}
+                  className={`flex-1 py-3 px-4 rounded-xl font-bold text-sm ${payMethod === "points" ? "bg-white text-[#D81B60] shadow-md" : "text-gray-600"}`}
                 >
                   💰 Points
                 </button>
                 <button
-                  onClick={() => setPayMethod("mm")}
-                  className={`flex-1 py-3 px-4 rounded-xl font-bold text-sm transition-all duration-200 ${
-                    payMethod === "mm"
-                      ? "bg-white text-[#D81B60] shadow-md"
-                      : "bg-transparent text-gray-600 hover:text-gray-900"
-                  }`}
+                  onClick={() => setPayMethod("mobilemoney")}
+                  className={`flex-1 py-3 px-4 rounded-xl font-bold text-sm ${payMethod === "mobilemoney" ? "bg-white text-[#D81B60] shadow-md" : "text-gray-600"}`}
                 >
                   📱 Mobile Money
                 </button>
               </div>
             </div>
 
-            {/* Conditional Input for Mobile Money */}
-            {payMethod === "mm" && (
-              <div className="mb-6 animate-in fade-in slide-in-from-top-2 duration-200">
-                <label className="text-sm font-bold text-gray-700 uppercase tracking-wide block mb-2">
+            {payMethod === "mobilemoney" && (
+              <div className="mb-6">
+                <label className="text-sm font-bold text-gray-700 uppercase block mb-2">
                   Phone Number
                 </label>
                 <input
                   value={payPhone}
                   onChange={(e) => setPayPhone(e.target.value)}
                   placeholder="07XX XXX XXX"
-                  className="w-full p-4 bg-gray-50 border-2 border-gray-200 rounded-xl font-semibold focus:border-[#D81B60] focus:ring-2 focus:ring-[#D81B60]/20 outline-none transition-all"
+                  className="w-full p-4 bg-gray-50 border-2 border-gray-200 rounded-xl outline-none focus:border-[#D81B60]"
                 />
               </div>
             )}
 
-            {/* Action Buttons */}
             <div className="mt-8 flex justify-end gap-3 pt-4 border-t border-slate-100">
               <button
                 onClick={() => setPayingInvoice(null)}
-                disabled={loading}
-                className="bg-gray-200 text-black font-semibold py-2 px-6 rounded-lg hover:bg-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors border-none"
+                className="bg-gray-200 text-black font-semibold py-2 px-6 rounded-lg"
               >
                 Cancel
               </button>
-
               <Button
                 onClick={() => handlePayInvoice(payingInvoice)}
-                disabled={payMethod === "mm" && !payPhone}
-                className="bg-[#D81B60] text-white font-semibold py-2 px-4 rounded-lg hover:bg-[#b00a57] disabled:opacity-50 disabled:cursor-not-allowed transition-colors border-none"
+                disabled={loading || (payMethod === "mobilemoney" && !payPhone)}
+                className="bg-[#D81B60] text-white font-semibold py-2 px-4 rounded-lg"
               >
                 {loading ? "Processing..." : "Pay Now"}
               </Button>
@@ -435,16 +369,9 @@ export default function Statement() {
         <InvoiceDetailModal
           invoice={selectedInvoice}
           onClose={() => setSelectedInvoice(null)}
-          onPaid={async (invoiceId: string) => {
-            // 1. Fetch the updated data (the function now passes invoiceId to the API)
-            const data = await fetchInvoices(invoiceId);
-
-            // 2. Update the modal's state with the fresh record
-            const updated = data.find(
-              (inv: any) => (inv.invoiceId ?? inv.id) === invoiceId,
-            );
-
-            setSelectedInvoice(updated ?? null);
+          onPaid={async () => {
+            await fetchInvoices();
+            setSelectedInvoice(null);
             showToast("Payment successful", "success");
           }}
         />

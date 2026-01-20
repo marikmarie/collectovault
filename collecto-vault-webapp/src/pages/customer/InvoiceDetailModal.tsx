@@ -4,7 +4,7 @@ import { invoiceService } from '../../api/collecto';
 
 export default function InvoiceDetailModal({ invoice, onClose, onPaid }: { invoice: any; onClose: () => void; onPaid?: (invoiceId: string) => void; }) {
   const [tab, setTab] = useState<'details' | 'payment'>('details');
-  const [payMethod, setPayMethod] = useState<'points' | 'mm'>('points');
+  const [payMethod, setPayMethod] = useState<'points' | 'mobilemoney'>('points');
   const [payPhone, setPayPhone] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -26,7 +26,7 @@ export default function InvoiceDetailModal({ invoice, onClose, onPaid }: { invoi
     try {
       setLoading(true);
       const invoiceId = invoice.invoiceId ?? invoice.id;
-      await invoiceService.payInvoice({ invoiceId, method: payMethod, phone: payMethod === 'mm' ? payPhone : undefined });
+      await invoiceService.payInvoice({ invoiceId, paymentOption: payMethod, phone: payMethod === 'mobilemoney' ? payPhone : undefined });
       if (onPaid) onPaid(invoice.invoiceId ?? invoice.id);
     } catch (err: any) {
       console.error('Pay failed', err);
@@ -115,10 +115,10 @@ export default function InvoiceDetailModal({ invoice, onClose, onPaid }: { invoi
                   <label className="text-xs text-gray-600">Method</label>
                   <select value={payMethod} onChange={(e) => setPayMethod(e.target.value as any)} className="w-full p-2 mt-1 mb-2 border rounded">
                     <option value="points">Points</option>
-                    <option value="mm">Mobile Money</option>
+                    <option value="mobilemoney">Mobile Money</option>
                   </select>
 
-                  {payMethod === 'mm' && (
+                  {payMethod === 'mobilemoney' && (
                     <input value={payPhone} onChange={(e) => setPayPhone(e.target.value)} placeholder="07xxxxxxxx" className="w-full p-2 border rounded mb-2" />
                   )}
 

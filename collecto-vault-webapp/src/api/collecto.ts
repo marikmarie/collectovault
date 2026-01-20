@@ -19,7 +19,7 @@ export const invoiceService = {
     vaultOTPToken?: string;
     clientId?: string;
     collectoId?: string;
-    invoiceId?: string;
+    invoiceId?: string | null;
   }) => api.post("/invoiceDetails", payload),
   
   payInvoice: (payload: {
