@@ -212,19 +212,12 @@ const handlePlaceOrder = async () => {
     // --- CAREFUL EXTRACTION ---
     // 1. Get the main body (Axios .data)
     const apiRoot = response.data; 
-    // 2. Get the nested data (Your API .data)
-    const nestedData = apiRoot?.data;
-    // 3. Get the ID
-    const invoiceId = nestedData?.invoiceId;
+    const invoiceId = apiRoot?.data?.invoiceId;
 
     // LOGGING FOR DEBUGGING
     console.log("Full API Root:", apiRoot);
     console.log("Extracted Invoice ID:", invoiceId);
-
-    // --- STRICT VALIDATION ---
-    // We check if invoiceId exists first. 
-    // We use toString() on status to handle both "200" and 200.
-    if (invoiceId && apiRoot?.status?.toString() === "200") {
+  if (invoiceId && apiRoot?.status?.toString() === "200") {
       
       // Success: We have a valid ID and a 200 status
       showToast(`Order placed: ${invoiceId}`, 'success');
@@ -240,7 +233,7 @@ const handlePlaceOrder = async () => {
 
     } else {
       // Failure: ID is missing or status is not 200
-      const errorMsg = nestedData?.message || "Invoice ID was not returned by the server.";
+      const errorMsg = apiRoot?.data?.message || "Invoice ID was not returned by the server.";
       showToast(errorMsg, 'error');
     }
 
@@ -256,7 +249,7 @@ const handlePlaceOrder = async () => {
   const cartTotal = cart.reduce((acc, it) => acc + it.unitAmount * it.quantity, 0);
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-gray- 50 pb-20">
       <TopNav />
 
       {/* Toast (global) */}
