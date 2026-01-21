@@ -32,9 +32,10 @@ export default function ServicesList() {
     const fetchServices = async () => {
       setLoading(true);
       try {
+        const vaultOTPToken = localStorage.getItem("vaultOTPToken") || null;
         const collectoId = localStorage.getItem("collectoId") || "141122";
         // Request first page to avoid very large responses from the API
-        const res = await customerService.getServices(collectoId, 1);
+        const res = await customerService.getServices(vaultOTPToken,collectoId, 1);
 
         // Drilling down into the nested response: res.data.data.records
         const apiData = res.data?.data; 

@@ -452,6 +452,7 @@ export default function Dashboard() {
               },
             ]);
           }
+          // Do not auto-close modal here so user can see the success message and then close manually
         }}
       />
 
