@@ -5,9 +5,9 @@ import { customerService } from "../api/customer";
 // Updated Service type to match your real API response
 interface Service {
   id: string;
-  name: string; 
-  description: string; 
-  category: string; 
+  name: string;
+  description: string;
+  category: string;
   price: number;
   photo: string;
   is_product: number;
@@ -20,6 +20,9 @@ export default function ServicesList() {
   const [photosBaseUrl, setPhotosBaseUrl] = useState<string>("");
   const [selectedService, setSelectedService] = useState<Service | null>(null);
 
+  const [page, ] = useState(0);
+  const itemsPerPage = 10;
+
   const handleViewDetails = (service: Service) => {
     setSelectedService(service);
   };
@@ -28,17 +31,28 @@ export default function ServicesList() {
     setSelectedService(null);
   };
 
+  //   useEffect(() => {
+  //   setPage(0);
+  // }, [filteredServices]);
+
+
   useEffect(() => {
     const fetchServices = async () => {
       setLoading(true);
       try {
-        const vaultOTPToken = localStorage.getItem("vaultOTPToken") || null;
-        const collectoId = localStorage.getItem("collectoId") || "141122";
-        // Request first page to avoid very large responses from the API
-        const res = await customerService.getServices(vaultOTPToken,collectoId, 1);
+        const vaultOTPToken =
+          sessionStorage.getItem("vaultOTPToken") || undefined;
+        const collectoId = localStorage.getItem("collectoId") || undefined;
+        // send page (1-indexed) and limit to avoid huge responses from API
+        const res = await customerService.getServices(
+          vaultOTPToken,
+          collectoId,
+          page + 1,
+          itemsPerPage,
+        );
 
         // Drilling down into the nested response: res.data.data.records
-        const apiData = res.data?.data; 
+        const apiData = res.data?.data;
         const records = apiData?.records || [];
         const baseUrl = apiData?.metadata?.photosUrl || "";
 
@@ -59,9 +73,13 @@ export default function ServicesList() {
     <>
       <div className="space-y-3 px-4 pb-6">
         {loading ? (
-          <div className="text-center py-6 text-sm text-gray-500">Loading services…</div>
+          <div className="text-center py-6 text-sm text-gray-500">
+            Loading services…
+          </div>
         ) : services.length === 0 ? (
-          <div className="text-center py-6 text-sm text-gray-500">No services available.</div>
+          <div className="text-center py-6 text-sm text-gray-500">
+            No services available.
+          </div>
         ) : (
           services.map((s) => (
             <div
@@ -71,26 +89,37 @@ export default function ServicesList() {
               {/* Image Preview */}
               <div className="w-16 h-16 rounded-md bg-gray-100 overflow-hidden mr-3 shrink-0">
                 {s.photo ? (
-                  <img 
-                    src={`${photosBaseUrl}${s.photo}`} 
-                    alt={s.name} 
+                  <img
+                    src={`${photosBaseUrl}${s.photo}`}
+                    alt={s.name}
                     className="w-full h-full object-cover"
-                    onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/64?text=Service'; }}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src =
+                        "https://via.placeholder.com/64?text=Service";
+                    }}
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-400">No Img</div>
+                  <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-400">
+                    No Img
+                  </div>
                 )}
               </div>
 
               <div className="flex-1">
-                <div className="font-semibold text-gray-800 line-clamp-1">{s.name}</div>
-                <div className="text-[11px] font-medium text-[#d81b60] uppercase tracking-wide">{s.category}</div>
-                <div className="text-sm text-gray-600 mt-0.5 line-clamp-1">{s.description}</div>
+                <div className="font-semibold text-gray-800 line-clamp-1">
+                  {s.name}
+                </div>
+                <div className="text-[11px] font-medium text-[#d81b60] uppercase tracking-wide">
+                  {s.category}
+                </div>
+                <div className="text-sm text-gray-600 mt-0.5 line-clamp-1">
+                  {s.description}
+                </div>
                 <div className="text-xs font-bold text-gray-900 mt-1">
                   UGX {s.price.toLocaleString()}
                 </div>
               </div>
-              
+
               <div className="p-1 shrink-0">
                 <button
                   onClick={() => handleViewDetails(s)}
@@ -113,7 +142,7 @@ export default function ServicesList() {
             title: selectedService.name,
             desc: selectedService.description,
             // Assuming points calculation or passing price if needed
-            pointsPerUGX: 1000, 
+            pointsPerUGX: 1000,
             category: selectedService.category,
           }}
         />
