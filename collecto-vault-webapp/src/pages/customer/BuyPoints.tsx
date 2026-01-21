@@ -4,7 +4,7 @@ import Modal from "../../components/Modal";
 import Card from "../../components/Card";
 import Button from "../../components/Button";
 import api from "../../api"; // Your axios instance
-import { Zap, Heart, Star, X, Loader2 } from "lucide-react";
+import { Zap, Heart, Star, X, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 
 type Package = {
   id: number | string;
@@ -462,45 +462,37 @@ const queryTxStatus = async () => {
           </div>
 
           <div className="animate-in fade-in slide-in-from-top-1 duration-200">
-            <label className="text-xs font-semibold text-slate-500 uppercase mb-2 block">
-              mobilemoney Number
-            </label>
-            <input
-              value={phone}
-              onChange={(e) => {
-                // Allow digits only and limit to 10 characters
-                const digits = String(e.target.value).replace(/\D/g, "").slice(0, 10);
-                setPhone(digits);
-                // Clear previous verification and errors when user edits the number
-                setAccountName(null);
-                setVerified(false);
-                setVerifying(false);
-                setPhoneError(null);
-              }}
-              onBlur={() => {
-                // Trigger verification when user leaves the input and it's exactly 10 digits
-                if (/^\d{10}$/.test(String(phone || ""))) verifyPhoneNumber();
-              }}
-              placeholder="07XXXXXXXX"
-              maxLength={10}
-              className="w-full max-w-xs mx-auto px-3 py-1.5 rounded-md border border-slate-300 focus:border-[#d81b60] outline-none text-sm"
-            />
-
-            <div className="mt-2 max-w-xs mx-auto text-sm text-left">
-              {verifying ? (
-                <div className="flex items-center gap-2 text-slate-500">
-                  <Loader2 className="w-4 h-4 animate-spin" /> Verifying number...
-                </div>
-              ) : phoneError ? (
-                <div className="text-xs text-red-600">{phoneError}</div>
-              ) : accountName ? (
-                <div className="text-slate-700">Recipient: <span className="font-medium text-green-600">{accountName}</span></div>
-              ) : verified ? (
-                <div className="text-xs text-green-600">Number verified</div>
-              ) : (
-                <div className="text-slate-400 justify-start">Enter number and leave the field to verify recipient</div>
-              )}
+            <label className="text-xs font-bold text-gray-500 uppercase block mb-2">Phone Number</label>
+            <div className="relative">
+              <input
+                value={phone}
+                onChange={(e) => {
+                  const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
+                  setPhone(digits);
+                  setAccountName(null);
+                  setVerified(false);
+                  setPhoneError(null);
+                  if (digits.length === 10) verifyPhoneNumber();
+                }}
+                placeholder="07XXXXXXXX"
+                maxLength={10}
+                className={`w-full p-2 bg-gray-50 border-2 rounded-xl outline-none focus:border-[#D81B60] transition-all ${verified ? 'border-green-500' : phoneError ? 'border-red-500' : 'border-gray-200'}`}
+              />
+              {verifying && <div className="absolute right-4 top-4"><Loader2 className="w-5 h-5 animate-spin text-[#D81B60]" /></div>}
             </div>
+            
+            {accountName && (
+              <div className="mt-2 flex items-center gap-2 text-green-600 bg-green-50 p-2 rounded-lg border border-green-100">
+                <CheckCircle2 className="w-4 h-4" />
+                <span className="text-xs font-bold uppercase">{accountName}</span>
+              </div>
+            )}
+            {phoneError && (
+              <div className="mt-2 flex items-center gap-2 text-red-600 bg-red-50 p-2 rounded-lg border border-red-100">
+                <AlertCircle className="w-4 h-4" />
+                <span className="text-xs font-medium">{phoneError}</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -615,12 +607,7 @@ const queryTxStatus = async () => {
             </button>
           </div>
 
-          <button
-            onClick={() => setStep("select")}
-            className="mt-3 text-sm text-slate-800 underline"
-          >
-            Didn't receive the request?
-          </button>
+      
         </div>
       </div>
     );
