@@ -43,7 +43,7 @@ export default function InvoiceDetailModal({ invoice, onClose }: Props) {
           <div className="flex gap-8">
             <button
               onClick={() => setTab("details")}
-              className={`py-3 text-lg font-medium transition-all relative ${tab === "details" ? "text-[#9c27b0]" : "text-gray-400"}`}
+              className={`py-3 text-sm font-medium transition-all relative ${tab === "details" ? "text-[#9c27b0]" : "text-gray-400"}`}
             >
               Details
               {tab === "details" && (
@@ -52,7 +52,7 @@ export default function InvoiceDetailModal({ invoice, onClose }: Props) {
             </button>
             <button
               onClick={() => setTab("payment")}
-              className={`py-3 text-lg font-medium transition-all relative ${tab === "payment" ? "text-[#9c27b0]" : "text-gray-400"}`}
+              className={`py-3 text-sm font-medium transition-all relative ${tab === "payment" ? "text-[#9c27b0]" : "text-gray-400"}`}
             >
               Payments
               {tab === "payment" && (
@@ -69,19 +69,19 @@ export default function InvoiceDetailModal({ invoice, onClose }: Props) {
             <table className="w-full border-collapse">
               <tbody className="text-gray-700">
                 <tr className="border-b border-gray-100">
-                  <td className="py-3 font-bold text-gray-800 w-1/3 text-sm uppercase tracking-wider">
+                  <td className="py-3 font-bold text-gray-800 w-1/3 text-sm tracking-wider">
                     Date
                   </td>
                   <td className="py-3 text-sm">{details.invoice_date}</td>
                 </tr>
                 <tr className="border-b border-gray-100">
-                  <td className="py-3 font-bold text-gray-800 text-sm uppercase tracking-wider">
+                  <td className="py-3 font-bold text-gray-800 text-sm tracking-wider">
                     Client
                   </td>
                   <td className="py-3 text-sm">{details.client_name}</td>
                 </tr>
                 <tr className="border-b border-gray-100">
-                  <td className="py-3 font-bold text-gray-800 align-top text-sm uppercase tracking-wider">
+                  <td className="py-3 font-bold text-gray-800 align-top text-sm tracking-wider">
                     Services
                   </td>
                   <td className="py-3">
@@ -99,7 +99,7 @@ export default function InvoiceDetailModal({ invoice, onClose }: Props) {
                   </td>
                 </tr>
                 <tr className="border-b border-gray-100">
-                  <td className="py-3 font-bold text-gray-800 text-sm uppercase tracking-wider">
+                  <td className="py-3 font-bold text-gray-800 text-sm tracking-wider">
                     Total
                   </td>
                   <td className="py-3 font-bold text-right text-lg">
@@ -107,7 +107,7 @@ export default function InvoiceDetailModal({ invoice, onClose }: Props) {
                   </td>
                 </tr>
                 <tr className="border-b border-gray-100 text-green-600">
-                  <td className="py-3 font-bold text-sm uppercase tracking-wider">
+                  <td className="py-3 font-bold text-sm  tracking-wider">
                     Paid
                   </td>
                   <td className="py-3 font-bold text-right">
@@ -115,7 +115,7 @@ export default function InvoiceDetailModal({ invoice, onClose }: Props) {
                   </td>
                 </tr>
                 <tr className="border-b border-gray-100 text-red-500">
-                  <td className="py-3 font-bold text-sm uppercase tracking-wider">
+                  <td className="py-3 font-bold text-xm tracking-wider">
                     Balance
                   </td>
                   <td className="py-3 font-bold text-right text-lg">
@@ -123,7 +123,7 @@ export default function InvoiceDetailModal({ invoice, onClose }: Props) {
                   </td>
                 </tr>
                 <tr>
-                  <td className="py-3 font-bold text-gray-800 text-sm uppercase tracking-wider">
+                  <td className="py-3 font-bold text-gray-800 text-sm tracking-wider">
                     Issued By
                   </td>
                   <td className="py-3 text-sm">{details.invoice_by_name}</td>
@@ -134,7 +134,7 @@ export default function InvoiceDetailModal({ invoice, onClose }: Props) {
             <div className="w-full">
               <table className="w-full text-left">
                 <thead>
-                  <tr className="text-gray-800 font-bold border-b-2 border-gray-100 uppercase text-xs tracking-widest">
+                  <tr className="text-gray-800 font-bold border-b-2 border-gray-100 text-xs tracking-widest">
                     <th className="pb-3">Date</th>
                     <th className="pb-3">Type</th>
                     <th className="pb-3">Info</th>
@@ -149,11 +149,11 @@ export default function InvoiceDetailModal({ invoice, onClose }: Props) {
                     >
                       <td className="py-4 text-[13px]">{pay.paid_date}</td>
                       <td className="py-4">
-                        <div className="font-bold text-gray-800 text-sm">
-                          {pay.payment_option}
+                        <div className="font-bold text-gray-800 text-xs">
+                          {pay.transaction_id}
                         </div>
                         <div className="text-[11px] text-gray-400 font-mono">
-                          {pay.transaction_id}
+                          {pay.payment_option}
                         </div>
                       </td>
                       <td className="py-4">

@@ -1,7 +1,6 @@
 import React from 'react';
 import { Users, Coins, Trophy, DollarSign } from 'lucide-react';
 
-// Custom colors: Primary red: 'bg-red-600', Secondary orange: 'bg-orange-500'
 
 // --- Mock Data ---
 const stats = [

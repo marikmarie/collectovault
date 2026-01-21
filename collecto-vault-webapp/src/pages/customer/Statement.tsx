@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import TopNav from "../../components/TopNav";
-import { ArrowDownLeft, ChevronRight, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { ArrowDownLeft, ChevronRight, Loader2, CheckCircle2, AlertCircle, X } from "lucide-react";
 import { transactionService, invoiceService } from "../../api/collecto";
 import api from "../../api"; 
 import InvoiceDetailModal from "./InvoiceDetailModal";
@@ -30,11 +30,13 @@ export default function Statement() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+  const [loadingType, setLoadingType] = useState<"invoices" | "transactions" | null>(null);
   const [activeTab, setActiveTab] = useState<"invoices" | "payments">("invoices");
   const [payingInvoice, setPayingInvoice] = useState<string | null>(null);
   const [payMethod, setPayMethod] = useState<"points" | "mobilemoney">("points");
   const [payPhone, setPayPhone] = useState("");
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
+  const [selectedTransaction, setSelectedTransaction] = useState<any | null>(null);
   const { toast, showToast } = useLocalToast();
 
   // Verification States
@@ -91,6 +93,7 @@ export default function Statement() {
 
   const fetchInvoices = async (invoiceId?: string | null) => {
     setLoading(true);
+    setLoadingType("invoices");
     try {
       const res = await invoiceService.getInvoices({
         vaultOTPToken,
@@ -101,19 +104,29 @@ export default function Statement() {
 
       const invoiceArray = res.data?.data?.data;
       const validatedData = Array.isArray(invoiceArray) ? invoiceArray : [];
-      setInvoices(validatedData);
-      return validatedData;
+      
+      // Sort invoices by date in descending order (newest first)
+      const sortedData = validatedData.sort((a: any, b: any) => {
+        const dateA = new Date(a.details?.invoice_date || 0).getTime();
+        const dateB = new Date(b.details?.invoice_date || 0).getTime();
+        return dateB - dateA;
+      });
+      
+      setInvoices(sortedData);
+      return sortedData;
     } catch (err) {
       console.error("Fetch Invoices Error:", err);
       setInvoices([]);
       return [];
     } finally {
       setLoading(false);
+      setLoadingType(null);
     }
   };
 
   const fetchTransactions = async () => {
     setLoading(true);
+    setLoadingType("transactions");
     try {
       // Use clientId as customerId (it's the logged-in user's ID)
       const customerId = clientId || "";
@@ -127,6 +140,7 @@ export default function Statement() {
       return [];
     } finally {
       setLoading(false);
+      setLoadingType(null);
     }
   };
 
@@ -205,12 +219,17 @@ export default function Statement() {
 
         <div className="space-y-4">
           {loading ? (
-            <div className="text-center py-10 text-gray-400">Loading...</div>
+            <div className="text-center py-10 flex flex-col items-center justify-center gap-3">
+              <Loader2 className="w-8 h-8 text-[#cb0d6c] animate-spin" />
+              <p className="text-gray-600 font-semibold">
+                {loadingType === "invoices" ? "Fetching invoices..." : "Fetching transactions..."}
+              </p>
+            </div>
           ) : activeTab === "invoices" ? (
             invoices.map((inv: any) => {
               const invId = inv.details?.id || "N/A";
               const dateRaw = inv.details?.invoice_date || "N/A";
-              const amount = inv.amount_less ?? 0;
+              const amount = inv.details?.invoice_amount ?? 0;
               const isPaid = Number(inv.amount_less) === 0;
 
               return (
@@ -255,22 +274,39 @@ export default function Statement() {
               );
             })
           ) : (
-            transactions.map((tx: any) => (
-              <div key={tx.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full flex items-center justify-center bg-blue-50">
-                    <ArrowDownLeft className="w-6 h-6 text-blue-600" />
+            transactions.map((tx: any) => {
+              const statusColor = tx.paymentStatus === "SUCCESS" ? "text-green-600" : tx.paymentStatus === "PENDING" ? "text-yellow-600" : "text-red-600";
+              const createdDate = new Date(tx.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+              
+              return (
+                <div
+                  key={tx.id}
+                  onClick={() => setSelectedTransaction(tx)}
+                  className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between active:scale-[0.98] transition-transform cursor-pointer"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full flex items-center justify-center bg-blue-50">
+                      <ArrowDownLeft className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-gray-800 text-base">{tx.transactionId}</p>
+                      <div className="flex items-center gap-1 text-[11px] uppercase font-extrabold tracking-wider">
+                        <span className="text-gray-500">{createdDate}</span>
+                        <span className="text-gray-400">•</span>
+                        <span className={statusColor}>{tx.paymentStatus}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-bold text-gray-800 text-base">{tx.description || "Payment"}</p>
-                    <p className="text-[11px] text-gray-400 font-extrabold uppercase tracking-wider">{tx.method} • {tx.date}</p>
+                  <div className="text-right flex items-center gap-4">
+                    <div>
+                      <p className="font-black text-lg text-gray-900">UGX {Number(tx.amount || 0).toLocaleString()}</p>
+                      <p className="text-xs text-gray-500 font-semibold">{tx.points} points</p>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-gray-300" />
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-black text-lg text-gray-900">UGX {Number(tx.amount || 0).toLocaleString()}</p>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </main>
@@ -384,6 +420,111 @@ export default function Statement() {
             showToast("Payment successful", "success");
           }}
         />
+      )}
+
+      {/* Transaction Detail Modal */}
+      {selectedTransaction && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 border border-gray-100 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h4 className="text-2xl font-black text-gray-900">Transaction Details</h4>
+              <button 
+                onClick={() => setSelectedTransaction(null)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="space-y-5">
+              {/* Transaction ID */}
+              <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                <p className="text-xs text-gray-600 font-bold uppercase mb-1 tracking-wider">Transaction ID</p>
+                <p className="text-lg font-black text-gray-900">{selectedTransaction.transactionId}</p>
+              </div>
+
+              {/* Status */}
+              <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                <p className="text-xs text-gray-600 font-bold uppercase mb-1 tracking-wider">Status</p>
+                <div className="flex items-center gap-2">
+                  <div className={`w-3 h-3 rounded-full ${
+                    selectedTransaction.paymentStatus === "SUCCESS" ? "bg-green-500" :
+                    selectedTransaction.paymentStatus === "PENDING" ? "bg-yellow-500" :
+                    "bg-red-500"
+                  }`} />
+                  <p className={`font-bold text-base ${
+                    selectedTransaction.paymentStatus === "SUCCESS" ? "text-green-600" :
+                    selectedTransaction.paymentStatus === "PENDING" ? "text-yellow-600" :
+                    "text-red-600"
+                  }`}>{selectedTransaction.paymentStatus}</p>
+                </div>
+              </div>
+
+              {/* Amount */}
+              <div className="bg-linear-to-br from-pink-50 to-orange-50 rounded-xl p-4 border border-pink-100">
+                <p className="text-xs text-gray-600 font-bold uppercase mb-1 tracking-wider">Amount</p>
+                <p className="text-2xl font-black text-[#D81B60]">UGX {Number(selectedTransaction.amount).toLocaleString()}</p>
+              </div>
+
+              {/* Points */}
+              <div className="bg-purple-50 rounded-xl p-4 border border-purple-100">
+                <p className="text-xs text-gray-600 font-bold uppercase mb-1 tracking-wider">Points Earned</p>
+                <p className="text-2xl font-black text-purple-600">{selectedTransaction.points} pts</p>
+              </div>
+
+              {/* Payment Method */}
+              <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                <p className="text-xs text-gray-600 font-bold uppercase mb-1 tracking-wider">Payment Method</p>
+                <p className="text-base font-bold text-gray-900">{selectedTransaction.paymentMethod}</p>
+              </div>
+
+              {/* Reference */}
+              <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                <p className="text-xs text-gray-600 font-bold uppercase mb-1 tracking-wider">Reference</p>
+                <p className="text-base font-bold text-gray-900">{selectedTransaction.reference}</p>
+              </div>
+
+              {/* Date Created */}
+              <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                <p className="text-xs text-gray-600 font-bold uppercase mb-1 tracking-wider">Date</p>
+                <p className="text-base font-bold text-gray-900">
+                  {new Date(selectedTransaction.createdAt).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </p>
+              </div>
+
+              {/* Confirmed Date */}
+              {selectedTransaction.confirmedAt && (
+                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                  <p className="text-xs text-gray-600 font-bold uppercase mb-1 tracking-wider">Confirmed</p>
+                  <p className="text-base font-bold text-gray-900">
+                    {new Date(selectedTransaction.confirmedAt).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-8 pt-4 border-t border-gray-100">
+              <button
+                onClick={() => setSelectedTransaction(null)}
+                className="w-full bg-[#D81B60] text-white font-bold py-3 rounded-xl hover:bg-[#c01a5e] transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -22,7 +22,7 @@ export default function Services() {
   const [photosBaseUrl, setPhotosBaseUrl] = useState<string>("");
 
   const [loading, setLoading] = useState(false);
-  const [phone, setPhone] = useState("");
+  const [staffId, setStaffId] = useState("");
   const [clientId, setClientId] = useState<string | null>(null);
 
   // Toast / notification
@@ -109,9 +109,8 @@ export default function Services() {
   async function fetchServices() {
     setLoading(true);
     try {
-      const vaultOTPToken = sessionStorage.getItem("vaultOTPToken") || undefined;
+      const vaultOTPToken = sessionStorage.getItem("vaultOtpToken") || undefined;
       const collectoId = localStorage.getItem("collectoId") || undefined;
-      // send page (1-indexed) and limit to avoid huge responses from API
       const response = await customerService.getServices(vaultOTPToken,collectoId, page + 1, itemsPerPage);
       const payload = response.data?.data;
       const innerData = payload?.data;
@@ -200,6 +199,7 @@ const handlePlaceOrder = async () => {
       vaultOTPToken: sessionStorage.getItem('vaultOtpToken') || undefined,
       collectoId,
       clientId,
+      staffId,
       totalAmount: Number(cartTotal),
       items: cart.map((c) => ({
         serviceId: c.id,
@@ -211,9 +211,7 @@ const handlePlaceOrder = async () => {
 
     const response = await invoiceService.createInvoice(payload);
 
-    // --- CAREFUL EXTRACTION ---
-    // 1. Get the main body (Axios .data)
-    const apiRoot = response.data; 
+   const apiRoot = response.data; 
     const invoiceId = apiRoot?.data?.invoiceId;
 
     // LOGGING FOR DEBUGGING
@@ -534,12 +532,12 @@ const handlePlaceOrder = async () => {
               </div>
             </div>
 
-            <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Mobile Money Number</label>
+            <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Enter StaffId</label>
             <input
-              type="tel"
-              placeholder="0775617890"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              type="id"
+              placeholder="674"
+              value={staffId}
+              onChange={(e) => setStaffId(e.target.value)}
               className="w-full border-2 border-gray-100 p-3 rounded-xl mb-4 focus:border-[#d81b60] outline-none transition-all font-mono"
             />
 
