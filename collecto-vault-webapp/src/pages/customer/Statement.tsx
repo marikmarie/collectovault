@@ -115,7 +115,9 @@ export default function Statement() {
   const fetchTransactions = async () => {
     setLoading(true);
     try {
-      const res = await transactionService.getTransactions("me");
+      // Use clientId as customerId (it's the logged-in user's ID)
+      const customerId = clientId || "";
+      const res = await transactionService.getTransactions(customerId);
       const data = res.data?.data?.data ?? res.data?.transactions ?? [];
       setTransactions(Array.isArray(data) ? data : []);
       return data;
