@@ -20,13 +20,6 @@ interface RedeemableOffer {
   pointsCost: number;
 }
 
-// Dummy tiers data fallback
-const DUMMY_TIERS = [
-  { id: "1", name: "Silver", minPoints: 0, maxPoints: 5000 },
-  { id: "2", name: "Gold", minPoints: 5000, maxPoints: 10000 },
-  { id: "3", name: "Platinum", minPoints: 10000, maxPoints: Infinity },
-];
-
 // Dummy redeemable offers fallback
 const DUMMY_OFFERS: RedeemableOffer[] = [
   {
@@ -53,28 +46,25 @@ interface UserProfile {
   name?: string;
   phone?: string;
   avatar?: string;
-  pointsBalance?: number;
   avatarsize?: number;
-  tier?: string;
-  tierProgress?: number;
   expiryDate?: string;
-  invoicesCount?: number;
 }
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabType>("tier");
   // Initialize user with any name stored at login and sensible defaults
-  const [user, setUser] = useState<UserProfile>(() => ({
+  const [user] = useState<UserProfile>(() => ({
     name: localStorage.getItem("userName") ?? undefined,
     phone: undefined,
     avatar: "/photo.png",
-    pointsBalance: Number(localStorage.getItem("pointsBalance") ?? "4000"),
     avatarsize: 120,
-    tier: undefined,
-    tierProgress: 0,
     expiryDate: undefined,
-    invoicesCount: 0,
   }));
+
+  // Customer data from API (points, tier, progress)
+  const [pointsBalance, setPointsBalance] = useState<number>(0);
+  const [tier, setTier] = useState<string>("N/A");
+  const [tierProgress, setTierProgress] = useState<number>(0);
 
   const [buyPointsOpen, setBuyPointsOpen] = useState<boolean>(false);
   const [spendPointsOpen, setSpendPointsOpen] = useState<boolean>(false);
@@ -101,37 +91,23 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchPointsAndTier = async () => {
       try {
-        const vendorId = localStorage.getItem("collectoId") || "141122";
-        // Fetch tier information
-        const tierRes = await customerService.getTierInfo(vendorId);
-        let tiers = tierRes.data?.data ?? tierRes.data ?? [];
-
-        // Use dummy data if no tiers found
-        if (!Array.isArray(tiers) || tiers.length === 0) {
-          console.warn("No tier data from API, using dummy data");
-          tiers = DUMMY_TIERS;
+        const clientId = localStorage.getItem("clientId");
+        if (!clientId) {
+          console.warn("No clientId found in localStorage");
+          return;
         }
 
-        // In production, this should come from user's account data
-        if (Array.isArray(tiers) && tiers.length > 0) {
-          const currentTier = tiers[tiers.length - 1];
-          setUser((prev) => ({
-            ...prev,
-            tier: currentTier.name || "Standard",
-            tierProgress: 65,
-          }));
+        // Fetch customer data including points and tier
+        const res = await customerService.getCustomerData(clientId);
+        const data = res.data?.data ?? res.data;
+
+        if (data) {
+          setPointsBalance(data.pointsBalance || 0);
+          setTier(data.tier || "N/A");
+          setTierProgress(data.tierProgress || 0);
         }
       } catch (err) {
-        console.warn("Failed to fetch tier info, using dummy data", err);
-        // Use dummy tiers on error
-        if (DUMMY_TIERS.length > 0) {
-          const currentTier = DUMMY_TIERS[DUMMY_TIERS.length - 1];
-          setUser((prev) => ({
-            ...prev,
-            tier: currentTier.name || "Standard",
-            tierProgress: 65,
-          }));
-        }
+        console.warn("Failed to fetch customer points and tier", err);
       }
     };
 
@@ -206,7 +182,7 @@ export default function Dashboard() {
             }`}
           >
             <span className="text-3xl text-gray-800 font-light tracking-tight">
-              {(user.pointsBalance ?? 0).toLocaleString()}
+              {pointsBalance.toLocaleString()}
             </span>
             <span className="text-xs font-medium text-gray-500 uppercase mt-1">
               Your Points
@@ -224,7 +200,7 @@ export default function Dashboard() {
             }`}
           >
             <span className="text-3xl text-gray-800 font-light tracking-tight">
-              {user.tier ?? "N/A"}
+              {tier}
             </span>
             <span className="text-xs font-medium text-gray-500 uppercase mt-1">
               Tier
@@ -261,8 +237,8 @@ export default function Dashboard() {
           <div className="animate-in slide-in-from-bottom-2 fade-in duration-300">
             {activeTab === "tier" && (
               <TierProgress
-                currentTier={user.tier ?? "N/A"}
-                progress={user.tierProgress ?? 0}
+                currentTier={tier}
+                progress={tierProgress}
               />
             )}
           </div>
@@ -320,10 +296,10 @@ export default function Dashboard() {
                                   setSelectedRedeemOffer(offer);
                                 }}
                                 disabled={
-                                  (user.pointsBalance ?? 0) < offer.pointsCost
+                                  pointsBalance < offer.pointsCost
                                 }
                                 className={`text-[10px] px-2 py-1 rounded-full font-semibold transition-all ${
-                                  (user.pointsBalance ?? 0) >= offer.pointsCost
+                                  pointsBalance >= offer.pointsCost
                                     ? "bg-[#ef4155] text-white hover:bg-[#cb0d6c]"
                                     : "bg-gray-200 text-gray-500 cursor-not-allowed"
                                 }`}
@@ -427,20 +403,7 @@ export default function Dashboard() {
           const added =
             typeof details?.addedPoints === "number" ? details.addedPoints : 0;
           if (added > 0) {
-            setUser((prev) => {
-              const next = {
-                ...prev,
-                pointsBalance: (prev.pointsBalance ?? 0) + added,
-              };
-              // persist so the value is visible on reload/dashboard load
-              try {
-                localStorage.setItem(
-                  "pointsBalance",
-                  String(next.pointsBalance ?? 0)
-                );
-              } catch (e) {}
-              return next;
-            });
+            setPointsBalance((prev) => prev + added);
 
             setRecentPoints((prev) => [
               ...prev,
@@ -459,13 +422,13 @@ export default function Dashboard() {
       <SpendPointsModal
         open={spendPointsOpen}
         onClose={() => setSpendPointsOpen(false)}
-        currentPoints={user.pointsBalance ?? 0}
+        currentPoints={pointsBalance}
       />
 
       <TierDetailsModal
         open={tierDetailsOpen}
         onClose={() => setTierDetailsOpen(false)}
-        tier={user.tier ?? "N/A"}
+        tier={tier}
         expiry={user.expiryDate ?? ""}
         pointsToNextTier={1500}
       />
@@ -515,10 +478,10 @@ export default function Dashboard() {
               <button
                 onClick={() => handleSpendFromDetails()}
                 disabled={
-                  (user.pointsBalance ?? 0) < selectedRedeemOffer.pointsCost
+                  pointsBalance < selectedRedeemOffer.pointsCost
                 }
                 className={`flex-1 text-sm font-semibold px-4 py-2 rounded-full transition-all ${
-                  (user.pointsBalance ?? 0) >= selectedRedeemOffer.pointsCost
+                  pointsBalance >= selectedRedeemOffer.pointsCost
                     ? "bg-[#ef4155] text-white hover:bg-[#cb0d6c] shadow-md shadow-[#ef4155]/30"
                     : "bg-gray-200 text-gray-500 cursor-not-allowed"
                 }`}

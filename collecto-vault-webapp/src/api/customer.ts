@@ -1,6 +1,10 @@
 import api from "./index";
 
 export const customerService = {
+  // Get customer data including points balance and tier
+  getCustomerData: (clientId: string) =>
+    api.get(`/customers`, { params: { clientId } }),
+
   // Get customer's current points balance and tier info
   getPointsAndTier: (vendorId?: string) =>
     api.get(`/pointRules/collecto/${vendorId || localStorage.getItem('collectoId') || '141122'}`),
@@ -20,11 +24,6 @@ export const customerService = {
       }`
     ),
 
-  getServicesById: (customerId?: string) =>
-    api.post(`/customers/${customerId}/services`),
-
-  getServices: (vaultOTPToken?: string, collectoId?: string, page?: number, limit?: number) => 
-    api.post('/services', { vaultOTPToken,collectoId, page, limit }),
 
   // Create or upsert a customer on login
   createCustomer: (payload: { collecto_id: string; client_id: string; name?: string }) =>
