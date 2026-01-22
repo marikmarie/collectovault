@@ -298,7 +298,7 @@ const queryTxStatus = async () => {
     /** * Calling the updated status endpoint with full context
      */
     const res = await api.post("/requestToPayStatus", { 
-       vaultOTPToken,
+      vaultOTPToken,
       collectoId,
       clientId,
       transactionId: String(txId),
@@ -307,7 +307,6 @@ const queryTxStatus = async () => {
 
     const data = res?.data;
     
-    // Normalize status from the response
     const status = String(data?.status || "pending").toLowerCase();
 
     if (["confirmed", "success", "paid", "completed"].includes(status)) {
