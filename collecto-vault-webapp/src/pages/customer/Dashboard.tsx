@@ -99,12 +99,36 @@ export default function Dashboard() {
 
         // Fetch customer data including points and tier
         const res = await customerService.getCustomerData(clientId);
-        const data = res.data?.data ?? res.data;
+        const data = res.data;
 
-        if (data) {
-          setPointsBalance(data.pointsBalance || 0);
-          setTier(data.tier || "N/A");
-          setTierProgress(data.tierProgress || 0);
+        if (data?.customer && data?.currentTier && data?.tiers) {
+          // Set points balance from customer.currentPoints
+          setPointsBalance(data.customer.currentPoints || 0);
+          
+          // Set current tier name
+          setTier(data.currentTier.name || "N/A");
+          
+          // Calculate tier progress (percentage from current tier to next tier)
+          const currentTierIndex = data.tiers.findIndex(
+            (t: any) => t.id === data.currentTier.id
+          );
+          
+          if (currentTierIndex !== -1 && currentTierIndex < data.tiers.length - 1) {
+            // There's a next tier, calculate progress
+            const nextTier = data.tiers[currentTierIndex + 1];
+            const currentTierPoints = data.currentTier.pointsRequired;
+            const nextTierPoints = nextTier.pointsRequired;
+            const pointsInRange = nextTierPoints - currentTierPoints;
+            const pointsEarned = data.customer.currentPoints - currentTierPoints;
+            const progress = Math.min(
+              100,
+              Math.max(0, (pointsEarned / pointsInRange) * 100)
+            );
+            setTierProgress(progress);
+          } else {
+            // At highest tier
+            setTierProgress(100);
+          }
         }
       } catch (err) {
         console.warn("Failed to fetch customer points and tier", err);
