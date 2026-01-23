@@ -474,7 +474,7 @@ const queryTxStatus = async () => {
                   setAccountName(null);
                   setVerified(false);
                   setPhoneError(null);
-                  if (digits.length === 10) verifyPhoneNumber(digits);
+                  if (digits.length === 10) verifyPhoneNumber();
                 }}
                 placeholder="07XXXXXXXX"
                 maxLength={10}

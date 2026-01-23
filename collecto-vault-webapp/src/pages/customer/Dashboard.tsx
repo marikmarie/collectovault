@@ -249,10 +249,10 @@ export default function Dashboard() {
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <TierProgress currentTier={tier} progress={tierProgress} />
               
-              <div className="bg-linear-to-br from-gray-400 to-gray-300 p-6 rounded-3xl text-white shadow-xl relative overflow-hidden">
+              <div className="bg-linear-to-br from-gray-300 to-gray-200 p-6 rounded-3xl text-gray-900 shadow-xl relative overflow-hidden">
                 <div className="relative z-10">
                   <h3 className="text-xl font-bold mb-2">Tier Benefits</h3>
-                  <p className="text-gray-400 text-sm mb-6">Enjoy exclusive rewards and priority services as a {tier} member.</p>
+                  <p className="text-gray-900 text-sm mb-6">Enjoy exclusive rewards and priority services as a {tier} member.</p>
                   <button 
                     onClick={() => setTierDetailsOpen(true)}
                     className="w-full py-3 bg-white text-gray-900 rounded-xl font-bold text-sm hover:bg-gray-100 transition-colors"
