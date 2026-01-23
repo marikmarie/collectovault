@@ -7,9 +7,9 @@ import BuyPoints from "../customer/BuyPoints";
 import SpendPointsModal from "./SpendPoints";
 import TierDetailsModal from "./TierDetails";
 import Slider from "../../components/Slider";
-import { X } from "lucide-react";
+import {  RefreshCw, ArrowUpRight, ArrowDownLeft, Clock } from "lucide-react";
 import { customerService } from "../../api/customer";
-import { mockUser } from "../../data/mockUser";
+import { transactionService } from "../../api/collecto";
 
 type TabType = "points" | "tier";
 
@@ -20,162 +20,90 @@ interface RedeemableOffer {
   pointsCost: number;
 }
 
-// Dummy redeemable offers fallback
 const DUMMY_OFFERS: RedeemableOffer[] = [
-  {
-    id: "offer_1",
-    title: "10% Discount on Next Purchase",
-    desc: "Get 10% off your next purchase over 15%",
-    pointsCost: 500,
-  },
-  {
-    id: "offer_2",
-    title: "Free concert ticket",
-    desc: "Redeem for a free ticket to a local concert event",
-    pointsCost: 250,
-  },
-  {
-    id: "offer_3",
-    title: "Exclusive Member Offer",
-    desc: "Special discount available only to tier members",
-    pointsCost: 1000,
-  },
+  { id: "offer_1", title: "10% Discount on Next Purchase", desc: "Get 10% off your next purchase over 15%", pointsCost: 500 },
+  { id: "offer_2", title: "Free concert ticket", desc: "Redeem for a free ticket to a local concert event", pointsCost: 250 },
+  { id: "offer_3", title: "Exclusive Member Offer", desc: "Special discount available only to tier members", pointsCost: 1000 },
 ];
-
-interface UserProfile {
-  name?: string;
-  phone?: string;
-  avatar?: string;
-  avatarsize?: number;
-  expiryDate?: string;
-}
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabType>("tier");
-  // Initialize user with any name stored at login and sensible defaults
-  const [user] = useState<UserProfile>(() => ({
-    name: localStorage.getItem("userName") ?? undefined,
-    phone: undefined,
-    avatar: "/photo.png",
-    avatarsize: 120,
-    expiryDate: undefined,
-  }));
-
-  // Customer data from API (points, tier, progress)
   const [pointsBalance, setPointsBalance] = useState<number>(0);
   const [tier, setTier] = useState<string>("N/A");
   const [tierProgress, setTierProgress] = useState<number>(0);
+  
+  // UI States
+  const [buyPointsOpen, setBuyPointsOpen] = useState(false);
+  const [spendPointsOpen, setSpendPointsOpen] = useState(false);
+  const [tierDetailsOpen, setTierDetailsOpen] = useState(false);
+  const [selectedRedeemOffer, setSelectedRedeemOffer] = useState<RedeemableOffer | null>(null);
+  
+  // Data States
+  const [loading, setLoading] = useState(false);
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [redeemableOffers, setRedeemableOffers] = useState<RedeemableOffer[]>([]);
+  const [offersLoading, setOffersLoading] = useState(false);
 
-  const [buyPointsOpen, setBuyPointsOpen] = useState<boolean>(false);
-  const [spendPointsOpen, setSpendPointsOpen] = useState<boolean>(false);
-  const [tierDetailsOpen, setTierDetailsOpen] = useState<boolean>(false);
+  const clientId = localStorage.getItem("clientId") || "";
+  const userName = localStorage.getItem("userName") || "User";
 
-  const [selectedRedeemOffer, setSelectedRedeemOffer] =
-    useState<RedeemableOffer | null>(null);
+  // --- API FETCHERS ---
 
-  // Offers state
-  const [redeemableOffers, setRedeemableOffers] = useState<RedeemableOffer[]>(
-    []
-  );
-  const [offersLoading, setOffersLoading] = useState<boolean>(false);
-
-  // Recent points activity (ascending order)
-  interface LedgerItem {
-    id: string;
-    date: string;
-    desc: string;
-    change: number;
-  }
-  const [recentPoints, setRecentPoints] = useState<LedgerItem[]>([]);
-
-  useEffect(() => {
-    const fetchPointsAndTier = async () => {
-      try {
-        const clientId = localStorage.getItem("clientId");
-        if (!clientId) {
-          console.warn("No clientId found in localStorage");
-          return;
-        }
-
-        const res = await customerService.getCustomerData(clientId);
-        const data = res.data;
-
-        if (data?.customer && data?.currentTier && data?.tiers) {
-          // Set points balance from customer.currentPoints
-          setPointsBalance(data.customer.currentPoints || 0);
-          
-          // Set current tier name
-          setTier(data.currentTier.name || "N/A");
-          
-          // Calculate tier progress (percentage from current tier to next tier)
-          const currentTierIndex = data.tiers.findIndex(
-            (t: any) => t.id === data.currentTier.id
-          );
-          
-          if (currentTierIndex !== -1 && currentTierIndex < data.tiers.length - 1) {
-            // There's a next tier, calculate progress
-            const nextTier = data.tiers[currentTierIndex + 1];
-            const currentTierPoints = data.currentTier.pointsRequired;
-            const nextTierPoints = nextTier.pointsRequired;
-            const pointsInRange = nextTierPoints - currentTierPoints;
-            const pointsEarned = data.customer.currentPoints - currentTierPoints;
-            const progress = Math.min(
-              100,
-              Math.max(0, (pointsEarned / pointsInRange) * 100)
-            );
-            setTierProgress(progress);
+  const fetchData = async () => {
+    if (!clientId) return;
+    setLoading(true);
+    try {
+      // 1. Fetch Customer Profile (Points/Tier)
+      const customerRes = await customerService.getCustomerData(clientId);
+      const cData = customerRes.data;
+      if (cData?.customer) {
+        setPointsBalance(cData.customer.currentPoints || 0);
+        setTier(cData.currentTier?.name || "N/A");
+        
+        // Calculate Progress
+        if (cData.currentTier && cData.tiers) {
+          const idx = cData.tiers.findIndex((t: any) => t.id === cData.currentTier.id);
+          if (idx !== -1 && idx < cData.tiers.length - 1) {
+            const next = cData.tiers[idx + 1];
+            const diff = next.pointsRequired - cData.currentTier.pointsRequired;
+            const earned = cData.customer.currentPoints - cData.currentTier.pointsRequired;
+            setTierProgress(Math.min(100, Math.max(0, (earned / diff) * 100)));
           } else {
-            // At highest tier
             setTierProgress(100);
           }
         }
-      } catch (err) {
-        console.warn("Failed to fetch customer points and tier", err);
       }
-    };
 
-    const fetchOffers = async () => {
-      setOffersLoading(true);
-      try {
-        const res = await customerService.getRedeemableOffers();
-        const offers = res.data?.offers ?? res.data ?? [];
+      // 2. Fetch Transactions
+      const txRes = await transactionService.getTransactions(clientId);
+      setTransactions(txRes.data?.transactions || []);
 
-        // Use dummy offers if no offers found
-        if (!Array.isArray(offers) || offers.length === 0) {
-          console.warn("No offers from API, using dummy offers");
-          setRedeemableOffers(DUMMY_OFFERS);
-        } else {
-          setRedeemableOffers(offers);
-        }
-      } catch (err) {
-        console.warn(
-          "Failed to fetch redeemable offers, using dummy offers",
-          err
-        );
-        setRedeemableOffers(DUMMY_OFFERS);
-      } finally {
-        setOffersLoading(false);
-      }
-    };
-
-    // Fetch tier and offers data
-    fetchPointsAndTier();
-    fetchOffers();
-  }, []);
-
-  // Load recent points activity from mock data (ascending by date)
-  useEffect(() => {
-    const ledger = (mockUser.ledger ?? []).slice();
-    ledger.sort(
-      (a: any, b: any) =>
-        new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
-    setRecentPoints(ledger as any);
-  }, []);
-
-  const handleViewRedeemOffer = (offer: RedeemableOffer) => {
-    setSelectedRedeemOffer(offer);
+    } catch (err) {
+      console.error("Error fetching dashboard data:", err);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const fetchOffers = async () => {
+    setOffersLoading(true);
+    try {
+      const res = await customerService.getRedeemableOffers();
+      const offers = res.data?.offers ?? res.data ?? [];
+      setRedeemableOffers(Array.isArray(offers) && offers.length > 0 ? offers : DUMMY_OFFERS);
+    } catch (err) {
+      setRedeemableOffers(DUMMY_OFFERS);
+    } finally {
+      setOffersLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+    fetchOffers();
+  }, [clientId]);
+
+  // --- HANDLERS ---
 
   const handleSpendFromDetails = () => {
     setSelectedRedeemOffer(null);
@@ -183,333 +111,208 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-50 to-[#faf9f7] font-sans">
+    <div className="min-h-screen bg-slate-50 font-sans pb-20 lg:pb-0">
       <TopNav />
       <Header
-        name={user.name ?? localStorage.getItem("userName") ?? "User"}
-        phone={user.phone ?? ""}
-        avatar={user.avatar ?? "/photo.png"}
+        name={userName}
+        phone=""
+        avatar="/photo.png"
         useVideo={false}
         onAvatarFileChange={() => {}}
       />
 
-      <main className="px-0">
-        {/* --- TABS SECTION --- */}
-
-        <div className="bg-white shadow-lg flex divide-x divide-gray-100">
-          {/* TAB 1: POINTS */}
-          <button
-            onClick={() => setActiveTab("points")}
-            className={`flex-1 py-4 flex flex-col items-center justify-center relative transition-colors ${
-              activeTab === "points" ? "bg-white" : "bg-gray-50/50"
-            }`}
+      <main className="max-w-4xl mx-auto">
+        {/* --- TABS --- */}
+        <div className="bg-white shadow-sm flex sticky top-16 z-20">
+          <button 
+            onClick={() => setActiveTab("points")} 
+            className={`flex-1 py-5 flex flex-col items-center transition-all ${activeTab === "points" ? "border-b-4 border-[#cb0d6c]" : "opacity-50"}`}
           >
-            <span className="text-3xl text-gray-800 font-light tracking-tight">
-              {pointsBalance.toLocaleString()}
-            </span>
-            <span className="text-xs font-medium text-gray-500 uppercase mt-1">
-              Your Points
-            </span>
-            {activeTab === "points" && (
-              <div className="absolute bottom-0 w-full h-[3px] bg-[#cb0d6c] animate-in fade-in zoom-in duration-200" />
-            )}
+            <span className="text-2xl font-bold text-gray-900">{pointsBalance.toLocaleString()}</span>
+            <span className="text-[10px] uppercase tracking-wider font-bold text-gray-500">Available Points</span>
           </button>
-
-          {/* TAB 2: TIER */}
-          <button
-            onClick={() => setActiveTab("tier")}
-            className={`flex-1 py-4 flex flex-col items-center justify-center relative transition-colors ${
-              activeTab === "tier" ? "bg-white" : "bg-gray-50/50"
-            }`}
+          <button 
+            onClick={() => setActiveTab("tier")} 
+            className={`flex-1 py-5 flex flex-col items-center transition-all ${activeTab === "tier" ? "border-b-4 border-[#cb0d6c]" : "opacity-50"}`}
           >
-            <span className="text-3xl text-gray-800 font-light tracking-tight">
-              {tier}
-            </span>
-            <span className="text-xs font-medium text-gray-500 uppercase mt-1">
-              Tier
-            </span>
-            {activeTab === "tier" && (
-              <div className="absolute bottom-0 w-full h-[3px] bg-[#cb0d6c] animate-in fade-in zoom-in duration-200" />
-            )}
+            <span className="text-2xl font-bold text-gray-900">{tier}</span>
+            <span className="text-[10px] uppercase tracking-wider font-bold text-gray-500">Current Tier</span>
           </button>
         </div>
 
-        {/* --- MAIN CONTENT AREA --- */}
-        <div className="mt-6 px-4">
-          {/* Action Buttons (Points tab only) */}
-          <div className="flex items-center justify-end mb-4 gap-3">
+        <div className="p-4">
+          {/* --- ACTIONS --- */}
+          <div className="flex justify-end gap-3 mb-6">
             {activeTab === "points" && (
               <>
-                <button
-                  onClick={() => setSpendPointsOpen(true)}
-                  className="text-sm font-semibold px-5 py-2 rounded-full border border-gray-300 bg-white text-(btn-text) shadow-sm hover:(--btn-hover-bg) active:scale-95 transition-all"
-                >
-                  Spend Points
-                </button>
-                <button
-                  onClick={() => setBuyPointsOpen(true)}
-                  className="text-sm font-semibold px-5 py-2 rounded-full border border-gray-300 bg-(--btn-bg) text-(--btn-text) shadow-md hover:bg-(--btn-hover-bg) active:scale-95 transition-all"
-                >
-                  Buy Points
-                </button>
+                <button onClick={() => setSpendPointsOpen(true)} className="px-6 py-2 rounded-full border border-gray-200 bg-white text-sm font-bold shadow-xs hover:bg-gray-50 transition-all">Spend</button>
+                <button onClick={() => setBuyPointsOpen(true)} className="px-6 py-2 rounded-full bg-[#cb0d6c] text-white text-sm font-bold shadow-md hover:opacity-90 transition-all">Buy Points</button>
               </>
             )}
           </div>
 
-          {/* Tier Progress (Tier tab only) */}
-          <div className="animate-in slide-in-from-bottom-2 fade-in duration-300">
-            {activeTab === "tier" && (
-              <TierProgress
-                currentTier={tier}
-                progress={tierProgress}
-              />
-            )}
-          </div>
-        </div>
-
-        {/* --- BOTTOM LISTS --- */}
-        <div className="mt-8">
-          {/* 1. VIEW: POINTS TAB */}
+          {/* --- CONTENT: POINTS TAB --- */}
           {activeTab === "points" && (
-            <>
-              <div className="px-4 mb-3">
-                <h3 className="text-lg font-semibold text-gray-800">
-                  Redeemable Offers
-                </h3>
-              </div>
-
-              <div className="px-4 pb-4">
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              
+              {/* Offers Slider */}
+              <section>
+                <h3 className="text-lg font-bold text-gray-800 mb-4 px-1">Exclusive Offers</h3>
                 {offersLoading ? (
-                  <div className="text-center py-6 text-sm text-gray-500">
-                    Loading offers…
-                  </div>
-                ) : redeemableOffers.length === 0 ? (
-                  <div className="text-center py-6 text-sm text-gray-500">
-                    No redeemable offers found.
-                  </div>
+                  <div className="h-32 flex items-center justify-center text-gray-400 text-sm">Loading offers...</div>
                 ) : (
                   <Slider
+                    height="h-40"
                     slides={redeemableOffers.map((offer) => ({
                       key: offer.id,
                       node: (
-                        <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-2 h-full flex flex-col justify-between">
+                        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm h-full flex flex-col justify-between mr-2">
                           <div>
-                            <div className="font-semibold text-gray-900 text-sm">
-                              {offer.title}
-                            </div>
-                            <div className="text-xs text-gray-500 mt-1">
-                              {offer.desc}
-                            </div>
+                            <h4 className="font-bold text-gray-900 text-sm line-clamp-1">{offer.title}</h4>
+                            <p className="text-xs text-gray-500 mt-1 line-clamp-2">{offer.desc}</p>
                           </div>
-
-                          <div className="flex items-center justify-between mt-2">
-                            <div className="text-xs text-gray-700 font-semibold">
-                              {offer.pointsCost.toLocaleString()} pts
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => handleViewRedeemOffer(offer)}
-                                className="text-[10px] px-2 py-1 rounded-full bg-[#f0eced] hover:bg-[#e6dfe3] text-gray-800 font-medium"
-                              >
-                                View
-                              </button>
-
-                              <button
-                                onClick={() => {
-                                  setSelectedRedeemOffer(offer);
-                                }}
-                                disabled={
-                                  pointsBalance < offer.pointsCost
-                                }
-                                className={`text-[10px] px-2 py-1 rounded-full font-semibold transition-all ${
-                                  pointsBalance >= offer.pointsCost
-                                    ? "bg-[#ef4155] text-white hover:bg-[#cb0d6c]"
-                                    : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                                }`}
-                              >
-                                Redeem
-                              </button>
-                            </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-black text-[#cb0d6c]">{offer.pointsCost} pts</span>
+                            <button 
+                              onClick={() => setSelectedRedeemOffer(offer)}
+                              className="text-[10px] bg-gray-900 text-white px-3 py-1.5 rounded-full font-bold"
+                            >
+                              Redeem
+                            </button>
                           </div>
                         </div>
-                      ),
+                      )
                     }))}
-                    height="h-32"
-                    className="pb-1"
                   />
                 )}
+              </section>
 
-                {/* Recent Points Activity (ascending) */}
-                <div className="mt-6">
-                  <h4 className="text-md font-semibold text-gray-800">
-                    Recent Points Activity
-                  </h4>
-                  <div className="mt-3 space-y-3">
-                    {recentPoints.length === 0 ? (
-                      <div className="text-sm text-gray-500">
-                        No recent points activity.
-                      </div>
-                    ) : (
-                      recentPoints.map((item) => (
-                        <div
-                          key={item.id}
-                          className="bg-white p-3 rounded-lg border border-gray-100 flex items-center justify-between"
-                        >
-                          <div>
-                            <p className="font-medium text-gray-800">
-                              {item.desc}
-                            </p>
-                            <p className="text-xs text-gray-400">
-                              {new Date(item.date).toLocaleDateString()}
-                            </p>
-                          </div>
-                          <div
-                            className={`font-black ${
-                              item.change > 0
-                                ? "text-green-600"
-                                : "text-red-600"
-                            }`}
-                          >
-                            {item.change > 0 ? "+" : ""}
-                            {item.change.toLocaleString()} pts
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* 2. VIEW: TIER TAB */}
-          {activeTab === "tier" && (
-            <>
-              <div className="px-4">
-                <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                  Tier Benefits
-                </h3>
-              </div>
-
-              <div className="px-4">
-                <div
-                  onClick={() => setTierDetailsOpen(true)}
-                  className="cursor-pointer bg-white py-4 mx-4 rounded-lg border border-gray-100 shadow-sm text-center hover:shadow-lg transition-shadow"
-                >
-                  <button
-                    type="button"
-                    className="text-lg font-semibold text-gray-900 w-full py-2"
-                  >
-                    View All Benefits & Details
+              {/* Transactions Ledger */}
+              <section>
+                <div className="flex items-center justify-between mb-4 px-1">
+                  <h3 className="text-lg font-bold text-gray-800">Recent Activity</h3>
+                  <button onClick={fetchData} className="p-2 text-gray-400 hover:text-[#cb0d6c] transition-colors">
+                    <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
                   </button>
                 </div>
+
+                <div className="space-y-3">
+                  {transactions.length === 0 ? (
+                    <div className="bg-white p-10 rounded-2xl text-center text-gray-400 border border-dashed border-gray-200">
+                      No transactions found yet.
+                    </div>
+                  ) : (
+                    transactions.map((tx) => {
+                      const isConfirmed = ["success", "confirmed"].includes(tx.paymentStatus?.toLowerCase());
+                      const isInvoice = tx.reference === "INVOICE_PURCHASE";
+                      
+                      return (
+                        <div key={tx.id} className="bg-white p-4 rounded-2xl border border-gray-50 shadow-xs flex items-center gap-4">
+                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${isInvoice ? "bg-blue-50 text-blue-600" : "bg-green-50 text-green-600"}`}>
+                            {isInvoice ? <ArrowUpRight size={24} /> : <ArrowDownLeft size={24} />}
+                          </div>
+                          
+                          <div className="flex-1">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <h4 className="font-bold text-gray-900 text-sm">
+                                  {isInvoice ? "Earned from Service" : "Points Purchase"}
+                                </h4>
+                                <p className="text-[10px] text-gray-400 font-mono mt-0.5">{tx.transactionId}</p>
+                              </div>
+                              <div className="text-right">
+                                <span className="font-black text-[#cb0d6c] text-sm">+{tx.points.toLocaleString()} pts</span>
+                                <p className="text-[10px] text-gray-400">{tx.amount.toLocaleString()} UGX</p>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-3 mt-2">
+                              <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                                <Clock size={10} /> {new Date(tx.createdAt).toLocaleDateString()}
+                              </span>
+                              <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${isConfirmed ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"}`}>
+                                {tx.paymentStatus}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </section>
+            </div>
+          )}
+
+          {/* --- CONTENT: TIER TAB --- */}
+          {activeTab === "tier" && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <TierProgress currentTier={tier} progress={tierProgress} />
+              
+              <div className="bg-linear-to-br from-gray-400 to-gray-300 p-6 rounded-3xl text-white shadow-xl relative overflow-hidden">
+                <div className="relative z-10">
+                  <h3 className="text-xl font-bold mb-2">Tier Benefits</h3>
+                  <p className="text-gray-400 text-sm mb-6">Enjoy exclusive rewards and priority services as a {tier} member.</p>
+                  <button 
+                    onClick={() => setTierDetailsOpen(true)}
+                    className="w-full py-3 bg-white text-gray-900 rounded-xl font-bold text-sm hover:bg-gray-100 transition-colors"
+                  >
+                    View All Benefits
+                  </button>
+                </div>
+                <div className="absolute -right-4 -bottom-4 w-32 h-32 bg-[#cb0d6c] rounded-full blur-3xl opacity-20"></div>
               </div>
 
-              <div className="mt-6">
-                <div className="px-4 mb-3">
-                  <h3 className="text-lg font-semibold text-gray-800">
-                    Earn points from
-                  </h3>
-                </div>
+              <section>
+                <h3 className="text-lg font-bold text-gray-800 mb-4">How to earn points</h3>
                 <ServicesList />
-              </div>
-            </>
+              </section>
+            </div>
           )}
         </div>
       </main>
 
       {/* --- MODALS --- */}
-      <BuyPoints
-        open={buyPointsOpen}
-        onClose={() => setBuyPointsOpen(false)}
-        onSuccess={(details) => {
-          const added =
-            typeof details?.addedPoints === "number" ? details.addedPoints : 0;
-          if (added > 0) {
-            setPointsBalance((prev) => prev + added);
-
-            setRecentPoints((prev) => [
-              ...prev,
-              {
-                id: `tx_${Date.now()}`,
-                date: new Date().toISOString(),
-                desc: "Bought points",
-                change: added,
-              },
-            ]);
-          }
-          // Do not auto-close modal here so user can see the success message and then close manually
-        }}
+      <BuyPoints 
+        open={buyPointsOpen} 
+        onClose={() => setBuyPointsOpen(false)} 
+        onSuccess={fetchData} 
+      />
+      
+      <SpendPointsModal 
+        open={spendPointsOpen} 
+        onClose={() => setSpendPointsOpen(false)} 
+        currentPoints={pointsBalance} 
       />
 
-      <SpendPointsModal
-        open={spendPointsOpen}
-        onClose={() => setSpendPointsOpen(false)}
-        currentPoints={pointsBalance}
+      <TierDetailsModal 
+        open={tierDetailsOpen} 
+        onClose={() => setTierDetailsOpen(false)} 
+        tier={tier} 
+        expiry="" 
+        pointsToNextTier={1500} 
       />
 
-      <TierDetailsModal
-        open={tierDetailsOpen}
-        onClose={() => setTierDetailsOpen(false)}
-        tier={tier}
-        expiry={user.expiryDate ?? ""}
-        pointsToNextTier={1500}
-      />
-
-      {/* --- REDEEM OFFER MODAL --- */}
+      {/* Redeem Detail Overlay */}
       {selectedRedeemOffer && (
-        <div
-          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
-          onClick={() => setSelectedRedeemOffer(null)}
-        >
-          <div
-            className="bg-white p-6 rounded-xl shadow-2xl w-full max-w-sm"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex justify-between items-center mb-4">
-              <h4 className="text-xl font-bold text-gray-800">
-                Redeem Offer Details
-              </h4>
-              <button
-                onClick={() => setSelectedRedeemOffer(null)}
-                className="text-gray-400 hover:text-gray-700"
-              >
-                <X className="w-6 h-6" />
-              </button>
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-6" onClick={() => setSelectedRedeemOffer(null)}>
+          <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <h4 className="text-xl font-black text-gray-900 mb-2">{selectedRedeemOffer.title}</h4>
+            <p className="text-gray-500 text-sm mb-6">{selectedRedeemOffer.desc}</p>
+            
+            <div className="bg-red-50 p-4 rounded-2xl mb-8 border border-red-100">
+              <span className="text-xs font-bold text-red-400 uppercase tracking-widest">Redemption Cost</span>
+              <p className="text-2xl font-black text-red-600">{selectedRedeemOffer.pointsCost.toLocaleString()} Points</p>
             </div>
 
-            <p className="font-semibold text-gray-900">
-              {selectedRedeemOffer.title}
-            </p>
-            <p className="text-sm text-gray-600 mb-4">
-              {selectedRedeemOffer.desc}
-            </p>
-
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg mb-6">
-              <p className="text-sm text-red-700 font-semibold">
-                Cost: {selectedRedeemOffer.pointsCost.toLocaleString()} Points
-              </p>
-            </div>
-
-            <div className="flex justify-between gap-3">
-              <button
-                onClick={() => setSelectedRedeemOffer(null)}
-                className="flex-1 text-sm font-medium px-4 py-2 rounded-full text-gray-600 border border-gray-300 hover:bg-gray-100 transition-colors"
+            <div className="grid grid-cols-2 gap-3">
+              <button onClick={() => setSelectedRedeemOffer(null)} className="py-3 rounded-xl font-bold text-gray-500 border border-gray-200">Close</button>
+              <button 
+                onClick={handleSpendFromDetails}
+                disabled={pointsBalance < selectedRedeemOffer.pointsCost}
+                className={`py-3 rounded-xl font-bold text-white shadow-lg ${pointsBalance >= selectedRedeemOffer.pointsCost ? "bg-[#cb0d6c] shadow-[#cb0d6c]/30" : "bg-gray-300 cursor-not-allowed"}`}
               >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleSpendFromDetails()}
-                disabled={
-                  pointsBalance < selectedRedeemOffer.pointsCost
-                }
-                className={`flex-1 text-sm font-semibold px-4 py-2 rounded-full transition-all ${
-                  pointsBalance >= selectedRedeemOffer.pointsCost
-                    ? "bg-[#ef4155] text-white hover:bg-[#cb0d6c] shadow-md shadow-[#ef4155]/30"
-                    : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                }`}
-              >
-                Spend Points
+                Claim Offer
               </button>
             </div>
           </div>

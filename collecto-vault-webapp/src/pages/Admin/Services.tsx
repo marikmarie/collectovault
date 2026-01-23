@@ -26,12 +26,17 @@ export default function Services() {
   const [clientId, setClientId] = useState<string | null>(null);
 
   // Toast / notification
-  const [toast, setToast] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
-  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+  const [toast, setToast] = useState<{
+    type: "success" | "error" | "info";
+    message: string;
+  } | null>(null);
+  const showToast = (
+    message: string,
+    type: "success" | "error" | "info" = "info",
+  ) => {
     setToast({ message, type });
     window.setTimeout(() => setToast(null), 4000);
   };
-
 
   // Cart
   type CartItem = {
@@ -51,8 +56,15 @@ export default function Services() {
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [activePreviewId, setActivePreviewId] = useState<string | null>(null);
-  const openDetail = (s: Service) => { setSelectedService(s); setDetailOpen(true); setActivePreviewId(null); };
-  const closeDetail = () => { setSelectedService(null); setDetailOpen(false); };
+  const openDetail = (s: Service) => {
+    setSelectedService(s);
+    setDetailOpen(true);
+    setActivePreviewId(null);
+  };
+  const closeDetail = () => {
+    setSelectedService(null);
+    setDetailOpen(false);
+  };
 
   // Pagination
   const [page, setPage] = useState(0);
@@ -67,21 +79,21 @@ export default function Services() {
     fetchServices();
 
     // Initialize clientId from the login step if available
-    
-    const storedClientId = localStorage.getItem('clientId');
+
+    const storedClientId = localStorage.getItem("clientId");
     if (storedClientId) setClientId(storedClientId);
   }, [page]);
 
   useEffect(() => {
     let result = services;
-    if (selectedCategory && selectedCategory !== 'All') {
+    if (selectedCategory && selectedCategory !== "All") {
       result = result.filter((s) => s.category === selectedCategory);
     }
     if (searchQuery) {
       result = result.filter(
         (s) =>
           s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          s.description.toLowerCase().includes(searchQuery.toLowerCase())
+          s.description.toLowerCase().includes(searchQuery.toLowerCase()),
       );
     }
     setFilteredServices(result);
@@ -91,12 +103,12 @@ export default function Services() {
   useEffect(() => {
     const onDocumentClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (!target.closest('[data-service-card]')) {
+      if (!target.closest("[data-service-card]")) {
         setActivePreviewId(null);
       }
     };
-    document.addEventListener('click', onDocumentClick);
-    return () => document.removeEventListener('click', onDocumentClick);
+    document.addEventListener("click", onDocumentClick);
+    return () => document.removeEventListener("click", onDocumentClick);
   }, []);
 
   // Reset to first page whenever the filtered result changes (e.g., search or category changes)
@@ -104,17 +116,19 @@ export default function Services() {
     setPage(0);
   }, [filteredServices]);
 
-
-
   async function fetchServices() {
     setLoading(true);
     try {
-      const vaultOTPToken = sessionStorage.getItem("vaultOtpToken") || undefined;
+      const vaultOTPToken =
+        sessionStorage.getItem("vaultOtpToken") || undefined;
       const collectoId = localStorage.getItem("collectoId") || undefined;
-
-      console.log("DEBUG: Outgoing collectoId:", collectoId);
-     console.log("DEBUG: Outgoing vaultOTPToken:", vaultOTPToken ? "TOKEN_EXISTS" : "MISSING");
-      const response = await customerService.getServices(vaultOTPToken,collectoId, page + 1, itemsPerPage);
+      
+      const response = await customerService.getServices(
+        vaultOTPToken,
+        collectoId,
+        page + 1,
+        itemsPerPage,
+      );
       const payload = response.data?.data;
       const innerData = payload?.data;
       const records = innerData?.records || [];
@@ -132,7 +146,9 @@ export default function Services() {
       }));
 
       const catSet = new Set<string>();
-      mappedServices.forEach((s: any) => catSet.add((s.category ?? 'General') as string));
+      mappedServices.forEach((s: any) =>
+        catSet.add((s.category ?? "General") as string),
+      );
       const uniqueCategories: string[] = ["All", ...Array.from(catSet)];
 
       setCategories(uniqueCategories);
@@ -146,9 +162,9 @@ export default function Services() {
       setLoading(false);
     }
   }
-const paginatedServices = filteredServices; 
+  const paginatedServices = filteredServices;
   // const hasPrev = page > 0;
-  // const hasNext = services.length === itemsPerPage; 
+  // const hasNext = services.length === itemsPerPage;
 
   // Cart helpers
   const addToCart = (s: Service) => {
@@ -156,7 +172,9 @@ const paginatedServices = filteredServices;
       const existing = prev.find((c) => c.id === s.id);
       if (existing) {
         // increase quantity
-        return prev.map((c) => (c.id === s.id ? { ...c, quantity: c.quantity + 1 } : c));
+        return prev.map((c) =>
+          c.id === s.id ? { ...c, quantity: c.quantity + 1 } : c,
+        );
       }
       return [
         ...prev,
@@ -178,78 +196,91 @@ const paginatedServices = filteredServices;
   };
 
   const updateQuantity = (id: string, quantity: number) => {
-    setCart((prev) => prev.map((c) => (c.id === id ? { ...c, quantity: Math.max(1, quantity) } : c)));
+    setCart((prev) =>
+      prev.map((c) =>
+        c.id === id ? { ...c, quantity: Math.max(1, quantity) } : c,
+      ),
+    );
   };
 
   // Place order helper (creates invoice)
-const handlePlaceOrder = async () => {
-  if (cart.length === 0) {
-    showToast('Cart is empty', 'error');
-    return;
-  }
-
-  setLoading(true);
-
-  try {
-    const collectoId = localStorage.getItem("collectoId") || "";
-    if (!clientId) {
-      showToast('Customer ID missing. Please login.', 'error');
-      setLoading(false);
+  const handlePlaceOrder = async () => {
+    if (cart.length === 0) {
+      showToast("Cart is empty", "error");
       return;
     }
 
-    const payload = {
-      vaultOTPToken: sessionStorage.getItem('vaultOtpToken') || undefined,
-      collectoId,
-      clientId,
-      staffId,
-      totalAmount: Number(cartTotal),
-      items: cart.map((c) => ({
-        serviceId: c.id,
-        serviceName: c.name,
-        quantity: c.quantity,
-        totalAmount: Number(c.unitAmount * c.quantity),
-      })),
-    };
+    setLoading(true);
 
-    const response = await invoiceService.createInvoice(payload);
+    try {
+      const collectoId = localStorage.getItem("collectoId") || "";
+      if (!clientId) {
+        showToast("Customer ID missing. Please login.", "error");
+        setLoading(false);
+        return;
+      }
 
-   const apiRoot = response.data; 
-    const invoiceId = apiRoot?.data?.invoiceId;
+      const payload = {
+        vaultOTPToken: sessionStorage.getItem("vaultOtpToken") || undefined,
+        collectoId,
+        clientId,
+        staffId,
+        totalAmount: Number(cartTotal),
+        items: cart.map((c) => ({
+          serviceId: c.id,
+          serviceName: c.name,
+          quantity: c.quantity,
+          totalAmount: Number(c.unitAmount * c.quantity),
+        })),
+      };
 
-    // LOGGING FOR DEBUGGING
-    console.log("Full API Root:", apiRoot);
-    console.log("Extracted Invoice ID:", invoiceId);
-  if (invoiceId && apiRoot?.status?.toString() === "200") {
-      
-      // Success: We have a valid ID and a 200 status
-      showToast(`Order placed: ${invoiceId}`, 'success');
+      const response = await invoiceService.createInvoice(payload);
 
-      try {
-        window.dispatchEvent(new CustomEvent('invoice:created', { 
-          detail: invoiceId 
-        }));
-      } catch (e) { /* silent fail */ }
+      const apiRoot = response.data;
+      const invoiceId = apiRoot?.data?.invoiceId;
 
-      setCart([]);
-      setCartOpen(false);
+      // LOGGING FOR DEBUGGING
+      console.log("Full API Root:", apiRoot);
+      console.log("Extracted Invoice ID:", invoiceId);
+      if (invoiceId && apiRoot?.status?.toString() === "200") {
+        // Success: We have a valid ID and a 200 status
+        showToast(`Order placed: ${invoiceId}`, "success");
 
-    } else {
-      // Failure: ID is missing or status is not 200
-      const errorMsg = apiRoot?.data?.message || "Invoice ID was not returned by the server.";
-      showToast(errorMsg, 'error');
+        try {
+          window.dispatchEvent(
+            new CustomEvent("invoice:created", {
+              detail: invoiceId,
+            }),
+          );
+        } catch (e) {
+          /* silent fail */
+        }
+
+        setCart([]);
+        setCartOpen(false);
+      } else {
+        // Failure: ID is missing or status is not 200
+        const errorMsg =
+          apiRoot?.data?.message ||
+          "Invoice ID was not returned by the server.";
+        showToast(errorMsg, "error");
+      }
+    } catch (err: any) {
+      console.error("Place order failed:", err);
+      const msg =
+        err?.response?.data?.data?.message ||
+        err.message ||
+        "Failed to place order";
+      showToast(msg, "error");
+    } finally {
+      setLoading(false);
     }
-
-  } catch (err: any) {
-    console.error('Place order failed:', err);
-    const msg = err?.response?.data?.data?.message || err.message || 'Failed to place order';
-    showToast(msg, 'error');
-  } finally {
-    setLoading(false);
-  }
-};
+  };
   const cartCount = cart.reduce((acc, it) => acc + it.quantity, 0);
-  const cartTotal = cart.reduce((acc, it) => acc + it.unitAmount * it.quantity, 0);
+  const cartTotal = cart.reduce(
+    (acc, it) => acc + it.unitAmount * it.quantity,
+    0,
+  );
 
   return (
     <div className="min-h-screen bg-gray- 50 pb-20">
@@ -257,7 +288,11 @@ const handlePlaceOrder = async () => {
 
       {/* Toast (global) */}
       {toast && !cartOpen && (
-        <div className={`fixed top-4 right-4 z-50 max-w-sm w-auto px-4 py-2 rounded shadow-lg text-sm ${toast.type === 'success' ? 'bg-green-600 text-white' : toast.type === 'error' ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'}`} role="status" aria-live="polite">
+        <div
+          className={`fixed top-4 right-4 z-50 max-w-sm w-auto px-4 py-2 rounded shadow-lg text-sm ${toast.type === "success" ? "bg-green-600 text-white" : toast.type === "error" ? "bg-red-600 text-white" : "bg-blue-600 text-white"}`}
+          role="status"
+          aria-live="polite"
+        >
           {toast.message}
         </div>
       )}
@@ -276,9 +311,13 @@ const handlePlaceOrder = async () => {
               aria-label="Open cart"
             >
               <ShoppingCart className="w-5 h-5 text-gray-700" />
-              <span className="text-sm font-bold text-gray-400">UGX {cartTotal.toLocaleString()}</span>
+              <span className="text-sm font-bold text-gray-400">
+                UGX {cartTotal.toLocaleString()}
+              </span>
               {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-[#d3c7cb] text-gray-900 text-[10px] rounded-full px-1.5 py-0.5">{cartCount}</span>
+                <span className="absolute -top-1 -right-1 bg-[#d3c7cb] text-gray-900 text-[10px] rounded-full px-1.5 py-0.5">
+                  {cartCount}
+                </span>
               )}
             </button>
           </div>
@@ -307,7 +346,9 @@ const handlePlaceOrder = async () => {
                 aria-label="Filter by category"
               >
                 {categories.map((cat) => (
-                  <option key={cat} value={cat}>{cat}</option>
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
                 ))}
               </select>
               <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
@@ -346,12 +387,11 @@ const handlePlaceOrder = async () => {
                   }
                 }}
                 className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between transition-all group relative cursor-pointer"
-              > 
+              >
                 <div className="flex items-center gap-4 min-w-0">
                   <div className="w-10 h-10 md:w-12 md:h-12 bg-gray-50 rounded-lg overflow-hidden shrink-0 border border-gray-50">
                     {s.photo ? (
                       <img
-
                         src={`${photosBaseUrl}${s.photo}`}
                         alt={s.name}
                         className="w-full h-full object-cover transition-transform duration-200"
@@ -365,7 +405,9 @@ const handlePlaceOrder = async () => {
 
                   <div className="min-w-0 text-left">
                     <div className="flex items-center gap-2 mb-0.5">
-                    <h2 className="font-bold text-gray-900 truncate text-xs text-left">{s.name}</h2>
+                      <h2 className="font-bold text-gray-900 truncate text-xs text-left">
+                        {s.name}
+                      </h2>
                     </div>
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-[9px] text-[#d81b60] font-medium bg-pink-50 px-2 py-0.5 rounded-md inline-block">
@@ -395,9 +437,11 @@ const handlePlaceOrder = async () => {
                       className="w-6 h-6 flex items-center justify-center text-[12px] rounded bg-gray-100"
                     >
                       +
-                    </button> 
+                    </button>
 
-                    <div className="text-[11px] font-semibold bg-white border px-2 py-0.5 rounded">{qty}</div>
+                    <div className="text-[11px] font-semibold bg-white border px-2 py-0.5 rounded">
+                      {qty}
+                    </div>
 
                     <button
                       onClick={(e) => {
@@ -411,116 +455,189 @@ const handlePlaceOrder = async () => {
                       className="w-6 h-6 flex items-center justify-center text-[12px] rounded bg-gray-100"
                     >
                       −
-                    </button> 
+                    </button>
                   </div>
                 </div>
 
                 {/* Tap preview (replaces hover) */}
                 <div
-                  className={`absolute inset-0 bg-white/95 p-4 rounded-2xl shadow-lg ${activePreviewId === s.id ? 'flex' : 'hidden'} flex-col justify-between`}
+                  className={`absolute inset-0 bg-white/95 p-4 rounded-2xl shadow-lg ${activePreviewId === s.id ? "flex" : "hidden"} flex-col justify-between`}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <button onClick={(e) => { e.stopPropagation(); setActivePreviewId(null); }} className="absolute top-3 right-3 p-1 rounded-full text-gray-600 hover:bg-gray-100">✕</button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActivePreviewId(null);
+                    }}
+                    className="absolute top-3 right-3 p-1 rounded-full text-gray-600 hover:bg-gray-100"
+                  >
+                    ✕
+                  </button>
 
                   <div>
-                    <h3 className="font-bold text-sm text-gray-900">{s.name}</h3>
-                    <p className="text-xs text-gray-600 mt-2 max-h-14 overflow-hidden">{s.description}</p>
+                    <h3 className="font-bold text-sm text-gray-900">
+                      {s.name}
+                    </h3>
+                    <p className="text-xs text-gray-600 mt-2 max-h-14 overflow-hidden">
+                      {s.description}
+                    </p>
                   </div>
                   <div className="flex items-center justify-between">
-                    <div className="text-sm font-semibold">UGX {s.amount.toLocaleString()}</div>
+                    <div className="text-sm font-semibold">
+                      UGX {s.amount.toLocaleString()}
+                    </div>
                     <button
-                      onClick={(e) => { e.stopPropagation(); addToCart(s); showToast('Added to cart', 'success'); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addToCart(s);
+                        showToast("Added to cart", "success");
+                      }}
                       className="py-2 px-3 bg-[#d81b60] text-white rounded-xl text-xs"
                     >
                       Add
                     </button>
                   </div>
                 </div>
-              </div> 
+              </div>
             );
           })}
         </div>
-
       </main>
 
       {/* Inline Cart Popup Modal */}
       {cartOpen && (
         <div className="fixed inset-0 z-50 flex items-start justify-center pt-24 px-4">
           {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/40" onClick={() => setCartOpen(false)} />
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setCartOpen(false)}
+          />
 
           <div className="relative w-full max-w-md bg-white rounded-2xl border border-gray-100 shadow-lg p-4 z-10">
             <div className="flex items-start justify-between mb-3">
               <div>
                 <h3 className="font-bold text-lg text-gray-900">Your Cart</h3>
-                <p className="text-sm text-gray-500 mt-1">{cart.length} items — UGX {cartTotal.toLocaleString()}</p>
+                <p className="text-sm text-gray-500 mt-1">
+                  {cart.length} items — UGX {cartTotal.toLocaleString()}
+                </p>
               </div>
-              <button onClick={() => setCartOpen(false)} className="text-gray-400 p-2 text-lg">✕</button>
+              <button
+                onClick={() => setCartOpen(false)}
+                className="text-gray-400 p-2 text-lg"
+              >
+                ✕
+              </button>
             </div>
 
             {toast && cartOpen && (
-              <div className={`mb-3 px-4 py-2 rounded text-sm ${toast.type === 'success' ? 'bg-green-600 text-white' : toast.type === 'error' ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'}`} role="status" aria-live="polite">
+              <div
+                className={`mb-3 px-4 py-2 rounded text-sm ${toast.type === "success" ? "bg-green-600 text-white" : toast.type === "error" ? "bg-red-600 text-white" : "bg-blue-600 text-white"}`}
+                role="status"
+                aria-live="polite"
+              >
                 {toast.message}
               </div>
             )}
 
-      {/* Service detail modal */}
-      {detailOpen && selectedService && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div className="absolute inset-0 bg-black/40" onClick={closeDetail} />
-          <div className="relative w-full max-w-md bg-white rounded-2xl border border-gray-100 shadow-lg p-4 z-10">
-            <div className="flex items-start justify-between mb-3">
-              <div>
-                <h3 className="font-bold text-lg text-gray-900">{selectedService.name}</h3>
-                <p className="text-sm text-gray-500 mt-1">{selectedService.category}</p>
-              </div>
-              <button onClick={closeDetail} className="text-gray-400 p-2 text-lg">✕</button>
-            </div>
+            {/* Service detail modal */}
+            {detailOpen && selectedService && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+                <div
+                  className="absolute inset-0 bg-black/40"
+                  onClick={closeDetail}
+                />
+                <div className="relative w-full max-w-md bg-white rounded-2xl border border-gray-100 shadow-lg p-4 z-10">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <h3 className="font-bold text-lg text-gray-900">
+                        {selectedService.name}
+                      </h3>
+                      <p className="text-sm text-gray-500 mt-1">
+                        {selectedService.category}
+                      </p>
+                    </div>
+                    <button
+                      onClick={closeDetail}
+                      className="text-gray-400 p-2 text-lg"
+                    >
+                      ✕
+                    </button>
+                  </div>
 
-            {selectedService.photo && (
-              <img src={`${photosBaseUrl}${selectedService.photo}`} alt={selectedService.name} className="w-full h-48 object-cover rounded-md mb-3" />
+                  {selectedService.photo && (
+                    <img
+                      src={`${photosBaseUrl}${selectedService.photo}`}
+                      alt={selectedService.name}
+                      className="w-full h-48 object-cover rounded-md mb-3"
+                    />
+                  )}
+
+                  <p className="text-sm text-gray-700 mb-4">
+                    {selectedService.description}
+                  </p>
+
+                  <div className="flex items-center justify-between">
+                    <div className="text-lg font-bold">
+                      UGX {selectedService.amount.toLocaleString()}
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          addToCart(selectedService);
+                          showToast("Added to cart", "success");
+                          setDetailOpen(false);
+                        }}
+                        className="py-2 px-4 bg-[#d81b60] text-white rounded-xl font-bold"
+                      >
+                        Add to Cart
+                      </button>
+                      <button
+                        onClick={closeDetail}
+                        className="py-2 px-4 border border-gray-200 rounded-xl"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
-
-            <p className="text-sm text-gray-700 mb-4">{selectedService.description}</p>
-
-            <div className="flex items-center justify-between">
-              <div className="text-lg font-bold">UGX {selectedService.amount.toLocaleString()}</div>
-              <div className="flex gap-2">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    addToCart(selectedService);
-                    showToast('Added to cart', 'success');
-                    setDetailOpen(false);
-                  }}
-                  className="py-2 px-4 bg-[#d81b60] text-white rounded-xl font-bold"
-                >
-                  Add to Cart
-                </button>
-                <button onClick={closeDetail} className="py-2 px-4 border border-gray-200 rounded-xl">Close</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
             <div className="mb-4 max-h-60 overflow-y-auto">
               {cart.length === 0 ? (
-                <div className="text-center text-gray-500 py-6">Your cart is empty.</div>
+                <div className="text-center text-gray-500 py-6">
+                  Your cart is empty.
+                </div>
               ) : (
                 <ul className="divide-y divide-gray-100">
                   {cart.map((it) => (
-                    <li key={it.id} className="flex items-center justify-between py-2">
+                    <li
+                      key={it.id}
+                      className="flex items-center justify-between py-2"
+                    >
                       <div className="min-w-0">
                         <div className="font-medium text-gray-800 text-xs truncate">
-                          {it.name} <span className="text-gray-600 text-xs">({it.quantity})</span>
+                          {it.name}{" "}
+                          <span className="text-gray-600 text-xs">
+                            ({it.quantity})
+                          </span>
                         </div>
-                        <div className="text-[10px] text-gray-500 mt-0.5">UGX {it.unitAmount.toLocaleString()} each</div>
+                        <div className="text-[10px] text-gray-500 mt-0.5">
+                          UGX {it.unitAmount.toLocaleString()} each
+                        </div>
                       </div>
 
                       <div className="ml-4 text-right">
-                        <div className="font-semibold text-sm">UGX {(it.unitAmount * it.quantity).toLocaleString()}</div>
-                        <button onClick={() => removeFromCart(it.id)} className="text-xs text-red-500 mt-1">Remove</button>
+                        <div className="font-semibold text-sm">
+                          UGX {(it.unitAmount * it.quantity).toLocaleString()}
+                        </div>
+                        <button
+                          onClick={() => removeFromCart(it.id)}
+                          className="text-xs text-red-500 mt-1"
+                        >
+                          Remove
+                        </button>
                       </div>
                     </li>
                   ))}
@@ -531,11 +648,15 @@ const handlePlaceOrder = async () => {
             <div className="bg-gray-50 p-3 rounded-xl mb-4">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-500">Total</div>
-                <div className="text-lg font-bold">UGX {cartTotal.toLocaleString()}</div>
+                <div className="text-lg font-bold">
+                  UGX {cartTotal.toLocaleString()}
+                </div>
               </div>
             </div>
 
-            <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Enter StaffId</label>
+            <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">
+              Enter StaffId
+            </label>
             <input
               type="id"
               placeholder="674"
@@ -550,10 +671,13 @@ const handlePlaceOrder = async () => {
                 disabled={loading}
                 className="flex-1 py-3 bg-[#ddd2d6] text-gray-800 rounded-xl font-bold hover:opacity-95 disabled:opacity-50 transition-all"
               >
-                {loading ? 'Placing Order...' : 'Place Order'}
+                {loading ? "Placing Order..." : "Place Order"}
               </button>
 
-              <button onClick={() => setCartOpen(false)} className="px-6 py-3 bg-white border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50">
+              <button
+                onClick={() => setCartOpen(false)}
+                className="px-6 py-3 bg-white border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50"
+              >
                 Cancel
               </button>
             </div>
