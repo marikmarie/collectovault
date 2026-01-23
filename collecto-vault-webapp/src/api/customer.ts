@@ -4,7 +4,7 @@ export const customerService = {
   // Get customer data including points balance and tier
 
   getCustomerData: (clientId: string) => 
-    api.get(`/customers/${clientId}`),
+    api.get(`/customers/info/${clientId}`),
 
   // Get customer's current points balance and tier info
   getPointsAndTier: (vendorId?: string) =>

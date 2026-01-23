@@ -65,9 +65,12 @@ export default function BuyPointsModal({
   const [queryLoading, setQueryLoading] = useState(false);
   const [queryError, setQueryError] = useState<string | null>(null);
 
-  const verifyPhoneNumber = async () => {
-    const trimmed = String(phone || "").trim();
-    if (!trimmed || trimmed.length < 10) return;
+  const verifyPhoneNumber = async (passedPhone?: string) => {
+  // Use passedPhone if available, otherwise fallback to state
+  const phoneToVerify = passedPhone || phone;
+  const trimmed = String(phoneToVerify || "").trim();
+  
+  if (!trimmed || trimmed.length < 10) return;
     try {
       setVerifying(true);
       setVerified(false);
@@ -471,7 +474,7 @@ const queryTxStatus = async () => {
                   setAccountName(null);
                   setVerified(false);
                   setPhoneError(null);
-                  if (digits.length === 10) verifyPhoneNumber();
+                  if (digits.length === 10) verifyPhoneNumber(digits);
                 }}
                 placeholder="07XXXXXXXX"
                 maxLength={10}

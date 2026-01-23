@@ -262,7 +262,7 @@ export default function Statement() {
               <p className="text-gray-600 font-semibold">
                 {loadingType === "invoices"
                   ? "Fetching invoices..."
-                  : "Fetching transactions..."}
+                  : "Fetching invoices..."}
               </p>
             </div>
           ) : activeTab === "invoices" ? (
