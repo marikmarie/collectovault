@@ -8,11 +8,11 @@ export const customerService = {
 
   // Get customer's current points balance and tier info
   getPointsAndTier: (vendorId?: string) =>
-    api.get(`/pointRules/collecto/${vendorId || localStorage.getItem('collectoId') || '141122'}`),
+    api.get(`/pointRules/collecto/${vendorId || localStorage.getItem('collectoId') || null}`),
 
   // Get tier rules/benefits
   getTierInfo: (vendorId?: string) =>
-    api.get(`/tier/collecto/${vendorId || localStorage.getItem('collectoId') || '141122'}`),
+    api.get(`/tier/collecto/${vendorId || localStorage.getItem('collectoId') || null}`),
 
   getRedeemableOffers: (customerId?: string) =>
     api.post(`/customers/${customerId ?? "me"}/offers/redeemable`),
@@ -25,8 +25,7 @@ export const customerService = {
       }`
     ),
 
-  getServicesById: (customerId?: string) =>
-    api.post(`/customers/${customerId}/services`),
+
 
   getServices: (vaultOTPToken?: string, collectoId?: string, page?: number, limit?: number) => 
     api.post('/services', { vaultOTPToken,collectoId, page, limit }),
