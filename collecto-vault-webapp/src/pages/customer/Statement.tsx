@@ -1,28 +1,28 @@
-import  { useCallback, useEffect, useState } from "react";
+// StatementWithPoints.tsx
+import { useCallback, useEffect, useState } from "react";
 import TopNav from "../../components/TopNav";
-import { ArrowDownLeft, ChevronRight, Loader2, CheckCircle2, AlertCircle, X } from "lucide-react";
+import {
+  ArrowDownLeft,
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
+  X,
+} from "lucide-react";
 import { transactionService, invoiceService } from "../../api/collecto";
 import api from "../../api";
 import InvoiceDetailModal from "./InvoiceDetailModal";
 import Button from "../../components/Button";
-import {customerService} from "../../api/customer";
+import { customerService } from "../../api/customer";
 
-/*
-  StatementWithPoints.tsx
-  - Rebuilt from user's existing Statement component
-  - Adds: points balance display, points-to-UGX conversion, points-only / mobile-money / mixed payment flows
-  - Uses existing endpoints provided by user: /vaultPackages, customerService.getCustomerData, transactionService.getTransactions, invoiceService.getInvoices, invoiceService.payInvoice, api.post('/verifyPhoneNumber')
-
-  Notes/assumptions made:
-  - The vaultPackages endpoint returns packages with pointsAmount and price (used to estimate UGX-per-point).
-  - invoiceService.payInvoice accepts payloads with different paymentOption values: "points", "mobilemoney", and "mixed". If your backend expects different fields, adjust the payload shapes accordingly.
-  - If no packages are available we fall back to 1 UGX per point (conservative fallback).
-*/
-
-// Local toast helper
 const useLocalToast = () => {
-  const [toast, setToast] = useState<null | { type: "success" | "error" | "info"; message: string }>(null);
-  const showToast = (message: string, type: "success" | "error" | "info" = "info") => {
+  const [toast, setToast] = useState<null | {
+    type: "success" | "error" | "info";
+    message: string;
+  }>(null);
+  const showToast = (
+    message: string,
+    type: "success" | "error" | "info" = "info",
+  ) => {
     setToast({ message, type });
     window.setTimeout(() => setToast(null), 3500);
   };
@@ -41,18 +41,23 @@ export default function StatementWithPoints() {
 
   // UI/Loading
   const [loading, setLoading] = useState(false);
-  const [loadingType, setLoadingType] = useState<"invoices" | "transactions" | "packages" | null>(null);
-  const [activeTab, setActiveTab] = useState<"invoices" | "payments">("invoices");
+  const [loadingType, setLoadingType] = useState<
+    "invoices" | "transactions" | "packages" | null
+  >(null);
+  const [activeTab, setActiveTab] = useState<"invoices" | "payments">(
+    "invoices",
+  );
 
   // Selection / modals
   const [payingInvoice, setPayingInvoice] = useState<string | null>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
-  const [selectedTransaction, setSelectedTransaction] = useState<any | null>(null);
+  const [selectedTransaction, setSelectedTransaction] = useState<any | null>(
+    null,
+  );
 
-  // Payment controls
-  const [payMethod, setPayMethod] = useState<"points" | "mobilemoney" | "mixed">("points");
+  // Payment controls (single combined flow)
   const [payPhone, setPayPhone] = useState("");
-  const [pointsToUse, setPointsToUse] = useState<number | null>(null); // used in mixed flow
+  const [pointsToUse, setPointsToUse] = useState<number | null>(null);
 
   // Verification states for phone
   const [verifying, setVerifying] = useState(false);
@@ -70,7 +75,6 @@ export default function StatementWithPoints() {
 
   const { toast, showToast } = useLocalToast();
 
-  // Verify phone number helper (reused from original code)
   const verifyPhoneNumber = useCallback(async (number: string) => {
     const trimmed = number.trim();
     if (trimmed.length < 10) return;
@@ -99,23 +103,30 @@ export default function StatementWithPoints() {
         null;
 
       const verifiedFlag = Boolean(
-        nested?.verifyPhoneNumber ?? deeper?.verifyPhoneNumber ?? String(payload?.status_message ?? "").toLowerCase() === "success",
+        nested?.verifyPhoneNumber ??
+        deeper?.verifyPhoneNumber ??
+        String(payload?.status_message ?? "").toLowerCase() === "success",
       );
 
       if (verifiedFlag) {
         setVerified(true);
         if (name) setAccountName(name);
       } else {
-        setPhoneError(nested?.message || payload?.message || "Verification failed");
+        setPhoneError(
+          nested?.message || payload?.message || "Verification failed",
+        );
       }
     } catch (err: any) {
-      setPhoneError(err?.response?.data?.message || err?.message || "Error verifying number");
+      setPhoneError(
+        err?.response?.data?.message ||
+          err?.message ||
+          "Error verifying number",
+      );
     } finally {
       setVerifying(false);
     }
   }, []);
 
-  // Fetch active packages (used to compute UGX-per-point)
   const fetchActivePackages = useCallback(async () => {
     setLoadingType("packages");
     setLoading(true);
@@ -131,17 +142,25 @@ export default function StatementWithPoints() {
       }));
       setPackages(mapped);
 
-      // compute UGX per point as weighted average (price / points)
-      const totalPoints = mapped.reduce((s: number, p: any) => s + (p.points || 0), 0);
-      const totalPrice = mapped.reduce((s: number, p: any) => s + (p.price || 0), 0);
+      const totalPoints = mapped.reduce(
+        (s: number, p: any) => s + (p.points || 0),
+        0,
+      );
+      const totalPrice = mapped.reduce(
+        (s: number, p: any) => s + (p.price || 0),
+        0,
+      );
       if (totalPoints > 0) {
         setUgxPerPoint(totalPrice / totalPoints);
       } else if (mapped.length > 0) {
-        // fallback: take average of per-package ratio
-        const avg = mapped.reduce((s: number, p: any) => s + (p.price / (p.points || 1)), 0) / mapped.length;
+        const avg =
+          mapped.reduce(
+            (s: number, p: any) => s + p.price / (p.points || 1),
+            0,
+          ) / mapped.length;
         setUgxPerPoint(avg || 1);
       } else {
-        setUgxPerPoint(1); // conservative fallback
+        setUgxPerPoint(1);
       }
 
       return mapped;
@@ -156,40 +175,48 @@ export default function StatementWithPoints() {
     }
   }, []);
 
-  // Fetch invoices and annotate them with points-equivalent (rounded)
-  const fetchInvoices = useCallback(async (invoiceId?: string | null) => {
-    setLoading(true);
-    setLoadingType("invoices");
-    try {
-      const res = await invoiceService.getInvoices({ vaultOTPToken, collectoId, clientId, invoiceId: invoiceId ?? null });
-      const invoiceArray = res.data?.data?.data;
-      const validatedData = Array.isArray(invoiceArray) ? invoiceArray : [];
+  const fetchInvoices = useCallback(
+    async (invoiceId?: string | null) => {
+      setLoading(true);
+      setLoadingType("invoices");
+      try {
+        // console.log(vaultOTPToken);
+        const res = await invoiceService.getInvoices({
+          vaultOTPToken,
+          collectoId,
+          clientId,
+          invoiceId: invoiceId ?? null,
+        });
+        const invoiceArray = res.data?.data?.data;
+        const validatedData = Array.isArray(invoiceArray) ? invoiceArray : [];
 
-      // Sort descending by invoice_date
-      const sortedData = validatedData.sort((a: any, b: any) => {
-        const dateA = new Date(a.details?.invoice_date || 0).getTime();
-        const dateB = new Date(b.details?.invoice_date || 0).getTime();
-        return dateB - dateA;
-      });
+        const sortedData = validatedData.sort((a: any, b: any) => {
+          const dateA = new Date(a.details?.invoice_date || 0).getTime();
+          const dateB = new Date(b.details?.invoice_date || 0).getTime();
+          return dateB - dateA;
+        });
 
-      // Attach pointsEquivalent using ugxPerPoint
-      const annotated = sortedData.map((inv: any) => {
-        const amount = Number(inv.details?.invoice_amount ?? inv.details?.amount ?? 0);
-        const pointsEquivalent = Math.max(0, Math.ceil(amount / ugxPerPoint));
-        return { ...inv, pointsEquivalent };
-      });
+        const annotated = sortedData.map((inv: any) => {
+          const amount = Number(
+            inv.details?.invoice_amount ?? inv.details?.amount ?? 0,
+          );
+          const pointsEquivalent = Math.max(0, Math.ceil(amount / ugxPerPoint));
+          return { ...inv, pointsEquivalent };
+        });
 
-      setInvoices(annotated);
-      return annotated;
-    } catch (err) {
-      console.error("Fetch Invoices Error:", err);
-      setInvoices([]);
-      return [];
-    } finally {
-      setLoading(false);
-      setLoadingType(null);
-    }
-  }, [ugxPerPoint]);
+        setInvoices(annotated);
+        return annotated;
+      } catch (err) {
+        console.error("Fetch Invoices Error:", err);
+        setInvoices([]);
+        return [];
+      } finally {
+        setLoading(false);
+        setLoadingType(null);
+      }
+    },
+    [ugxPerPoint],
+  );
 
   const fetchTransactions = useCallback(async () => {
     setLoading(true);
@@ -210,7 +237,6 @@ export default function StatementWithPoints() {
     }
   }, []);
 
-  // Fetch customer profile (points & tier) and transactions
   const fetchCustomerAndRelated = useCallback(async () => {
     if (!clientId) return;
     setLoading(true);
@@ -222,11 +248,14 @@ export default function StatementWithPoints() {
         setTier(cData.currentTier?.name || "N/A");
 
         if (cData.currentTier && cData.tiers) {
-          const idx = cData.tiers.findIndex((t: any) => t.id === cData.currentTier.id);
+          const idx = cData.tiers.findIndex(
+            (t: any) => t.id === cData.currentTier.id,
+          );
           if (idx !== -1 && idx < cData.tiers.length - 1) {
             const next = cData.tiers[idx + 1];
             const diff = next.pointsRequired - cData.currentTier.pointsRequired;
-            const earned = cData.customer.currentPoints - cData.currentTier.pointsRequired;
+            const earned =
+              cData.customer.currentPoints - cData.currentTier.pointsRequired;
             setTierProgress(Math.min(100, Math.max(0, (earned / diff) * 100)));
           } else {
             setTierProgress(100);
@@ -243,7 +272,6 @@ export default function StatementWithPoints() {
     }
   }, []);
 
-  // Master fetch on mount: packages -> derive ugxPerPoint -> customer -> invoices & txs
   useEffect(() => {
     (async () => {
       await fetchActivePackages();
@@ -251,73 +279,108 @@ export default function StatementWithPoints() {
       await fetchInvoices();
       await fetchTransactions();
     })();
-  }, [fetchActivePackages, fetchCustomerAndRelated, fetchInvoices, fetchTransactions]);
+  }, [
+    fetchActivePackages,
+    fetchCustomerAndRelated,
+    fetchInvoices,
+    fetchTransactions,
+  ]);
 
-  // Payment handler supporting points / mobilemoney / mixed
+  // Helpers
+  const pointsToUGX = (points: number) => Math.round(points * ugxPerPoint);
+  const ugxToPoints = (ugx: number) => Math.ceil(ugx / ugxPerPoint);
+
+  // Compute safe max points for the FlexPay (ensure mobile portion > 0)
+  const computeMaxPointsForInvoice = (
+    invoiceAmount: number,
+    invoicePointsEquivalent: number,
+  ) => {
+    // Ensure at least 1 UGX remains for mobile money after applying points
+    // maxPoints = floor((invoiceAmount - 1) / ugxPerPoint)
+    const maxFromAmount = Math.max(
+      0,
+      Math.floor((invoiceAmount - 1) / ugxPerPoint),
+    );
+    return Math.min(pointsBalance, invoicePointsEquivalent, maxFromAmount);
+  };
+
   const handlePayInvoice = async (invoiceId: string) => {
     try {
       setLoading(true);
 
-      const targetInvoice = invoices.find((inv) => inv.details?.id === invoiceId);
-      const balanceDue = Number(targetInvoice?.amount_less ?? targetInvoice?.details?.invoice_amount ?? 0);
+      const targetInvoice = invoices.find(
+        (inv) => inv.details?.id === invoiceId,
+      );
+      const balanceDue = Number(
+        targetInvoice?.amount_less ??
+          targetInvoice?.details?.invoice_amount ??
+          0,
+      );
 
-      // Format phone
-      const formattedPhone = payPhone ? payPhone.replace(/^0/, "256") : payPhone;
-
-      // Build payload depending on method
-      let payload: any = { vaultOTPToken, collectoId, clientId, reference: invoiceId };
-
-      if (payMethod === "points") {
-        // compute required points to fully cover invoice
-        const pointsNeeded = Math.max(0, Math.ceil(balanceDue / ugxPerPoint));
-        if (pointsBalance < pointsNeeded) {
-          showToast("Insufficient points to cover invoice", "error");
-          return;
-        }
-
-        payload = { ...payload, paymentOption: "points", points: pointsNeeded };
-
-      } else if (payMethod === "mobilemoney") {
-        payload = { ...payload, paymentOption: "mobilemoney", phone: formattedPhone, amount: balanceDue };
-      } else if (payMethod === "mixed") {
-        // pointsToUse must be set; ensure it's within bounds
-        const pointsUse = Math.max(0, Math.floor(pointsToUse || 0));
-        if (pointsUse <= 0) {
-          showToast("Choose points to apply for mixed payment", "error");
-          return;
-        }
-        if (pointsUse > pointsBalance) {
-          showToast("You don't have that many points", "error");
-          return;
-        }
-
-        const pointsValueUGX = pointsUse * ugxPerPoint;
-        const mobileAmount = Math.max(0, balanceDue - pointsValueUGX);
-
-        payload = { ...payload, paymentOption: "mixed", points: pointsUse, phone: formattedPhone, amount: mobileAmount };
+      const pointsUse = Math.max(0, Math.floor(pointsToUse || 0));
+      if (pointsUse <= 0) {
+        showToast("Please choose some points to apply for FlexPay.", "error");
+        return;
       }
+
+      if (!payPhone || !verified) {
+        showToast(
+          "Please verify a phone number for the mobile money portion.",
+          "error",
+        );
+        return;
+      }
+
+      const pointsValueUGX = pointsUse * ugxPerPoint;
+      const mobileAmount = Math.max(0, balanceDue - pointsValueUGX);
+
+      if (mobileAmount <= 0) {
+        showToast(
+          "FlexPay requires a non-zero mobile money portion. Reduce points used.",
+          "error",
+        );
+        return;
+      }
+
+      // Format phone for backend (keep consistent with existing code)
+      const formattedPhone = payPhone
+        ? payPhone.replace(/^0/, "256")
+        : payPhone;
+
+      // Build payload with the points object shape requested
+      const payload: any = {
+        vaultOTPToken,
+        collectoId,
+        clientId,
+        reference: invoiceId,
+        paymentOption: "flexpay", // change to "mixed" if backend expects that
+        phone: formattedPhone,
+        amount: mobileAmount,
+        points: {
+          points_used: pointsUse,
+          discount_amount: pointsValueUGX,
+        },
+      };
 
       await invoiceService.payInvoice(payload);
 
-      // optimistic updates
-      if (payMethod === "points") {
-        const pointsNeeded = Math.max(0, Math.ceil(balanceDue / ugxPerPoint));
-        setPointsBalance((p) => Math.max(0, p - pointsNeeded));
-      } else if (payMethod === "mixed") {
-        const pointsUse = Math.max(0, Math.floor(pointsToUse || 0));
-        setPointsBalance((p) => Math.max(0, p - pointsUse));
-      }
+      // optimistic update of user's points balance
+      setPointsBalance((p) => Math.max(0, p - pointsUse));
 
       await fetchInvoices();
       await fetchTransactions();
 
+      // reset payment modal fields
       setPayingInvoice(null);
       setPointsToUse(null);
       setPayPhone("");
       setAccountName(null);
       setVerified(false);
 
-      showToast("Payment initiated. Check your phone if prompted.", "success");
+      showToast(
+        "FlexPay initiated — check your phone for mobile money prompts.",
+        "success",
+      );
     } catch (err: any) {
       console.error("Payment failed:", err);
       showToast(err?.response?.data?.message || "Payment failed", "error");
@@ -326,51 +389,67 @@ export default function StatementWithPoints() {
     }
   };
 
-  // Utility: compute UGX equivalent of points and vice-versa
-  const pointsToUGX = (points: number) => Math.round(points * ugxPerPoint);
-  const ugxToPoints = (ugx: number) => Math.ceil(ugx / ugxPerPoint);
-
   return (
-    <div className="min-h-screen bg-[#f3f3f3] font-sans pb-20">
+    <div className="min-h-screen bg-[#f6f7fb] font-sans pb-20">
       <TopNav />
 
       {toast && (
-        <div className="fixed top-4 right-4 z-50 px-4 py-2 rounded shadow-lg text-sm bg-black text-white">
+        <div className="fixed top-4 right-4 z-50 px-4 py-2 rounded-lg shadow-lg text-sm bg-black text-white">
           {toast.message}
         </div>
       )}
 
-      {/* Header: Points balance */}
-      <div className="w-full bg-white shadow-md flex items-center justify-between px-5 py-4 border-b border-gray-100">
+      {/* Header */}
+      <div className="w-full bg-white shadow-sm flex items-center justify-between px-6 py-5 border-b border-gray-100">
         <div>
-          <p className="text-xs text-gray-500 uppercase font-bold">Points balance</p>
-          <p className="text-2xl font-black text-gray-900">{pointsBalance.toLocaleString()} pts</p>
-          <p className="text-xs text-gray-400">UGX {pointsToUGX(pointsBalance).toLocaleString()}</p>
+          <p className="text-xs text-gray-500 uppercase font-bold">
+            Points balance
+          </p>
+          <p className="text-2xl font-extrabold text-gray-900">
+            {pointsBalance.toLocaleString()} pts
+          </p>
+          <p className="text-xs text-gray-400">
+            UGX {pointsToUGX(pointsBalance).toLocaleString()}
+          </p>
         </div>
 
         <div className="text-right">
           <p className="text-xs text-gray-500 uppercase font-bold">Tier</p>
           <p className="text-lg font-bold text-gray-900">{tier}</p>
-          <p className="text-xs text-gray-400">Progress: {Math.round(tierProgress)}%</p>
+          <p className="text-xs text-gray-400">
+            Progress: {Math.round(tierProgress)}%
+          </p>
         </div>
       </div>
 
-      <div className="w-full bg-white shadow-md flex divide-x divide-gray-100 border-b border-gray-100">
-        <button onClick={() => setActiveTab("invoices")} className={`flex-1 py-6 flex flex-col items-center justify-center relative transition-colors ${activeTab === "invoices" ? "bg-white" : "bg-gray-50/30"}`}>
-          <span className="text-xs font-bold text-gray-400 uppercase mt-1 tracking-widest">Invoices</span>
-          {activeTab === "invoices" && <div className="absolute bottom-0 w-full h-1 bg-[#cb0d6c]" />}
+      <div className="w-full bg-white shadow-md flex border-b border-gray-100">
+        <button
+          onClick={() => setActiveTab("invoices")}
+          className={`flex-1 py-5 text-center ${activeTab === "invoices" ? "border-b-2 border-[#cb0d6c]" : "text-gray-500"}`}
+        >
+          <span className="text-xs font-bold uppercase tracking-widest">
+            Invoices
+          </span>
         </button>
 
-        <button onClick={() => setActiveTab("payments")} className={`flex-1 py-6 flex flex-col items-center justify-center relative transition-colors ${activeTab === "payments" ? "bg-white" : "bg-gray-50/30"}`}>
-          <span className="text-xs font-bold text-gray-400 uppercase mt-1 tracking-widest">Payments</span>
-          {activeTab === "payments" && <div className="absolute bottom-0 w-full h-1 bg-[#cb0d6c]" />}
+        <button
+          onClick={() => setActiveTab("payments")}
+          className={`flex-1 py-5 text-center ${activeTab === "payments" ? "border-b-2 border-[#cb0d6c]" : "text-gray-500"}`}
+        >
+          <span className="text-xs font-bold uppercase tracking-widest">
+            Payments
+          </span>
         </button>
       </div>
 
-      <main className="w-full px-4 mt-0">
-        <div className="mt-6 mb-6 text-center">
+      <main className="w-full px-4 mt-6 max-w-4xl mx-auto">
+        <div className="mb-6 text-center">
           {!loading && (
-            <p className="text-gray-400 text-sm font-medium">{activeTab === "invoices" ? `${invoices.length} invoices found` : `${transactions.length} payments found`}</p>
+            <p className="text-gray-500 text-sm">
+              {activeTab === "invoices"
+                ? `${invoices.length} invoices found`
+                : `${transactions.length} payments found`}
+            </p>
           )}
         </div>
 
@@ -378,58 +457,111 @@ export default function StatementWithPoints() {
           {loading ? (
             <div className="text-center py-10 flex flex-col items-center justify-center gap-3">
               <Loader2 className="w-8 h-8 text-[#cb0d6c] animate-spin" />
-              <p className="text-gray-600 font-semibold">{loadingType === "invoices" ? "Fetching invoices..." : loadingType === "transactions" ? "Fetching transactions..." : "Loading..."}</p>
+              <p className="text-gray-600 font-semibold">
+                {loadingType === "invoices"
+                  ? "Fetching invoices..."
+                  : loadingType === "transactions"
+                    ? "Fetching transactions..."
+                    : "Loading..."}
+              </p>
             </div>
           ) : activeTab === "invoices" ? (
             invoices.map((inv: any) => {
               const invId = inv.details?.id || "N/A";
               const dateRaw = inv.details?.invoice_date || "N/A";
-              const amount = Number(inv.details?.invoice_amount ?? inv.details?.amount ?? 0);
+              const amount = Number(
+                inv.details?.invoice_amount ?? inv.details?.amount ?? 0,
+              );
               const isPaid = Number(inv.amount_less) === 0;
-              const pointsEquivalent = inv.pointsEquivalent ?? ugxToPoints(amount);
+              const pointsEquivalent =
+                inv.pointsEquivalent ?? ugxToPoints(amount);
 
               return (
-                <div key={invId} onClick={() => setSelectedInvoice(inv)} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between active:scale-[0.98] transition-transform cursor-pointer">
+                <div
+                  key={invId}
+                  onClick={() => setSelectedInvoice(inv)}
+                  className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between cursor-pointer hover:shadow-md transition-transform active:scale-[0.99]"
+                >
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center">
                       <ArrowDownLeft className="w-6 h-6 text-gray-300" />
                     </div>
                     <div>
-                      <p className="font-bold text-gray-800 text-base">{invId}</p>
-                      <div className="flex items-center gap-1 text-[11px] uppercase font-extrabold tracking-wider">
+                      <p className="font-bold text-gray-800 text-base">
+                        {invId}
+                      </p>
+                      <div className="flex items-center gap-2 text-[11px] uppercase font-extrabold tracking-wider">
                         <span className="text-gray-500">{dateRaw}</span>
                         <span className="text-gray-400">•</span>
-                        <span className={isPaid ? "text-green-600" : "text-red-600"}>{isPaid ? "PAID" : "PENDING"}</span>
+                        <span
+                          className={isPaid ? "text-green-600" : "text-red-600"}
+                        >
+                          {isPaid ? "PAID" : "PENDING"}
+                        </span>
                       </div>
-                      <div className="text-xs text-gray-500 mt-1">Equivalent: {pointsEquivalent.toLocaleString()} pts UGX {pointsToUGX(pointsEquivalent).toLocaleString()}</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        Equivalent: {pointsEquivalent.toLocaleString()} pts •
+                        UGX {pointsToUGX(pointsEquivalent).toLocaleString()}
+                      </div>
                     </div>
                   </div>
 
                   <div className="text-right flex items-center gap-4">
                     <div>
-                      <p className="font-black text-gray-900 text-lg">UGX {Number(amount).toLocaleString()}</p>
+                      <p className="font-extrabold text-gray-900 text-lg">
+                        UGX {Number(amount).toLocaleString()}
+                      </p>
                       {!isPaid && (
-                        <button onClick={(e) => { e.stopPropagation(); setPayingInvoice(invId); setPointsToUse(Math.min(pointsBalance, inv.pointsEquivalent || ugxToPoints(amount))); }} className="text-[11px] text-black uppercase bg-gray-200 px-3 py-1 rounded hover:bg-gray-300 transition">Pay Now</button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPayingInvoice(invId);
+                            // pick a sensible default: min(balance, pointsEquivalent but ensure mixed constraint)
+                            const defaultMax = computeMaxPointsForInvoice(
+                              amount,
+                              pointsEquivalent,
+                            );
+                            setPointsToUse(
+                              Math.max(0, Math.min(pointsBalance, defaultMax)),
+                            );
+                          }}
+                          className="text-[11px] text-black uppercase bg-gray-200 px-3 py-1 rounded hover:bg-gray-300 transition"
+                        >
+                          Pay Now
+                        </button>
                       )}
                     </div>
-                    <ChevronRight className="w-5 h-5 text-gray-300" />
                   </div>
                 </div>
               );
             })
           ) : (
             transactions.map((tx: any) => {
-              const statusColor = tx.paymentStatus === "SUCCESS" ? "text-green-600" : tx.paymentStatus === "PENDING" ? "text-yellow-600" : "text-red-600";
-              const createdDate = new Date(tx.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+              const statusColor =
+                tx.paymentStatus === "SUCCESS"
+                  ? "text-green-600"
+                  : tx.paymentStatus === "PENDING"
+                    ? "text-yellow-600"
+                    : "text-red-600";
+              const createdDate = new Date(tx.createdAt).toLocaleDateString(
+                "en-US",
+                { year: "numeric", month: "short", day: "numeric" },
+              );
 
               return (
-                <div key={tx.id} onClick={() => setSelectedTransaction(tx)} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between active:scale-[0.98] transition-transform cursor-pointer">
+                <div
+                  key={tx.id}
+                  onClick={() => setSelectedTransaction(tx)}
+                  className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between cursor-pointer hover:shadow-md transition-transform active:scale-[0.99]"
+                >
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-full flex items-center justify-center bg-blue-50">
                       <ArrowDownLeft className="w-6 h-6 text-blue-600" />
                     </div>
                     <div>
-                      <p className="font-bold text-gray-800 text-base">{tx.transactionId}</p>
+                      <p className="font-bold text-gray-800 text-base">
+                        {tx.transactionId}
+                      </p>
                       <div className="flex items-center gap-1 text-[11px] uppercase font-extrabold tracking-wider">
                         <span className="text-gray-500">{createdDate}</span>
                         <span className="text-gray-400">•</span>
@@ -439,10 +571,13 @@ export default function StatementWithPoints() {
                   </div>
                   <div className="text-right flex items-center gap-4">
                     <div>
-                      <p className="font-black text-lg text-gray-900">UGX {Number(tx.amount || 0).toLocaleString()}</p>
-                      <p className="text-xs text-gray-500 font-semibold">{tx.points} points</p>
+                      <p className="font-extrabold text-lg text-gray-900">
+                        UGX {Number(tx.amount || 0).toLocaleString()}
+                      </p>
+                      <p className="text-xs text-gray-500 font-semibold">
+                        {tx.points} points
+                      </p>
                     </div>
-                    <ChevronRight className="w-5 h-5 text-gray-300" />
                   </div>
                 </div>
               );
@@ -451,125 +586,286 @@ export default function StatementWithPoints() {
         </div>
       </main>
 
-      {/* Payment Modal */}
+      {/* Payment Modal — single FlexPay flow */}
       {payingInvoice && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 border border-gray-100">
-            <div className="flex items-center justify-between mb-6">
-              <h4 className="text-2xl font-black text-gray-900">Payment Details</h4>
-              <button onClick={() => { setPayingInvoice(null); setAccountName(null); setVerified(false); setPayPhone(""); setPhoneError(null); setPointsToUse(null); }} className="text-gray-400 hover:text-gray-600">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl p-6 border border-gray-100">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h4 className="text-2xl font-extrabold text-gray-900">
+                  FlexPay — Points + Mobile Money
+                </h4>
+                <p className="text-xs text-gray-500 mt-1">
+                  Apply points and complete the remainder with mobile money.
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setPayingInvoice(null);
+                  setAccountName(null);
+                  setVerified(false);
+                  setPayPhone("");
+                  setPhoneError(null);
+                  setPointsToUse(null);
+                }}
+                className="text-gray-400 hover:text-gray-600 p-2 rounded-md"
+              >
+                <X className="w-6 h-6" />
               </button>
             </div>
 
-            <div className="bg-linear-to-br from-pink-50 to-orange-50 rounded-xl p-4 mb-5 border border-pink-100">
-              <div className="flex justify-between items-end">
-                <div>
-                  <p className="text-xs text-gray-600 font-medium mb-1">Invoice Reference</p>
-                  <p className="text-lg font-black text-gray-900">{payingInvoice}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs text-gray-600 font-medium mb-1">Balance Due</p>
-                  <p className="text-lg font-black text-[#D81B60]">UGX {Number(invoices.find((i) => i.details?.id === payingInvoice)?.amount_less || invoices.find((i) => i.details?.id === payingInvoice)?.details?.invoice_amount || 0).toLocaleString()}</p>
-                  <p className="text-xs text-gray-500 mt-1">Equivalent: {Math.ceil((invoices.find((i) => i.details?.id === payingInvoice)?.amount_less || invoices.find((i) => i.details?.id === payingInvoice)?.details?.invoice_amount || 0) / ugxPerPoint).toLocaleString()} pts</p>
+            <div className="rounded-2xl overflow-hidden mb-3 border border-pink-50 shadow-sm">
+              <div className="bg-linear-to-r from-pink-50 via-white to-yellow-50 px-4 py-2">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="text-[11px] text-gray-600 font-medium mb-0.5">
+                      Invoice
+                    </p>
+                    <p className="text-base font-extrabold text-gray-900">
+                      {payingInvoice}
+                    </p>
+                  </div>
+
+                  <div className="text-right">
+                    <p className="text-[11px] text-gray-600 font-medium mb-0.5">
+                      Balance Due
+                    </p>
+                    <p className="text-base font-extrabold text-[#D81B60] leading-tight">
+                      UGX{" "}
+                      {Number(
+                        invoices.find((i) => i.details?.id === payingInvoice)
+                          ?.amount_less ??
+                          invoices.find((i) => i.details?.id === payingInvoice)
+                            ?.details?.invoice_amount ??
+                          0,
+                      ).toLocaleString()}
+                    </p>
+                    <p className="text-[11px] text-gray-500 leading-tight">
+                      Equivalent:{" "}
+                      {Math.ceil(
+                        (invoices.find((i) => i.details?.id === payingInvoice)
+                          ?.amount_less ??
+                          invoices.find((i) => i.details?.id === payingInvoice)
+                            ?.details?.invoice_amount ??
+                          0) / ugxPerPoint,
+                      ).toLocaleString()}{" "}
+                      pts
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
 
+            {/* FlexPay controls */}
+            <div className="mb-4">
+              <p className="text-sm font-bold text-gray-700 uppercase mb-2">
+                Apply points
+              </p>
+              <p className="text-sm text-gray-600">
+                Slide to choose how many points to apply.
+              </p>
+
+              <div className="mt-4">
+                <p className="text-sm font-bold">
+                  Your balance: {pointsBalance.toLocaleString()} pts (UGX{" "}
+                  {pointsToUGX(pointsBalance).toLocaleString()})
+                </p>
+
+                <div className="mt-3">
+                  {/* compute invoice-specific values */}
+                  {(() => {
+                    const invoice = invoices.find(
+                      (i) => i.details?.id === payingInvoice,
+                    );
+                    const amount = Number(
+                      invoice?.amount_less ??
+                        invoice?.details?.invoice_amount ??
+                        0,
+                    );
+                    const pointsEquivalent =
+                      invoice?.pointsEquivalent ?? ugxToPoints(amount);
+                    const safeMaxPoints = computeMaxPointsForInvoice(
+                      amount,
+                      pointsEquivalent,
+                    );
+                    // Set a default if not already set
+                    if (pointsToUse === null) {
+                      // set default to min(safeMaxPoints, pointsBalance) — let this be 0 if not possible
+                      setPointsToUse((prev) => {
+                        if (prev !== null) return prev;
+                        return Math.max(
+                          0,
+                          Math.min(pointsBalance, safeMaxPoints),
+                        );
+                      });
+                    }
+
+                    return (
+                      <>
+                        <input
+                          type="range"
+                          min={0}
+                          max={Math.max(0, safeMaxPoints)}
+                          value={Math.max(0, pointsToUse ?? 0)}
+                          onChange={(e) =>
+                            setPointsToUse(Number(e.target.value))
+                          }
+                          className="w-full"
+                        />
+
+                        <div className="flex justify-between text-xs text-gray-600 mt-2">
+                          <span>0 pts</span>
+                          <span>
+                            {Math.max(0, safeMaxPoints).toLocaleString()} pts
+                          </span>
+                        </div>
+
+                        <div className="mt-3 text-sm">
+                          <p>
+                            Applying:{" "}
+                            <span className="font-bold">
+                              {(pointsToUse ?? 0).toLocaleString()} pts • UGX{" "}
+                              {pointsToUGX(pointsToUse ?? 0).toLocaleString()}
+                            </span>
+                          </p>
+
+                          <p className="text-sm mt-1">
+                            Remaining to pay by mobile money:{" "}
+                            <span className="font-bold">
+                              UGX{" "}
+                              {(() => {
+                                const remaining = Math.max(
+                                  0,
+                                  amount - pointsToUGX(pointsToUse ?? 0),
+                                );
+                                return remaining.toLocaleString();
+                              })()}
+                            </span>
+                          </p>
+
+                          {(() => {
+                            const remaining = Math.max(
+                              0,
+                              amount - pointsToUGX(pointsToUse ?? 0),
+                            );
+                            if (remaining <= 0) {
+                              return (
+                                <p className="text-xs mt-2 text-red-600">
+                                  Reduce points so that there is a mobile-money
+                                  portion (FlexPay requires both).
+                                </p>
+                              );
+                            }
+                            if ((pointsToUse ?? 0) <= 0) {
+                              return (
+                                <p className="text-xs mt-2 text-yellow-700">
+                                  Please choose points to apply for FlexPay.
+                                </p>
+                              );
+                            }
+                            return null;
+                          })()}
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+            </div>
+
+            {/* Phone input for mobile money portion */}
             <div className="mb-6">
-              <p className="text-sm font-bold text-gray-700 uppercase mb-3">Select Method</p>
-              <div className="flex gap-3 bg-gray-100 p-1 rounded-2xl">
-                <button onClick={() => setPayMethod("points")} className={`flex-1 py-3 px-4 rounded-xl font-bold text-sm ${payMethod === "points" ? "bg-white text-[#D81B60] shadow-md" : "text-gray-600"}`}>💰 Points</button>
-                <button onClick={() => setPayMethod("mobilemoney")} className={`flex-1 py-3 px-4 rounded-xl font-bold text-sm ${payMethod === "mobilemoney" ? "bg-white text-[#D81B60] shadow-md" : "text-gray-600"}`}>📱 Mobile Money</button>
-                <button onClick={() => setPayMethod("mixed")} className={`flex-1 py-3 px-4 rounded-xl font-bold text-sm ${payMethod === "mixed" ? "bg-white text-[#D81B60] shadow-md" : "text-gray-600"}`}>🔀 Mixed</button>
-              </div>
-            </div>
-
-            {payMethod === "mobilemoney" && (
-              <div className="mb-6">
-                <label className="text-xs font-bold text-gray-500 uppercase block mb-2">Phone Number</label>
-                <div className="relative">
-                  <input value={payPhone} onChange={(e) => {
-                    const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
+              <label className="text-xs font-bold text-gray-500 uppercase block mb-2">
+                Phone Number
+              </label>
+              <div className="relative">
+                <input
+                  value={payPhone}
+                  onChange={(e) => {
+                    const digits = e.target.value
+                      .replace(/\D/g, "")
+                      .slice(0, 10);
                     setPayPhone(digits);
                     setAccountName(null);
                     setVerified(false);
                     setPhoneError(null);
                     if (digits.length === 10) verifyPhoneNumber(digits);
-                  }} placeholder="07XXXXXXXX" maxLength={10} className={`w-full p-4 bg-gray-50 border-2 rounded-xl outline-none focus:border-[#D81B60] transition-all ${verified ? "border-green-500" : phoneError ? "border-red-500" : "border-gray-200"}`} />
-                  {verifying && (<div className="absolute right-4 top-4"><Loader2 className="w-5 h-5 animate-spin text-[#D81B60]" /></div>)}
-                </div>
-
-                {accountName && (
-                  <div className="mt-2 flex items-center gap-2 text-green-600 bg-green-50 p-2 rounded-lg border border-green-100"><CheckCircle2 className="w-4 h-4" /><span className="text-xs font-bold uppercase">{accountName}</span></div>
-                )}
-                {phoneError && (
-                  <div className="mt-2 flex items-center gap-2 text-red-600 bg-red-50 p-2 rounded-lg border border-red-100"><AlertCircle className="w-4 h-4" /><span className="text-xs font-medium">{phoneError}</span></div>
-                )}
-              </div>
-            )}
-
-            {payMethod === "points" && (
-              <div className="mb-6">
-                <p className="text-xs font-bold text-gray-500 uppercase mb-2">Pay with points</p>
-                <p className="text-sm text-gray-600">This will use points to fully settle the invoice. You need at least the equivalent points shown above.</p>
-                <div className="mt-3">
-                  <p className="text-sm font-bold">Your balance: {pointsBalance.toLocaleString()} pts (UGX {pointsToUGX(pointsBalance).toLocaleString()})</p>
-                </div>
-              </div>
-            )}
-
-            {payMethod === "mixed" && (
-              <div className="mb-6">
-                <p className="text-xs font-bold text-gray-500 uppercase mb-2">Mixed payment</p>
-                <p className="text-sm text-gray-600">Choose how many points to apply. The remainder will be paid via Mobile Money.</p>
-
-                <div className="mt-3">
-                  <p className="text-sm font-bold">Available points: {pointsBalance.toLocaleString()} pts (UGX {pointsToUGX(pointsBalance).toLocaleString()})</p>
-
-                  <div className="mt-3">
-                    <input type="range" min={0} max={Math.min(pointsBalance, invoices.find((i) => i.details?.id === payingInvoice)?.pointsEquivalent || pointsBalance)} value={pointsToUse ?? Math.min(pointsBalance, invoices.find((i) => i.details?.id === payingInvoice)?.pointsEquivalent || pointsBalance)} onChange={(e) => setPointsToUse(Number(e.target.value))} className="w-full" />
-
-                    <div className="flex justify-between text-xs text-gray-600 mt-2">
-                      <span>0 pts</span>
-                      <span>{Math.min(pointsBalance, invoices.find((i) => i.details?.id === payingInvoice)?.pointsEquivalent || pointsBalance).toLocaleString()} pts</span>
-                    </div>
-
-                    <div className="mt-2">
-                      <p className="text-sm">Applying: <span className="font-bold">{(pointsToUse ?? 0).toLocaleString()} pts</span> UGX {pointsToUGX(pointsToUse ?? 0).toLocaleString()}</p>
-
-                      <p className="text-sm mt-1">Remaining to pay by mobile money: <span className="font-bold">UGX {(() => {
-                        const invoice = invoices.find((i) => i.details?.id === payingInvoice);
-                        const due = Number(invoice?.amount_less ?? invoice?.details?.invoice_amount ?? 0);
-                        const remaining = Math.max(0, due - pointsToUGX(pointsToUse ?? 0));
-                        return remaining.toLocaleString();
-                      })()}</span></p>
-                    </div>
-
-                    <div className="mt-4">
-                      <label className="text-xs font-bold text-gray-500 uppercase block mb-2">Phone Number (for mobile money portion)</label>
-                      <input value={payPhone} onChange={(e) => {
-                        const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
-                        setPayPhone(digits);
-                        setAccountName(null);
-                        setVerified(false);
-                        setPhoneError(null);
-                        if (digits.length === 10) verifyPhoneNumber(digits);
-                      }} placeholder="07XXXXXXXX" maxLength={10} className={`w-full p-4 bg-gray-50 border-2 rounded-xl outline-none focus:border-[#D81B60] transition-all ${verified ? "border-green-500" : phoneError ? "border-red-500" : "border-gray-200"}`} />
-                    </div>
-
-                    {accountName && (<div className="mt-2 flex items-center gap-2 text-green-600 bg-green-50 p-2 rounded-lg border border-green-100"><CheckCircle2 className="w-4 h-4" /><span className="text-xs font-bold uppercase">{accountName}</span></div>)}
-                    {phoneError && (<div className="mt-2 flex items-center gap-2 text-red-600 bg-red-50 p-2 rounded-lg border border-red-100"><AlertCircle className="w-4 h-4" /><span className="text-xs font-medium">{phoneError}</span></div>)}
-
+                  }}
+                  placeholder="07XXXXXXXX"
+                  maxLength={10}
+                  className={`w-full py-2 px-4 bg-gray-50 border-2 rounded-xl outline-none focus:border-[#D81B60] transition-all ${
+                    verified
+                      ? "border-green-500"
+                      : phoneError
+                        ? "border-red-500"
+                        : "border-gray-200"
+                  }`}
+                />
+                {verifying && (
+                  /* Adjusted top-4 to a centered positioning */
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                    <Loader2 className="w-5 h-5 animate-spin text-[#D81B60]" />
                   </div>
-                </div>
+                )}
               </div>
-            )}
 
-            <div className="mt-8 flex justify-end gap-3 pt-4 border-t border-slate-100">
-              <button onClick={() => setPayingInvoice(null)} className="bg-gray-200 text-black font-semibold py-2 px-6 rounded-lg">Cancel</button>
-              <Button onClick={() => handlePayInvoice(payingInvoice!)} disabled={loading || verifying || (payMethod === "mobilemoney" && !verified) || (payMethod === "mixed" && !verified && (Number(pointsToUse || 0) < Math.min(pointsBalance, invoices.find((i) => i.details?.id === payingInvoice)?.pointsEquivalent || 0)))} className="bg-[#D81B60] text-black font-semibold py-2 px-4 rounded-lg">
-                {loading ? "Processing..." : "Pay Now"}
+              {accountName && (
+                <div className="mt-2 flex items-center gap-2 text-green-600 bg-green-50 p-2 rounded-lg border border-green-100">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span className="text-xs font-bold uppercase">
+                    {accountName}
+                  </span>
+                </div>
+              )}
+              {phoneError && (
+                <div className="mt-2 flex items-center gap-2 text-red-600 bg-red-50 p-2 rounded-lg border border-red-100">
+                  <AlertCircle className="w-4 h-4" />
+                  <span className="text-xs font-medium">{phoneError}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
+              <button
+                onClick={() => {
+                  setPayingInvoice(null);
+                  setAccountName(null);
+                  setVerified(false);
+                  setPayPhone("");
+                  setPhoneError(null);
+                  setPointsToUse(null);
+                }}
+                className="bg-gray-200 text-black font-semibold py-2 px-6 rounded-lg"
+              >
+                Cancel
+              </button>
+
+              <Button
+                onClick={() => handlePayInvoice(payingInvoice!)}
+                disabled={
+                  loading ||
+                  verifying ||
+                  !verified ||
+                  (pointsToUse ?? 0) <= 0 ||
+                  (() => {
+                    const invoice = invoices.find(
+                      (i) => i.details?.id === payingInvoice,
+                    );
+                    const amount = Number(
+                      invoice?.amount_less ??
+                        invoice?.details?.invoice_amount ??
+                        0,
+                    );
+                    const remaining = Math.max(
+                      0,
+                      amount - pointsToUGX(pointsToUse ?? 0),
+                    );
+                    return remaining <= 0;
+                  })()
+                }
+                className="bg-[#e9e0e3] text-gray-900 font-semibold py-2 px-6 rounded-lg"
+              >
+                {loading ? "Processing..." : "Continue"}
               </Button>
             </div>
           </div>
@@ -577,7 +873,15 @@ export default function StatementWithPoints() {
       )}
 
       {selectedInvoice && (
-        <InvoiceDetailModal invoice={selectedInvoice} onClose={() => setSelectedInvoice(null)} onPaid={async () => { await fetchInvoices(); setSelectedInvoice(null); showToast("Payment successful", "success"); }} />
+        <InvoiceDetailModal
+          invoice={selectedInvoice}
+          onClose={() => setSelectedInvoice(null)}
+          onPaid={async () => {
+            await fetchInvoices();
+            setSelectedInvoice(null);
+            showToast("Payment successful", "success");
+          }}
+        />
       )}
 
       {/* Transaction Detail Modal */}
@@ -585,68 +889,124 @@ export default function StatementWithPoints() {
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 border border-gray-100 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
-              <h4 className="text-2xl font-black text-gray-900">Transaction Details</h4>
-              <button onClick={() => setSelectedTransaction(null)} className="text-gray-400 hover:text-gray-600 transition-colors"><X className="w-6 h-6" /></button>
+              <h4 className="text-2xl font-extrabold text-gray-900">
+                Transaction Details
+              </h4>
+              <button
+                onClick={() => setSelectedTransaction(null)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
             </div>
 
             <div className="space-y-5">
-              {/* Transaction ID */}
               <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                <p className="text-xs text-gray-600 font-bold uppercase mb-1 tracking-wider">Transaction ID</p>
-                <p className="text-lg font-black text-gray-900">{selectedTransaction.transactionId}</p>
+                <p className="text-xs text-gray-600 font-bold uppercase mb-1 tracking-wider">
+                  Transaction ID
+                </p>
+                <p className="text-lg font-extrabold text-gray-900">
+                  {selectedTransaction.transactionId}
+                </p>
               </div>
 
-              {/* Status */}
               <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                <p className="text-xs text-gray-600 font-bold uppercase mb-1 tracking-wider">Status</p>
+                <p className="text-xs text-gray-600 font-bold uppercase mb-1 tracking-wider">
+                  Status
+                </p>
                 <div className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full ${selectedTransaction.paymentStatus === "SUCCESS" ? "bg-green-500" : selectedTransaction.paymentStatus === "PENDING" ? "bg-yellow-500" : "bg-red-500"}`} />
-                  <p className={`font-bold text-base ${selectedTransaction.paymentStatus === "SUCCESS" ? "text-green-600" : selectedTransaction.paymentStatus === "PENDING" ? "text-yellow-600" : "text-red-600"}`}>{selectedTransaction.paymentStatus}</p>
+                  <div
+                    className={`w-3 h-3 rounded-full ${selectedTransaction.paymentStatus === "SUCCESS" ? "bg-green-500" : selectedTransaction.paymentStatus === "PENDING" ? "bg-yellow-500" : "bg-red-500"}`}
+                  />
+                  <p
+                    className={`font-bold text-base ${selectedTransaction.paymentStatus === "SUCCESS" ? "text-green-600" : selectedTransaction.paymentStatus === "PENDING" ? "text-yellow-600" : "text-red-600"}`}
+                  >
+                    {selectedTransaction.paymentStatus}
+                  </p>
                 </div>
               </div>
 
-              {/* Amount */}
-              <div className="bg-linear-to-br from-pink-50 to-orange-50 rounded-xl p-4 border border-pink-100">
-                <p className="text-xs text-gray-600 font-bold uppercase mb-1 tracking-wider">Amount</p>
-                <p className="text-2xl font-black text-[#D81B60]">UGX {Number(selectedTransaction.amount).toLocaleString()}</p>
+              <div className="bg-linear-to-r from-pink-50 to-orange-50 rounded-xl p-4 border border-pink-100">
+                <p className="text-xs text-gray-600 font-bold uppercase mb-1 tracking-wider">
+                  Amount
+                </p>
+                <p className="text-2xl font-extrabold text-[#D81B60]">
+                  UGX {Number(selectedTransaction.amount).toLocaleString()}
+                </p>
               </div>
 
-              {/* Points */}
               <div className="bg-purple-50 rounded-xl p-4 border border-purple-100">
-                <p className="text-xs text-gray-600 font-bold uppercase mb-1 tracking-wider">Points Earned</p>
-                <p className="text-2xl font-black text-purple-600">{selectedTransaction.points} pts</p>
+                <p className="text-xs text-gray-600 font-bold uppercase mb-1 tracking-wider">
+                  Points Earned
+                </p>
+                <p className="text-2xl font-extrabold text-purple-600">
+                  {selectedTransaction.points} pts
+                </p>
               </div>
 
-              {/* Payment Method */}
               <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                <p className="text-xs text-gray-600 font-bold uppercase mb-1 tracking-wider">Payment Method</p>
-                <p className="text-base font-bold text-gray-900">{selectedTransaction.paymentMethod}</p>
+                <p className="text-xs text-gray-600 font-bold uppercase mb-1 tracking-wider">
+                  Payment Method
+                </p>
+                <p className="text-base font-bold text-gray-900">
+                  {selectedTransaction.paymentMethod}
+                </p>
               </div>
 
-              {/* Reference */}
               <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                <p className="text-xs text-gray-600 font-bold uppercase mb-1 tracking-wider">Reference</p>
-                <p className="text-base font-bold text-gray-900">{selectedTransaction.reference}</p>
+                <p className="text-xs text-gray-600 font-bold uppercase mb-1 tracking-wider">
+                  Reference
+                </p>
+                <p className="text-base font-bold text-gray-900">
+                  {selectedTransaction.reference}
+                </p>
               </div>
 
-              {/* Date Created */}
               <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                <p className="text-xs text-gray-600 font-bold uppercase mb-1 tracking-wider">Date</p>
-                <p className="text-base font-bold text-gray-900">{new Date(selectedTransaction.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}</p>
+                <p className="text-xs text-gray-600 font-bold uppercase mb-1 tracking-wider">
+                  Date
+                </p>
+                <p className="text-base font-bold text-gray-900">
+                  {new Date(selectedTransaction.createdAt).toLocaleDateString(
+                    "en-US",
+                    {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    },
+                  )}
+                </p>
               </div>
 
-              {/* Confirmed Date */}
               {selectedTransaction.confirmedAt && (
                 <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                  <p className="text-xs text-gray-600 font-bold uppercase mb-1 tracking-wider">Confirmed</p>
-                  <p className="text-base font-bold text-gray-900">{new Date(selectedTransaction.confirmedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}</p>
+                  <p className="text-xs text-gray-600 font-bold uppercase mb-1 tracking-wider">
+                    Confirmed
+                  </p>
+                  <p className="text-base font-bold text-gray-900">
+                    {new Date(
+                      selectedTransaction.confirmedAt,
+                    ).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </p>
                 </div>
               )}
-
             </div>
 
             <div className="mt-8 pt-4 border-t border-gray-100">
-              <button onClick={() => setSelectedTransaction(null)} className="w-full bg-[#D81B60] text-white font-bold py-3 rounded-xl hover:bg-[#c01a5e] transition-colors">Close</button>
+              <button
+                onClick={() => setSelectedTransaction(null)}
+                className="w-full bg-[#D81B60] text-white font-bold py-3 rounded-xl hover:bg-[#c01a5e] transition-colors"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>

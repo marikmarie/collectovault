@@ -121,7 +121,7 @@ export default function Dashboard() {
         onAvatarFileChange={() => {}}
       />
 
-      <main className="max-w-4xl mx-auto">
+      <main className="w-full px-4 mt-0">
         {/* --- TABS --- */}
         <div className="bg-white shadow-sm flex sticky top-16 z-20">
           <button 
@@ -146,7 +146,7 @@ export default function Dashboard() {
             {activeTab === "points" && (
               <>
                 <button onClick={() => setSpendPointsOpen(true)} className="px-6 py-2 rounded-full border border-gray-200 bg-white text-sm font-bold shadow-xs hover:bg-gray-50 transition-all">Spend</button>
-                <button onClick={() => setBuyPointsOpen(true)} className="px-6 py-2 rounded-full bg-[#cb0d6c] text-white text-sm font-bold shadow-md hover:opacity-90 transition-all">Buy Points</button>
+                <button onClick={() => setBuyPointsOpen(true)} className="px-6 py-2 rounded-full bg-[#f0edee] text-gray-800 text-sm font-bold shadow-md hover:opacity-90 transition-all">Buy Points</button>
               </>
             )}
           </div>
