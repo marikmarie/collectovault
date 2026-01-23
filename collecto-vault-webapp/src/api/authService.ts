@@ -34,8 +34,6 @@ export const authService = {
       localStorage.setItem("clientId", id);
       localStorage.setItem("collectoId", collectoId.toString());
 
-      console.log("Stored clientId:", id);
-      console.log("Stored collectoId:", collectoId);
     }
 
     return data;

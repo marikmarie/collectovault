@@ -26,7 +26,6 @@ export const customerService = {
     ),
 
 
-
   getServices: (vaultOTPToken?: string, collectoId?: string, page?: number, limit?: number) => 
     api.post('/services', { vaultOTPToken,collectoId, page, limit }),
 

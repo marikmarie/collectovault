@@ -97,7 +97,6 @@ export default function Dashboard() {
           return;
         }
 
-        // Fetch customer data including points and tier
         const res = await customerService.getCustomerData(clientId);
         const data = res.data;
 
