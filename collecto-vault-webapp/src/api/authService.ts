@@ -20,7 +20,7 @@ export const authService = {
   }) => {
     const resp = await api.post("/authVerify", payload);
     const data = resp.data;
-    const userData = resp.data.data.data;
+    const userData = data.data.data;
     if (data?.token) {
       // Set session expiry to 30 minutes from now
       const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
