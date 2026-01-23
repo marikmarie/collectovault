@@ -110,7 +110,10 @@ export default function Services() {
     setLoading(true);
     try {
       const vaultOTPToken = sessionStorage.getItem("vaultOtpToken") || undefined;
-      const collectoId = localStorage.getItem("collectoId") || undefined;
+      const collectoId = sessionStorage.getItem("collectoId") || undefined;
+
+      console.log("DEBUG: Outgoing collectoId:", collectoId);
+    console.log("DEBUG: Outgoing vaultOTPToken:", vaultOTPToken ? "TOKEN_EXISTS" : "MISSING");
       const response = await customerService.getServices(vaultOTPToken,collectoId, page + 1, itemsPerPage);
       const payload = response.data?.data;
       const innerData = payload?.data;

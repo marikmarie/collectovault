@@ -86,7 +86,8 @@ export default function LoginPage() {
 
     try {
       const verifyPayload = {
-        id: pendingPayload!.id, 
+        id: pendingPayload!.id,
+        type: pendingPayload!.type,
         vaultOTP: otpValue,
         vaultOTPToken: pendingPayload!.vaultOTPToken!,
       };
@@ -101,7 +102,7 @@ export default function LoginPage() {
         // If this is a client login, create/upsert the customer on the Collecto backend
         try {
           if (pendingPayload!.type === 'client') {
-            const collectoId = localStorage.getItem('collectoId') || '141122';
+            const collectoId = localStorage.getItem('collectoId') || '';
             const payload = {
               collecto_id: collectoId,
               client_id: pendingPayload!.id,
