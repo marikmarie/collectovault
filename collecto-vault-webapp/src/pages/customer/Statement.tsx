@@ -606,8 +606,8 @@ export default function StatementWithPoints() {
           <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl p-6 border border-gray-100">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h4 className="text-2xl font-extrabold text-gray-900">
-                  Payment — Points + Mobile Money
+                <h4 className="text-xl font-extrabold text-gray-900">
+                  Points + Mobile Money
                 </h4>
                 <p className="text-xs text-gray-500 mt-1">
                   Apply points and complete the remainder with mobile money.

@@ -121,7 +121,7 @@ export default function Dashboard() {
         onAvatarFileChange={() => {}}
       />
 
-      <main className="w-full px-4 mt-0">
+      <main className="w-full mt-0">
         {/* --- TABS --- */}
         <div className="bg-white shadow-sm flex sticky top-16 z-20">
           <button 
