@@ -3,7 +3,7 @@ import api, { setVaultOtpToken } from "./index";
 
 export const authService = {
   startCollectoAuth: async (payload: {
-    type: "business" | "client" | "staff";
+    type: "business" | "client";
     collectoId?: string;
     id?: string;
     // uid?: string;
@@ -14,7 +14,7 @@ export const authService = {
 
   verifyCollectoOtp: async (payload: {
     id: string;
-    type?: "business" | "client" | "staff";
+    type?: "business" | "client";
     vaultOTP: string;
     vaultOTPToken?: string;
   }) => {

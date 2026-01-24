@@ -5,7 +5,7 @@ import { authService } from '../api/authService';
 import { setVaultOtpToken, getVaultOtpToken } from '../api';
 import { customerService } from '../api/customer';
 
-type UserType = 'client' | 'staff' ;
+type UserType = 'client' | 'business' ;
 type PendingPayload = {
   type: UserType;
   id: string; 
@@ -116,7 +116,7 @@ export default function LoginPage() {
           console.warn('Failed to create customer record:', err);
         }
 
-        navigate(pendingPayload!.type === 'client' ? '/dashboard' : '/staff/dashboard');
+        navigate(pendingPayload!.type === 'client' ? '/dashboard' : '/admin/dashboard');
       } else {
         setError("Invalid verification code.");
       }
@@ -166,12 +166,12 @@ export default function LoginPage() {
                 <User className="w-3.5 h-3.5" /> CLIENT
               </button>
               <button
-                onClick={() => setUserType('staff')}
+                onClick={() => setUserType('business')}
                 className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-xl transition-all duration-300 ${
-                  userType === 'staff' ? 'bg-white shadow-sm text-[#67095D]' : 'text-gray-400 hover:text-gray-600'
+                  userType === 'business' ? 'bg-white shadow-sm text-[#67095D]' : 'text-gray-400 hover:text-gray-600'
                 }`}
               >
-                <Briefcase className="w-3.5 h-3.5" /> STAFF
+                <Briefcase className="w-3.5 h-3.5" /> BUSINESS
               </button>
             </div>
           )}
@@ -203,7 +203,7 @@ export default function LoginPage() {
               <form onSubmit={handleIdSubmit} className="space-y-5">
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-bold text-gray-400 uppercase ml-1">
-                    {userType === 'client' ? 'Client ID' : 'Staff User ID'}
+                    {userType === 'client' ? 'Client ID' : 'Collecto ID'}
                   </label>
                   <div className="relative group">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#b2a3b0] transition-colors">
