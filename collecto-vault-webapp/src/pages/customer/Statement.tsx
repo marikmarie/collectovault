@@ -48,6 +48,10 @@ export default function StatementWithPoints() {
     "invoices",
   );
 
+  // Payment modal controls
+  const [staffId, setStaffId] = useState<string>("");
+  const [mobileAmount, setMobileAmount] = useState<number>(0);
+
   // Selection / modals
   const [payingInvoice, setPayingInvoice] = useState<string | null>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
@@ -73,7 +77,6 @@ export default function StatementWithPoints() {
   const [ugxPerPoint, setUgxPerPoint] = useState<number>(1);
 
   const { toast, showToast } = useLocalToast();
-  const remaining = Math.max(0, amount - pointsToUGX(pointsToUse ?? 0));
 
   const verifyPhoneNumber = useCallback(async (number: string) => {
     const trimmed = number.trim();
@@ -273,12 +276,6 @@ export default function StatementWithPoints() {
   }, []);
 
   useEffect(() => {
-    if (pointsToUse !== null) {
-      setMobileAmount(Math.max(0, amount - pointsToUGX(pointsToUse)));
-    }
-  }, [pointsToUse, amount]);
-
-  useEffect(() => {
     (async () => {
       await fetchActivePackages();
       await fetchCustomerAndRelated();
@@ -345,10 +342,8 @@ export default function StatementWithPoints() {
       const pointsValueUGX = pointsUse * ugxPerPoint;
 
       // New line:
-      // const mobileAmount = Math.round(Math.max(0, balanceDue - pointsValueUGX));
-      const mobileAmount = Math.round(Math.max(0, mobileAmount));
+      const mobileAmount = Math.round(Math.max(0, balanceDue - pointsValueUGX));
 
- 
       if (mobileAmount <= 0) {
         showToast(
           "Payment requires a non-zero mobile money portion. Reduce points used.",
@@ -765,30 +760,22 @@ export default function StatementWithPoints() {
                             </span>
                           </p> */}
 
-                          <div className="mb-3">
-                            <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">
-                              Staff ID
-                            </label>
+                          <div className="flex items-center gap-3 mt-3">
                             <input
+                              type="text"
+                              placeholder="Staff ID"
                               value={staffId}
                               onChange={(e) => setStaffId(e.target.value)}
-                              placeholder="Enter staff ID"
-                              className="w-full px-4 py-2 bg-gray-50 border rounded-xl"
+                              className="flex-1 py-2 px-3 border rounded-xl focus:border-[#D81B60] outline-none"
                             />
-                          </div>
-
-                          <div className="mb-3">
-                            <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">
-                              Mobile Money Amount (UGX)
-                            </label>
                             <input
                               type="number"
-                              min={1}
+                              placeholder="Amount"
                               value={mobileAmount}
                               onChange={(e) =>
                                 setMobileAmount(Number(e.target.value))
                               }
-                              className="w-full px-4 py-2 bg-gray-50 border rounded-xl"
+                              className="flex-1 py-2 px-3 border rounded-xl focus:border-[#D81B60] outline-none"
                             />
                           </div>
 
