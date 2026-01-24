@@ -303,91 +303,105 @@ export default function StatementWithPoints() {
     );
     return Math.min(pointsBalance, invoicePointsEquivalent, maxFromAmount);
   };
+const handlePayInvoice = async (invoiceId: string) => {
+  try {
+    setLoading(true);
 
-  const handlePayInvoice = async (invoiceId: string) => {
-    try {
-      setLoading(true);
+    const targetInvoice = invoices.find(
+      (inv) => inv.details?.id === invoiceId,
+    );
+    
+    // 1. Calculate balance
+    const balanceDue = Number(
+      targetInvoice?.amount_less ??
+        targetInvoice?.details?.invoice_amount ??
+        0,
+    );
 
-      const targetInvoice = invoices.find(
-        (inv) => inv.details?.id === invoiceId,
-      );
-      const balanceDue = Number(
-        targetInvoice?.amount_less ??
-          targetInvoice?.details?.invoice_amount ??
-          0,
-      );
-
-      const pointsUse = Math.max(0, Math.floor(pointsToUse || 0));
-      if (pointsUse <= 0) {
-        showToast("Please choose some points to apply for FlexPay.", "error");
-        return;
-      }
-
-      if (!payPhone || !verified) {
-        showToast(
-          "Please verify a phone number for the mobile money portion.",
-          "error",
-        );
-        return;
-      }
-
-      const pointsValueUGX = pointsUse * ugxPerPoint;
-      const mobileAmount = Math.max(0, balanceDue - pointsValueUGX);
-
-      if (mobileAmount <= 0) {
-        showToast(
-          "FlexPay requires a non-zero mobile money portion. Reduce points used.",
-          "error",
-        );
-        return;
-      }
-
-      // Format phone for backend (keep consistent with existing code)
-      const formattedPhone = payPhone
-        ? payPhone.replace(/^0/, "256")
-        : payPhone;
-
-      // Build payload with the points object shape requested
-      const payload: any = {
-        vaultOTPToken,
-        collectoId,
-        clientId,
-        reference: invoiceId,
-        paymentOption: "flexpay", // change to "mixed" if backend expects that
-        phone: formattedPhone,
-        amount: mobileAmount,
-        points: {
-          points_used: pointsUse,
-          discount_amount: pointsValueUGX,
-        },
-      };
-
-      await invoiceService.payInvoice(payload);
-
-      // optimistic update of user's points balance
-      setPointsBalance((p) => Math.max(0, p - pointsUse));
-
-      await fetchInvoices();
-      await fetchTransactions();
-
-      // reset payment modal fields
-      setPayingInvoice(null);
-      setPointsToUse(null);
-      setPayPhone("");
-      setAccountName(null);
-      setVerified(false);
-
-      showToast(
-        "FlexPay initiated — check your phone for mobile money prompts.",
-        "success",
-      );
-    } catch (err: any) {
-      console.error("Payment failed:", err);
-      showToast(err?.response?.data?.message || "Payment failed", "error");
-    } finally {
-      setLoading(false);
+    // 2. Points Validation
+    const pointsUse = Math.max(0, Math.floor(pointsToUse || 0));
+    if (pointsUse <= 0) {
+      showToast("Please choose some points to apply for FlexPay.", "error");
+      setLoading(false); // Ensure loading stops if we return early
+      return;
     }
-  };
+
+    // 3. Phone Validation
+    if (!payPhone || !verified) {
+      showToast(
+        "Please verify a phone number for the mobile money portion.",
+        "error",
+      );
+      setLoading(false);
+      return;
+    }
+
+    const pointsValueUGX = pointsUse * ugxPerPoint;
+    const mobileAmount = Math.max(0, balanceDue - pointsValueUGX);
+
+    if (mobileAmount <= 0) {
+      showToast(
+        "FlexPay requires a non-zero mobile money portion. Reduce points used.",
+        "error",
+      );
+      setLoading(false);
+      return;
+    }
+
+    // 4. Format Phone (Using Uganda Country Code)
+    const formattedPhone = payPhone.startsWith("0") 
+      ? payPhone.replace(/^0/, "256") 
+      : payPhone;
+
+    // 5. Build Payload (using your saved clientId/collectoId)
+    const payload = {
+      vaultOTPToken,
+      collectoId, // From your auth session
+      clientId,   // From your auth session
+      reference: invoiceId,
+      paymentOption: "mobilemoney", 
+      phone: formattedPhone,
+      amount: mobileAmount,
+      points: {
+        points_used: pointsUse,
+        discount_amount: pointsValueUGX,
+      },
+    };
+
+    // 6. Execute Request and capture Response
+    const response = await invoiceService.payInvoice(payload);
+    
+    // Access the data based on your JSON structure: res.data.data
+    const responseData = response.data?.data;
+
+    // 7. Optimistic UI Updates
+    setPointsBalance((p) => Math.max(0, p - pointsUse));
+
+    await Promise.all([
+      fetchInvoices(),
+      fetchTransactions()
+    ]);
+
+    // 8. Reset States
+    setPayingInvoice(null);
+    setPointsToUse(null);
+    setPayPhone("");
+    setAccountName(null);
+    setVerified(false);
+
+    // 9. Show dynamic success message from backend
+    const successMsg = responseData?.message || "FlexPay initiated — check your phone.";
+    showToast(successMsg, "success");
+
+  } catch (err: any) {
+    console.error("Payment failed:", err);
+    // Standardizing error message extraction
+    const errorMsg = err?.response?.data?.message || err?.message || "Payment failed";
+    showToast(errorMsg, "error");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-[#f6f7fb] font-sans pb-20">

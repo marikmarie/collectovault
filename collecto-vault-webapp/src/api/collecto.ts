@@ -23,13 +23,19 @@ export const invoiceService = {
     invoiceId?: string | null;
   }) => api.post("/invoiceDetails", payload),
   
-  payInvoice: (payload: {
-    invoiceId?: string;
-    reference?: string;
-    paymentOption: string;
-    phone?: string;
-    vaultOTPToken?: string;
-    collectoId?: string;
-    clientId?: string;
-  }) => api.post("/requestToPay", payload),
+// invoiceService.ts
+payInvoice: (payload: {
+  invoiceId?: string;
+  reference?: string;
+  paymentOption: string;
+  phone?: string;
+  vaultOTPToken?: string;
+  collectoId?: string;
+  clientId?: string;
+  points?: { // Named the points object correctly
+    points_used?: number;
+    discount_amount?: number;
+  };
+}) => api.post("/requestToPay", payload),
+
 };
