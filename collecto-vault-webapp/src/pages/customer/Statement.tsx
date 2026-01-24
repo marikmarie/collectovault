@@ -321,7 +321,7 @@ export default function StatementWithPoints() {
       // 2. Points Validation
       const pointsUse = Math.max(0, Math.floor(pointsToUse || 0));
       if (pointsUse <= 0) {
-        showToast("Please choose some points to apply for FlexPay.", "error");
+        showToast("Please choose some points to apply for payment.", "error");
         setLoading(false); // Ensure loading stops if we return early
         return;
       }
@@ -343,7 +343,7 @@ export default function StatementWithPoints() {
 
       if (mobileAmount <= 0) {
         showToast(
-          "FlexPay requires a non-zero mobile money portion. Reduce points used.",
+          "Payment requires a non-zero mobile money portion. Reduce points used.",
           "error",
         );
         setLoading(false);
@@ -390,7 +390,7 @@ export default function StatementWithPoints() {
 
       // 9. Show dynamic success message from backend
       const successMsg =
-        responseData?.message || "FlexPay initiated — check your phone.";
+        responseData?.message || "Payment initiated — check your phone.";
       showToast(successMsg, "success");
     } catch (err: any) {
       console.error("Payment failed:", err);
@@ -600,14 +600,14 @@ export default function StatementWithPoints() {
         </div>
       </main>
 
-      {/* Payment Modal — single FlexPay flow */}
+      {/* Payment Modal — single Payment flow */}
       {payingInvoice && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl p-6 border border-gray-100">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h4 className="text-2xl font-extrabold text-gray-900">
-                  FlexPay — Points + Mobile Money
+                  Payment — Points + Mobile Money
                 </h4>
                 <p className="text-xs text-gray-500 mt-1">
                   Apply points and complete the remainder with mobile money.
@@ -766,14 +766,14 @@ export default function StatementWithPoints() {
                               return (
                                 <p className="text-xs mt-2 text-red-600">
                                   Reduce points so that there is a mobile-money
-                                  portion (FlexPay requires both).
+                                  portion (Payment requires both).
                                 </p>
                               );
                             }
                             if ((pointsToUse ?? 0) <= 0) {
                               return (
                                 <p className="text-xs mt-2 text-yellow-700">
-                                  Please choose points to apply for FlexPay.
+                                  Please choose points to apply for Payment.
                                 </p>
                               );
                             }
