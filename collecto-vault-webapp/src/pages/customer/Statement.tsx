@@ -48,7 +48,6 @@ export default function StatementWithPoints() {
     "invoices",
   );
 
-  // Payment modal controls
   const [staffId, setStaffId] = useState<string>("");
   const [mobileAmount, setMobileAmount] = useState<number>(0);
 
@@ -683,10 +682,10 @@ export default function StatementWithPoints() {
               </p>
 
               <div className="mt-4">
-                <p className="text-sm font-bold">
+                {/* <p className="text-sm font-bold">
                   Your balance: {pointsBalance.toLocaleString()} pts (UGX{" "}
                   {pointsToUGX(pointsBalance).toLocaleString()})
-                </p>
+                </p> */}
 
                 <div className="mt-3">
                   {/* compute invoice-specific values */}
@@ -736,7 +735,6 @@ export default function StatementWithPoints() {
                             {Math.max(0, safeMaxPoints).toLocaleString()} pts
                           </span>
                         </div>
-
                         <div className="mt-3 text-sm">
                           <p>
                             Applying:{" "}
@@ -746,21 +744,57 @@ export default function StatementWithPoints() {
                             </span>
                           </p>
 
-                          {/* <p className="text-sm mt-1">
-                            Remaining to pay by mobile money:{" "}
-                            <span className="font-bold">
-                              UGX{" "}
-                              {(() => {
-                                const remaining = Math.max(
-                                  0,
-                                  amount - pointsToUGX(pointsToUse ?? 0),
-                                );
-                                return remaining.toLocaleString();
-                              })()}
-                            </span>
-                          </p> */}
+                          {/* Slider to optionally apply points */}
+                          {(() => {
+                            const invoice = invoices.find(
+                              (i) => i.details?.id === payingInvoice,
+                            );
+                            const amount = Number(
+                              invoice?.amount_less ??
+                                invoice?.details?.invoice_amount ??
+                                0,
+                            );
+                            const pointsEquivalent =
+                              invoice?.pointsEquivalent ?? ugxToPoints(amount);
+                            const safeMaxPoints = computeMaxPointsForInvoice(
+                              amount,
+                              pointsEquivalent,
+                            );
 
+                            return (
+                              <div className="mt-2">
+                                <input
+                                  type="range"
+                                  min={0}
+                                  max={safeMaxPoints}
+                                  value={pointsToUse ?? 0}
+                                  onChange={(e) => {
+                                    const pts = Number(e.target.value);
+                                    setPointsToUse(pts);
+
+                                    const remaining = Math.max(
+                                      0,
+                                      amount - pointsToUGX(pts),
+                                    );
+                                    setMobileAmount(remaining);
+                                  }}
+                                  className="w-full"
+                                />
+                                <div className="flex justify-between text-xs text-gray-600 mt-1">
+                                  <span>0 pts</span>
+                                  <span>
+                                    {safeMaxPoints.toLocaleString()} pts
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })()}
+
+                          {/* Staff ID and Mobile Money Amount inline */}
                           <div className="flex items-center gap-3 mt-3">
+                            <label className="text-xs font-bold text-gray-500 uppercase block mb-2">
+                              Staff Id
+                            </label>
                             <input
                               type="text"
                               placeholder="Staff ID"
@@ -768,6 +802,10 @@ export default function StatementWithPoints() {
                               onChange={(e) => setStaffId(e.target.value)}
                               className="flex-1 py-2 px-3 border rounded-xl focus:border-[#D81B60] outline-none"
                             />
+
+                            <label className="text-xs font-bold text-gray-500 uppercase block mb-2">
+                            Amount
+                            </label>
                             <input
                               type="number"
                               placeholder="Amount"
@@ -779,23 +817,26 @@ export default function StatementWithPoints() {
                             />
                           </div>
 
+                          {/* Optional warnings */}
                           {(() => {
+                            const invoice = invoices.find(
+                              (i) => i.details?.id === payingInvoice,
+                            );
+                            const amount = Number(
+                              invoice?.amount_less ??
+                                invoice?.details?.invoice_amount ??
+                                0,
+                            );
                             const remaining = Math.max(
                               0,
                               amount - pointsToUGX(pointsToUse ?? 0),
                             );
-                            if (remaining <= 0) {
+
+                            if ((pointsToUse ?? 0) > 0 && remaining <= 0) {
                               return (
                                 <p className="text-xs mt-2 text-red-600">
                                   Reduce points so that there is a mobile-money
-                                  portion (Payment requires both).
-                                </p>
-                              );
-                            }
-                            if ((pointsToUse ?? 0) <= 0) {
-                              return (
-                                <p className="text-xs mt-2 text-yellow-700">
-                                  Please choose points to apply for Payment.
+                                  portion.
                                 </p>
                               );
                             }
@@ -875,30 +916,9 @@ export default function StatementWithPoints() {
               >
                 Cancel
               </button>
-
               <Button
                 onClick={() => handlePayInvoice(payingInvoice!)}
-                disabled={
-                  loading ||
-                  verifying ||
-                  !verified ||
-                  (pointsToUse ?? 0) <= 0 ||
-                  (() => {
-                    const invoice = invoices.find(
-                      (i) => i.details?.id === payingInvoice,
-                    );
-                    const amount = Number(
-                      invoice?.amount_less ??
-                        invoice?.details?.invoice_amount ??
-                        0,
-                    );
-                    const remaining = Math.max(
-                      0,
-                      amount - pointsToUGX(pointsToUse ?? 0),
-                    );
-                    return remaining <= 0;
-                  })()
-                }
+                disabled={loading || verifying || !verified}
                 className="bg-[#e9e0e3] text-gray-900 font-semibold py-2 px-6 rounded-lg"
               >
                 {loading ? "Processing..." : "Continue"}
