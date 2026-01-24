@@ -70,10 +70,10 @@ export default function StatementWithPoints() {
   const [tier, setTier] = useState<string | null>(null);
   const [tierProgress, setTierProgress] = useState<number>(0);
 
-  // Derived conversion: UGX per point
   const [ugxPerPoint, setUgxPerPoint] = useState<number>(1);
 
   const { toast, showToast } = useLocalToast();
+  const remaining = Math.max(0, amount - pointsToUGX(pointsToUse ?? 0));
 
   const verifyPhoneNumber = useCallback(async (number: string) => {
     const trimmed = number.trim();
@@ -273,6 +273,12 @@ export default function StatementWithPoints() {
   }, []);
 
   useEffect(() => {
+    if (pointsToUse !== null) {
+      setMobileAmount(Math.max(0, amount - pointsToUGX(pointsToUse)));
+    }
+  }, [pointsToUse, amount]);
+
+  useEffect(() => {
     (async () => {
       await fetchActivePackages();
       await fetchCustomerAndRelated();
@@ -339,8 +345,10 @@ export default function StatementWithPoints() {
       const pointsValueUGX = pointsUse * ugxPerPoint;
 
       // New line:
-      const mobileAmount = Math.round(Math.max(0, balanceDue - pointsValueUGX));
+      // const mobileAmount = Math.round(Math.max(0, balanceDue - pointsValueUGX));
+      const mobileAmount = Math.round(Math.max(0, mobileAmount));
 
+ 
       if (mobileAmount <= 0) {
         showToast(
           "Payment requires a non-zero mobile money portion. Reduce points used.",
@@ -394,7 +402,7 @@ export default function StatementWithPoints() {
       showToast(successMsg, "success");
     } catch (err: any) {
       console.error("Payment failed:", err);
-      
+
       const errorMsg =
         err?.response?.data?.message || err?.message || "Payment failed";
       showToast(errorMsg, "error");
@@ -743,7 +751,7 @@ export default function StatementWithPoints() {
                             </span>
                           </p>
 
-                          <p className="text-sm mt-1">
+                          {/* <p className="text-sm mt-1">
                             Remaining to pay by mobile money:{" "}
                             <span className="font-bold">
                               UGX{" "}
@@ -755,7 +763,34 @@ export default function StatementWithPoints() {
                                 return remaining.toLocaleString();
                               })()}
                             </span>
-                          </p>
+                          </p> */}
+
+                          <div className="mb-3">
+                            <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">
+                              Staff ID
+                            </label>
+                            <input
+                              value={staffId}
+                              onChange={(e) => setStaffId(e.target.value)}
+                              placeholder="Enter staff ID"
+                              className="w-full px-4 py-2 bg-gray-50 border rounded-xl"
+                            />
+                          </div>
+
+                          <div className="mb-3">
+                            <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">
+                              Mobile Money Amount (UGX)
+                            </label>
+                            <input
+                              type="number"
+                              min={1}
+                              value={mobileAmount}
+                              onChange={(e) =>
+                                setMobileAmount(Number(e.target.value))
+                              }
+                              className="w-full px-4 py-2 bg-gray-50 border rounded-xl"
+                            />
+                          </div>
 
                           {(() => {
                             const remaining = Math.max(

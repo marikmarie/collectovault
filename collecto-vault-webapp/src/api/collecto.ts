@@ -32,7 +32,8 @@ payInvoice: (payload: {
   vaultOTPToken?: string;
   collectoId?: string;
   clientId?: string;
-  points?: { // Named the points object correctly
+  staffId?: string;
+  points?: { 
     points_used?: number;
     discount_amount?: number;
   };
