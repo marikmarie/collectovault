@@ -394,7 +394,7 @@ export default function StatementWithPoints() {
       showToast(successMsg, "success");
     } catch (err: any) {
       console.error("Payment failed:", err);
-      // Standardizing error message extraction
+      
       const errorMsg =
         err?.response?.data?.message || err?.message || "Payment failed";
       showToast(errorMsg, "error");
