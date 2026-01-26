@@ -7,9 +7,9 @@ import {
   LogOut,
   LayoutDashboard,
   Users,
-  Award, // Tiers/Levels
-  GitBranch, // Point Rules
-  Package, // Packages
+  Award, 
+  GitBranch, 
+  Package, 
   X
 } from "lucide-react";
 

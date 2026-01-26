@@ -2,10 +2,6 @@ import React, { useEffect, useState } from "react";
 import { Coins, Plus, Edit, Trash2 } from "lucide-react";
 import api from "../../api";
 
-/* =======================
-   Types
-======================= */
-
 interface Package {
   id: number;
   name: string;
@@ -22,9 +18,6 @@ interface ApiPackage {
   isPopular: boolean;
 }
 
-/* =======================
-   Helpers
-======================= */
 
 const mapApiPackage = (pkg: ApiPackage): Package => ({
   id: pkg.id,
