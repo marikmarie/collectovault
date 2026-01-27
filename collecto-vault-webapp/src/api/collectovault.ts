@@ -1,4 +1,4 @@
-// srcService.ts
+// collectovault.ts
 import api from "./index";
 
 export const collectovault = {
@@ -18,11 +18,19 @@ export const collectovault = {
   getTierRuleById: (id: string) => api.get(`/tier/${id}/`),
   saveTierRule: (vendorId: string, data: any) =>
     api.post(`/tier/${vendorId}`, data),
+    deleteTierRules: (vendorId: string, ruleId: number) =>
+    api.delete(`/tier/${vendorId}/tier/${ruleId}`),
+  editleteTierRules: (vendorId: string, ruleId: number) =>
+    api.delete(`/tier/${vendorId}/tier/${ruleId}`),
 
   //point packages
   getPackages: (vendorId: number) =>
     api.get(`/vaultPackages/collecto/${vendorId}`),
   getPackageById: (id: string) => api.get(`/vaultPackages/${id}/`),
   savePackages: (vendorId: string, data: any) =>
-    api.post(`/vaultPackages/${vendorId}/tier-rules`, data),
+    api.post(`/vaultPackages/${vendorId}/packages`, data),
+    deletePackages: (vendorId: string, ruleId: number) =>
+    api.delete(`/vaultPackages/${vendorId}/packages/${ruleId}`),
+  editletePackages: (vendorId: string, ruleId: number) =>
+    api.delete(`/vaultPackages/${vendorId}/packages/${ruleId}`),
 };
