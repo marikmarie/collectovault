@@ -5,7 +5,7 @@ export const collectovault = {
   //point rules
   getPointRules: (vendorId: string) => api.get(`/pointRules/${vendorId}/`),
   getPointRulesById: (id: string) => api.get(`/pointRules/${id}/`),
-  
+
   savePointRule: (vendorId: string, data: any) =>
     api.post(`/pointRules/${vendorId}`, data),
   deletePointRule: (vendorId: string, ruleId: number) =>
@@ -24,7 +24,7 @@ export const collectovault = {
     api.delete(`/tier/${vendorId}/tier/${ruleId}`),
 
   //point packages
-  getPackages: (vendorId: number) => api.get(`/vaultPackages/${vendorId}`),
+  getPackages: (vendorId: string) => api.get(`/vaultPackages/${vendorId}`),
   getPackageById: (id: string) => api.get(`/vaultPackages/${id}/`),
   savePackages: (vendorId: string, data: any) =>
     api.post(`/vaultPackages/${vendorId}`, data),

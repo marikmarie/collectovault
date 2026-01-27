@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Coins, Plus, Edit, Trash2 } from "lucide-react";
-import api from "../../api";
+import { collectovault } from "../../api/collectovault";
+
+/* ================= TYPES ================= */
 
 interface Package {
   id: number;
@@ -25,6 +27,8 @@ const mapApiPackage = (pkg: ApiPackage): Package => ({
   price: Number(pkg.price ?? 0),
   popular: Boolean(pkg.isPopular),
 });
+
+/* ================= CARD ================= */
 
 interface PackageCardProps {
   pkg: Package;
@@ -65,19 +69,29 @@ const PackageCard: React.FC<PackageCardProps> = ({ pkg, onEdit, onDelete }) => (
       <h4 className="text-lg font-bold text-gray-900">{pkg.name}</h4>
 
       <div className="mt-1 flex items-baseline gap-1">
-        <span className="text-3xl font-black text-gray-900">{(pkg.points ?? 0).toLocaleString()}</span>
+        <span className="text-3xl font-black text-gray-900">
+          {pkg.points.toLocaleString()}
+        </span>
         <span className="text-sm text-gray-500 font-medium">Points</span>
       </div>
     </div>
 
     <div className="mt-6 pt-4 border-t border-gray-50 flex justify-between items-center">
-      <span className="text-sm font-semibold text-gray-600">UGX {(pkg.price ?? 0).toLocaleString()}</span>
+      <span className="text-sm font-semibold text-gray-600">
+        UGX {pkg.price.toLocaleString()}
+      </span>
       <span className="text-[10px] text-gray-400 uppercase">Managed Bundle</span>
     </div>
   </div>
 );
 
-const PointPackages: React.FC = () => {
+/* ================= MAIN ================= */
+
+interface PointPackagesProps {
+  vendorId: string; // 👈 collecto/vendor id
+}
+
+const PointPackages: React.FC<PointPackagesProps> = ({ vendorId }) => {
   const [packages, setPackages] = useState<Package[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -86,11 +100,13 @@ const PointPackages: React.FC = () => {
   const [deleteTarget, setDeleteTarget] = useState<Package | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  /* ===== FETCH ===== */
+
   const fetchPackages = async () => {
     setLoading(true);
     try {
-      const res = await api.get("/vaultPackages");
-      const list = res.data?.data ?? [];
+      const res = await collectovault.getPackages(vendorId);
+      const list = res.data?.data ?? res.data ?? [];
       setPackages(Array.isArray(list) ? list.map(mapApiPackage) : []);
     } catch (err) {
       console.error("Failed to load packages", err);
@@ -101,26 +117,18 @@ const PointPackages: React.FC = () => {
 
   useEffect(() => {
     fetchPackages();
-  }, []);
+  }, [vendorId]);
 
-  const openCreateModal = () => {
-    setEditingPackage(null);
-    setIsModalOpen(true);
-  };
-
-  const openEditModal = (pkg: Package) => {
-    setEditingPackage(pkg);
-    setIsModalOpen(true);
-  };
+  /* ===== ACTIONS ===== */
 
   const confirmDelete = async () => {
     if (!deleteTarget) return;
     try {
-      await api.delete(`/vaultPackages/${deleteTarget.id}`);
+      await collectovault.deletePackages(vendorId, deleteTarget.id);
       setPackages((prev) => prev.filter((p) => p.id !== deleteTarget.id));
       setSuccessMessage("Package removed successfully");
       setTimeout(() => setSuccessMessage(null), 3000);
-    } catch (err) {
+    } catch {
       alert("Failed to delete package");
     } finally {
       setDeleteTarget(null);
@@ -128,8 +136,8 @@ const PointPackages: React.FC = () => {
   };
 
   const handleSave = async (data: Omit<Package, "id">) => {
+    setSaving(true);
     try {
-      setSaving(true);
       const payload = {
         name: data.name,
         pointsAmount: data.points,
@@ -137,32 +145,47 @@ const PointPackages: React.FC = () => {
         isPopular: data.popular,
       };
 
-      if (editingPackage?.id) {
-        await api.put(`/vaultPackages/${editingPackage.id}`, payload);
+      if (editingPackage) {
+        // backend update route (PUT /vaultPackages/:id)
+        await collectovault.savePackages(vendorId, {
+          ...payload,
+          id: editingPackage.id,
+        });
         setSuccessMessage("Package updated successfully");
       } else {
-        await api.post("/vaultPackages", payload);
+        await collectovault.savePackages(vendorId, payload);
         setSuccessMessage("Package created successfully");
       }
 
       await fetchPackages();
-      setTimeout(() => setSuccessMessage(null), 3000);
       setIsModalOpen(false);
-    } catch (err) {
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch {
       alert("Save failed");
     } finally {
       setSaving(false);
     }
   };
 
+  /* ================= UI ================= */
+
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-8">
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold">Point Packages</h2>
-          <p className="text-sm text-gray-500">Configure bundles for customer purchase</p>
+          <p className="text-sm text-gray-500">
+            Configure bundles for customer purchase
+          </p>
         </div>
-        <button onClick={openCreateModal} className="flex items-center gap-2 px-5 py-2.5 bg-black text-white hover:bg-gray-800 rounded-xl">
+
+        <button
+          onClick={() => {
+            setEditingPackage(null);
+            setIsModalOpen(true);
+          }}
+          className="flex items-center gap-2 px-5 py-2.5 bg-black text-white hover:bg-gray-800 rounded-xl"
+        >
           <Plus className="w-4 h-4" /> New Package
         </button>
       </div>
@@ -178,7 +201,15 @@ const PointPackages: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {packages.map((pkg) => (
-            <PackageCard key={pkg.id} pkg={pkg} onEdit={openEditModal} onDelete={setDeleteTarget} />
+            <PackageCard
+              key={pkg.id}
+              pkg={pkg}
+              onEdit={(p) => {
+                setEditingPackage(p);
+                setIsModalOpen(true);
+              }}
+              onDelete={setDeleteTarget}
+            />
           ))}
         </div>
       )}
@@ -203,17 +234,30 @@ const PointPackages: React.FC = () => {
   );
 };
 
-/* --- Modals --- */
+/* ================= MODALS ================= */
 
-const DeleteConfirmModal: React.FC<{ name: string; onCancel: () => void; onConfirm: () => void; }> = ({ name, onCancel, onConfirm }) => (
+const DeleteConfirmModal: React.FC<{
+  name: string;
+  onCancel: () => void;
+  onConfirm: () => void;
+}> = ({ name, onCancel, onConfirm }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
     <div className="absolute inset-0 bg-black/40" onClick={onCancel} />
     <div className="relative bg-white rounded-2xl w-full max-w-sm p-6">
       <h3 className="text-lg font-bold mb-2">Remove Package</h3>
-      <p className="text-sm text-gray-600 mb-6">Are you sure you want to remove <strong>{name}</strong>?</p>
+      <p className="text-sm text-gray-600 mb-6">
+        Are you sure you want to remove <strong>{name}</strong>?
+      </p>
       <div className="flex justify-end gap-3">
-        <button onClick={onCancel} className="px-4 py-2 text-gray-500">Cancel</button>
-        <button onClick={onConfirm} className="px-4 py-2 bg-red-600 text-white rounded-xl">Remove</button>
+        <button onClick={onCancel} className="px-4 py-2 text-gray-500">
+          Cancel
+        </button>
+        <button
+          onClick={onConfirm}
+          className="px-4 py-2 bg-red-600 text-white rounded-xl"
+        >
+          Remove
+        </button>
       </div>
     </div>
   </div>
@@ -226,11 +270,18 @@ interface PackageModalProps {
   onSave: (data: Omit<Package, "id">) => Promise<void>;
 }
 
-const PackageModal: React.FC<PackageModalProps> = ({ initialData, saving, onClose, onSave }) => {
+const PackageModal: React.FC<PackageModalProps> = ({
+  initialData,
+  saving,
+  onClose,
+  onSave,
+}) => {
   const [name, setName] = useState(initialData?.name ?? "");
   const [points, setPoints] = useState<number | "">(initialData?.points ?? "");
   const [price, setPrice] = useState<number | "">(initialData?.price ?? "");
-  const [popular, setPopular] = useState<boolean>(initialData?.popular ?? false);
+  const [popular, setPopular] = useState<boolean>(
+    initialData?.popular ?? false
+  );
 
   useEffect(() => {
     setName(initialData?.name ?? "");
@@ -244,51 +295,73 @@ const PackageModal: React.FC<PackageModalProps> = ({ initialData, saving, onClos
     const prVal = Number(price);
 
     if (!name.trim()) return alert("Please enter a package name");
-    if (pVal <= 0 || prVal <= 0) return alert("Points and price must be greater than zero");
-    
-    await onSave({ name: name.trim(), points: pVal, price: prVal, popular });
+    if (pVal <= 0 || prVal <= 0)
+      return alert("Points and price must be greater than zero");
+
+    await onSave({
+      name: name.trim(),
+      points: pVal,
+      price: prVal,
+      popular,
+    });
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
       <div className="relative bg-white rounded-3xl w-full max-w-lg p-8">
-        <h3 className="text-xl font-bold mb-6">{initialData ? "Edit Package" : "New Package"}</h3>
+        <h3 className="text-xl font-bold mb-6">
+          {initialData ? "Edit Package" : "New Package"}
+        </h3>
+
         <div className="space-y-4">
-          <input 
-            value={name} 
-            onChange={(e) => setName(e.target.value)} 
-            placeholder="Package name" 
-            className="w-full px-4 py-3 border rounded-xl outline-none focus:border-black" 
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Package name"
+            className="w-full px-4 py-3 border rounded-xl outline-none focus:border-black"
           />
+
           <div className="grid grid-cols-2 gap-4">
-            <input 
-              type="number" 
-              value={points} 
-              onChange={(e) => setPoints(e.target.value === "" ? "" : Number(e.target.value))} 
-              placeholder="Points" 
-              className="px-4 py-3 border rounded-xl outline-none focus:border-black" 
+            <input
+              type="number"
+              value={points}
+              onChange={(e) =>
+                setPoints(e.target.value === "" ? "" : Number(e.target.value))
+              }
+              placeholder="Points"
+              className="px-4 py-3 border rounded-xl outline-none focus:border-black"
             />
-            <input 
-              type="number" 
-              value={price} 
-              onChange={(e) => setPrice(e.target.value === "" ? "" : Number(e.target.value))} 
-              placeholder="Price (UGX)" 
-              className="px-4 py-3 border rounded-xl outline-none focus:border-black" 
+            <input
+              type="number"
+              value={price}
+              onChange={(e) =>
+                setPrice(e.target.value === "" ? "" : Number(e.target.value))
+              }
+              placeholder="Price (UGX)"
+              className="px-4 py-3 border rounded-xl outline-none focus:border-black"
             />
           </div>
-          <button 
-            onClick={() => setPopular(!popular)} 
-            className={`w-full p-4 rounded-xl border transition-colors ${popular ? "bg-black text-white" : "bg-gray-50 text-gray-600"}`}
+
+          <button
+            onClick={() => setPopular(!popular)}
+            className={`w-full p-4 rounded-xl border transition-colors ${
+              popular
+                ? "bg-black text-white"
+                : "bg-gray-50 text-gray-600"
+            }`}
           >
             {popular ? "Popular Package ✓" : "Mark as Popular"}
           </button>
         </div>
+
         <div className="mt-6 flex justify-end gap-3">
-          <button onClick={onClose} className="px-6 py-2 text-gray-500">Cancel</button>
-          <button 
-            disabled={saving} 
-            onClick={handleSubmit} 
+          <button onClick={onClose} className="px-6 py-2 text-gray-500">
+            Cancel
+          </button>
+          <button
+            disabled={saving}
+            onClick={handleSubmit}
             className="px-6 py-2 bg-black text-white rounded-xl disabled:opacity-50"
           >
             {saving ? "Saving…" : "Save"}
