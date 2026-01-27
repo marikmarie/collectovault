@@ -18,7 +18,6 @@ interface ApiPackage {
   isPopular: boolean;
 }
 
-
 const mapApiPackage = (pkg: ApiPackage): Package => ({
   id: pkg.id,
   name: pkg.name,
@@ -26,10 +25,6 @@ const mapApiPackage = (pkg: ApiPackage): Package => ({
   price: Number(pkg.price ?? 0),
   popular: Boolean(pkg.isPopular),
 });
-
-/* =======================
-   Package Card
-======================= */
 
 interface PackageCardProps {
   pkg: Package;
@@ -55,14 +50,12 @@ const PackageCard: React.FC<PackageCardProps> = ({ pkg, onEdit, onDelete }) => (
           <button
             onClick={() => onEdit(pkg)}
             className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full"
-            aria-label={`Edit ${pkg.name}`}
           >
             <Edit className="w-4 h-4" />
           </button>
           <button
             onClick={() => onDelete(pkg)}
             className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full"
-            aria-label={`Remove ${pkg.name}`}
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -84,10 +77,6 @@ const PackageCard: React.FC<PackageCardProps> = ({ pkg, onEdit, onDelete }) => (
   </div>
 );
 
-/* =======================
-   Main Component
-======================= */
-
 const PointPackages: React.FC = () => {
   const [packages, setPackages] = useState<Package[]>([]);
   const [loading, setLoading] = useState(false);
@@ -97,7 +86,6 @@ const PointPackages: React.FC = () => {
   const [deleteTarget, setDeleteTarget] = useState<Package | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  /* ---- Fetch ---- */
   const fetchPackages = async () => {
     setLoading(true);
     try {
@@ -106,7 +94,6 @@ const PointPackages: React.FC = () => {
       setPackages(Array.isArray(list) ? list.map(mapApiPackage) : []);
     } catch (err) {
       console.error("Failed to load packages", err);
-      alert("Failed to load packages");
     } finally {
       setLoading(false);
     }
@@ -116,9 +103,8 @@ const PointPackages: React.FC = () => {
     fetchPackages();
   }, []);
 
-  /* ---- Open modal for create or edit ---- */
   const openCreateModal = () => {
-    setEditingPackage(null); // null signals create
+    setEditingPackage(null);
     setIsModalOpen(true);
   };
 
@@ -126,13 +112,6 @@ const PointPackages: React.FC = () => {
     setEditingPackage(pkg);
     setIsModalOpen(true);
   };
-
-  /* ---- Delete flow (uses modal) ---- */
-  const requestDelete = (pkg: Package) => {
-    setDeleteTarget(pkg);
-  };
-
-  const cancelDelete = () => setDeleteTarget(null);
 
   const confirmDelete = async () => {
     if (!deleteTarget) return;
@@ -142,18 +121,15 @@ const PointPackages: React.FC = () => {
       setSuccessMessage("Package removed successfully");
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
-      console.error("Delete failed", err);
       alert("Failed to delete package");
     } finally {
       setDeleteTarget(null);
     }
   };
 
-  /* ---- Save (CREATE / UPDATE) ---- */
   const handleSave = async (data: Omit<Package, "id">) => {
     try {
       setSaving(true);
-
       const payload = {
         name: data.name,
         pointsAmount: data.points,
@@ -161,24 +137,18 @@ const PointPackages: React.FC = () => {
         isPopular: data.popular,
       };
 
-      if (editingPackage && editingPackage.id > 0) {
-        // UPDATE existing
+      if (editingPackage?.id) {
         await api.put(`/vaultPackages/${editingPackage.id}`, payload);
         setSuccessMessage("Package updated successfully");
       } else {
-        // CREATE new
         await api.post("/vaultPackages", payload);
         setSuccessMessage("Package created successfully");
       }
 
-      // Refresh list, show success, then close modal
       await fetchPackages();
       setTimeout(() => setSuccessMessage(null), 3000);
-
       setIsModalOpen(false);
-      setEditingPackage(null);
     } catch (err) {
-      console.error("Save failed", err);
       alert("Save failed");
     } finally {
       setSaving(false);
@@ -192,8 +162,7 @@ const PointPackages: React.FC = () => {
           <h2 className="text-2xl font-bold">Point Packages</h2>
           <p className="text-sm text-gray-500">Configure bundles for customer purchase</p>
         </div>
-
-        <button onClick={openCreateModal} className="flex items-center gap-2 px-5 py-2.5 bg-(--btn-border) text-(--btn-text) hover:bg-(--btn-hover-bg) rounded-xl">
+        <button onClick={openCreateModal} className="flex items-center gap-2 px-5 py-2.5 bg-black text-white hover:bg-gray-800 rounded-xl">
           <Plus className="w-4 h-4" /> New Package
         </button>
       </div>
@@ -209,7 +178,7 @@ const PointPackages: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {packages.map((pkg) => (
-            <PackageCard key={pkg.id} pkg={pkg} onEdit={openEditModal} onDelete={requestDelete} />
+            <PackageCard key={pkg.id} pkg={pkg} onEdit={openEditModal} onDelete={setDeleteTarget} />
           ))}
         </div>
       )}
@@ -218,10 +187,7 @@ const PointPackages: React.FC = () => {
         <PackageModal
           initialData={editingPackage}
           saving={saving}
-          onClose={() => {
-            setIsModalOpen(false);
-            setEditingPackage(null);
-          }}
+          onClose={() => setIsModalOpen(false)}
           onSave={handleSave}
         />
       )}
@@ -229,7 +195,7 @@ const PointPackages: React.FC = () => {
       {deleteTarget && (
         <DeleteConfirmModal
           name={deleteTarget.name}
-          onCancel={cancelDelete}
+          onCancel={() => setDeleteTarget(null)}
           onConfirm={confirmDelete}
         />
       )}
@@ -237,41 +203,24 @@ const PointPackages: React.FC = () => {
   );
 };
 
-/* =======================
-   Delete Modal
-======================= */
+/* --- Modals --- */
 
-const DeleteConfirmModal: React.FC<{
-  name: string;
-  onCancel: () => void;
-  onConfirm: () => void;
-}> = ({ name, onCancel, onConfirm }) => (
+const DeleteConfirmModal: React.FC<{ name: string; onCancel: () => void; onConfirm: () => void; }> = ({ name, onCancel, onConfirm }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
     <div className="absolute inset-0 bg-black/40" onClick={onCancel} />
     <div className="relative bg-white rounded-2xl w-full max-w-sm p-6">
       <h3 className="text-lg font-bold mb-2">Remove Package</h3>
-      <p className="text-sm text-gray-600 mb-6">
-        Are you sure you want to remove <strong>{name}</strong>? This action cannot be undone.
-      </p>
-
+      <p className="text-sm text-gray-600 mb-6">Are you sure you want to remove <strong>{name}</strong>?</p>
       <div className="flex justify-end gap-3">
-        <button onClick={onCancel} className="px-4 py-2 text-gray-500">
-          Cancel
-        </button>
-        <button onClick={onConfirm} className="px-4 py-2 bg-red-600 text-white rounded-xl">
-          Remove
-        </button>
+        <button onClick={onCancel} className="px-4 py-2 text-gray-500">Cancel</button>
+        <button onClick={onConfirm} className="px-4 py-2 bg-red-600 text-white rounded-xl">Remove</button>
       </div>
     </div>
   </div>
 );
 
-/* =======================
-   Package Modal
-======================= */
-
 interface PackageModalProps {
-  initialData: Package | null; // null => create, object => edit
+  initialData: Package | null;
   saving: boolean;
   onClose: () => void;
   onSave: (data: Omit<Package, "id">) => Promise<void>;
@@ -279,56 +228,69 @@ interface PackageModalProps {
 
 const PackageModal: React.FC<PackageModalProps> = ({ initialData, saving, onClose, onSave }) => {
   const [name, setName] = useState(initialData?.name ?? "");
-  const [points, setPoints] = useState<number>(initialData?.points ?? 0);
-  const [price, setPrice] = useState<number>(initialData?.price ?? 0);
+  const [points, setPoints] = useState<number | "">(initialData?.points ?? "");
+  const [price, setPrice] = useState<number | "">(initialData?.price ?? "");
   const [popular, setPopular] = useState<boolean>(initialData?.popular ?? false);
 
-  // Sync modal inputs when initialData changes (opening modal for edit)
   useEffect(() => {
     setName(initialData?.name ?? "");
-    setPoints(initialData?.points ?? 0);
-    setPrice(initialData?.price ?? 0);
+    setPoints(initialData?.points ?? "");
+    setPrice(initialData?.price ?? "");
     setPopular(initialData?.popular ?? false);
   }, [initialData]);
 
-  const isEdit = initialData !== null && initialData !== undefined && initialData.id > 0;
-
   const handleSubmit = async () => {
-    // basic validation
-    if (!name.trim()) {
-      alert("Please enter a package name");
-      return;
-    }
-    if (points <= 0 || price <= 0) {
-      alert("Points and price must be greater than zero");
-      return;
-    }
-    await onSave({ name: name.trim(), points, price, popular });
+    const pVal = Number(points);
+    const prVal = Number(price);
+
+    if (!name.trim()) return alert("Please enter a package name");
+    if (pVal <= 0 || prVal <= 0) return alert("Points and price must be greater than zero");
+    
+    await onSave({ name: name.trim(), points: pVal, price: prVal, popular });
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-
       <div className="relative bg-white rounded-3xl w-full max-w-lg p-8">
-        <h3 className="text-xl font-bold mb-6">{isEdit ? "Edit Package" : "New Package"}</h3>
-
+        <h3 className="text-xl font-bold mb-6">{initialData ? "Edit Package" : "New Package"}</h3>
         <div className="space-y-4">
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Package name" className="w-full px-4 py-3 border rounded-xl" />
-
+          <input 
+            value={name} 
+            onChange={(e) => setName(e.target.value)} 
+            placeholder="Package name" 
+            className="w-full px-4 py-3 border rounded-xl outline-none focus:border-black" 
+          />
           <div className="grid grid-cols-2 gap-4">
-            <input type="number" value={points} onChange={(e) => setPoints(Number(e.target.value))} placeholder="Points" className="px-4 py-3 border rounded-xl" />
-            <input type="number" value={price} onChange={(e) => setPrice(Number(e.target.value))} placeholder="Price (UGX)" className="px-4 py-3 border rounded-xl" />
+            <input 
+              type="number" 
+              value={points} 
+              onChange={(e) => setPoints(e.target.value === "" ? "" : Number(e.target.value))} 
+              placeholder="Points" 
+              className="px-4 py-3 border rounded-xl outline-none focus:border-black" 
+            />
+            <input 
+              type="number" 
+              value={price} 
+              onChange={(e) => setPrice(e.target.value === "" ? "" : Number(e.target.value))} 
+              placeholder="Price (UGX)" 
+              className="px-4 py-3 border rounded-xl outline-none focus:border-black" 
+            />
           </div>
-
-          <button onClick={() => setPopular(!popular)} className={`w-full p-4 rounded-xl border ${popular ? "bg-(--btn-border) text-(--btn-text)" : ""}`}>
+          <button 
+            onClick={() => setPopular(!popular)} 
+            className={`w-full p-4 rounded-xl border transition-colors ${popular ? "bg-black text-white" : "bg-gray-50 text-gray-600"}`}
+          >
             {popular ? "Popular Package ✓" : "Mark as Popular"}
           </button>
         </div>
-
         <div className="mt-6 flex justify-end gap-3">
           <button onClick={onClose} className="px-6 py-2 text-gray-500">Cancel</button>
-          <button disabled={saving} onClick={handleSubmit} className="px-6 py-2 bg-(--btn-border) text-(--btn-text) rounded-xl disabled:opacity-50">
+          <button 
+            disabled={saving} 
+            onClick={handleSubmit} 
+            className="px-6 py-2 bg-black text-white rounded-xl disabled:opacity-50"
+          >
             {saving ? "Saving…" : "Save"}
           </button>
         </div>
