@@ -1,33 +1,32 @@
 import React, { useEffect, useState } from "react";
-import {  Gift,  Plus, Edit, Trash2, X } from "lucide-react";
+import {  Plus, Edit, Trash2, X } from "lucide-react";
 import { collectovault } from "../../api/collectovault";
 
-/** Types (match server EarningRule) */
+/** ================= TYPES ================= */
 interface EarningRule {
   id: number;
   ruleTitle: string;
   description: string;
   points: number;
   isActive: boolean;
-  createdAt?: string | Date;
-  updatedAt?: string | Date;
-  createdBy?: string;
 }
 
+/** ================= MODAL ================= */
 const Modal: React.FC<{
   open: boolean;
-  title?: string;
+  title: string;
   onClose: () => void;
   children: React.ReactNode;
 }> = ({ open, title, onClose, children }) => {
   if (!open) return null;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-lg bg-white rounded-xl shadow-2xl">
+      <div className="relative z-10 w-full max-w-lg bg-white rounded-xl shadow-xl">
         <div className="flex items-center justify-between p-4 border-b">
           <h3 className="text-lg font-semibold">{title}</h3>
-          <button onClick={onClose} className="p-1 rounded-md hover:bg-gray-100">
+          <button onClick={onClose}>
             <X className="w-5 h-5 text-gray-600" />
           </button>
         </div>
@@ -37,83 +36,26 @@ const Modal: React.FC<{
   );
 };
 
-/** Rule Toggle Row (display only) */
-const RuleToggle: React.FC<{
-  rule: Omit<EarningRule, 'createdAt' | 'updatedAt' | 'createdBy'> & { title: string; desc: string };
-  onPointsChange: (id: number, newPoints: number) => void;
-}> = ({ rule, onPointsChange }) => {
-  return (
-    <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-red-300 transition-colors bg-white shadow-sm">
-      <div className="flex items-start gap-3">
-        <div className="flex-1">
-          <h4 className="text-sm font-semibold text-gray-900">
-            {rule.title}
-          </h4>
-          <p className="text-xs text-gray-500 mt-0.5">{rule.desc}</p>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-3">
-        <div className="relative w-28">
-          <input
-            type="number"
-            value={rule.points}
-            onChange={(e) => onPointsChange(rule.id, parseInt(e.target.value || "0"))}
-            className="w-full text-right text-sm border-2 border-gray-400 bg-gray-50 rounded-lg px-3 py-2 appearance-none"
-            placeholder="0"
-          />
-          <span className="absolute right-3 top-2.5 text-xs text-gray-400 font-medium">Pts</span>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-/** Main Component */
+/** ================= MAIN PAGE ================= */
 const PointRules: React.FC = () => {
-  // Rules pulled from the API
+  const vendorId = localStorage.getItem("collectoId") || "141122";
+
   const [rules, setRules] = useState<EarningRule[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [deletingId, setDeletingId] = useState<number | null>(null);
 
-  // UI messages (replaces alerts)
-  const [message, setMessage] = useState<{ type: "success" | "error" | "info"; text: string } | null>(null);
-
-  // For in-place delete confirmation (show inline on a rule card)
-  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
-
-  // Modal state
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<EarningRule | null>(null);
 
-  const vendorId = localStorage.getItem('collectoId') || '141122';
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
-  const openCreateModal = () => {
-    setEditingRule(null);
-    setIsModalOpen(true);
-  };
-
-  const openEditModal = (rule: EarningRule) => {
-    setEditingRule(rule);
-    setIsModalOpen(true);
-  };
-
-  const showMessage = (type: "success" | "error" | "info", text: string) => {
-    setMessage({ type, text });
-    window.setTimeout(() => setMessage(null), 4000);
-  };
-
+  /** ================= FETCH ================= */
   const fetchRules = async () => {
     setLoading(true);
     try {
       const res = await collectovault.getPointRules(vendorId);
-      const d = res.data?.data ?? res.data ?? res;
-      const items: EarningRule[] = Array.isArray(d) ? d : (d?.rules ?? d?.items ?? []);
-      setRules(items);
-    } catch (err: any) {
-      console.error('Failed to load point rules', err);
-      showMessage('error', 'Failed to load point rules');
+      setRules(res.data?.data ?? []);
+    } catch {
       setRules([]);
     } finally {
       setLoading(false);
@@ -124,260 +66,189 @@ const PointRules: React.FC = () => {
     fetchRules();
   }, []);
 
-  const handleModalSave = async (payload: { ruleTitle: string; description: string; points: number; isActive: boolean }) => {
+  /** ================= SAVE (CREATE / UPDATE) ================= */
+  const handleSave = async (payload: Omit<EarningRule, "id">) => {
     setSaving(true);
     try {
       if (editingRule) {
-        // update existing
-        const upd = { id: editingRule.id, ...payload };
-        const res = await collectovault.savePointRule(vendorId, upd);
-        const saved = res.data?.data ?? res.data ?? res;
-        setRules((prev) => prev.map((r) => (r.id === editingRule.id ? { ...r, ...saved } : r)));
-        showMessage('success', 'Rule updated');
+        // UPDATE
+        await collectovault.savePointRule(vendorId, {
+          id: editingRule.id,
+          ...payload,
+        });
+
+        setRules((prev) =>
+          prev.map((r) =>
+            r.id === editingRule.id ? { ...r, ...payload } : r
+          )
+        );
       } else {
-        // create new
+        // CREATE
         const res = await collectovault.savePointRule(vendorId, payload);
-        const created = res.data?.data ?? res.data ?? res;
-        // If API returns created rule, push; otherwise reload
-        if (created && created.id) setRules((prev) => [created as EarningRule, ...prev]);
-        else await fetchRules();
-        showMessage('success', 'Rule created');
+        setRules((prev) => [res.data?.data, ...prev]);
       }
-    } catch (err: any) {
-      console.error('Failed to save rule', err);
-      showMessage('error', 'Failed to save rule');
     } finally {
-      setIsModalOpen(false);
-      setEditingRule(null);
       setSaving(false);
+      setModalOpen(false);
+      setEditingRule(null);
     }
   };
 
-  const handleDelete = async (id: number) => {
-    // Show inline confirm first
-    if (confirmDeleteId !== id) {
-      setConfirmDeleteId(id);
+  /** ================= DELETE ================= */
+  const handleDelete = async (ruleId: number) => {
+    if (confirmDeleteId !== ruleId) {
+      setConfirmDeleteId(ruleId);
       return;
     }
 
-    setDeletingId(id);
-    try {
-      await collectovault.deletePointRule(vendorId, id);
-      setRules((prev) => prev.filter((r) => r.id !== id));
-      showMessage('success', 'Rule deleted');
-    } catch (err: any) {
-      console.error('Failed to delete rule', err);
-      showMessage('error', 'Failed to delete rule');
-    } finally {
-      setDeletingId(null);
-      setConfirmDeleteId(null);
-    }
-  };
-
-  const handlePointsChange = async (id: number, newPoints: number) => {
-    setRules((prev) => prev.map((r) => (r.id === id ? { ...r, points: newPoints } : r)));
-    try {
-      await collectovault.savePointRule(vendorId, { id, points: newPoints });
-      showMessage('success', 'Points updated');
-    } catch (err: any) {
-      console.error('Failed to update points', err);
-      showMessage('error', 'Failed to update points');
-      await fetchRules();
-    }
-  };
-
-  const handleReload = async () => {
-    await fetchRules();
-    showMessage('info', 'Rules reloaded');
+    await collectovault.deletePointRule(vendorId, ruleId);
+    setRules((prev) => prev.filter((r) => r.id !== ruleId));
+    setConfirmDeleteId(null);
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-full">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">Point Rules Configuration</h2>
-        <div className="flex items-center gap-3">
-          <button
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50"
-            onClick={handleReload}
-            title="Reload rules"
-          >
-            Reload
-          </button>
-          <button
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-(--btn-text) bg-(--btn-bg) rounded-lg hover:bg-(--btn-hover-bg) shadow-lg transition-colors"
-            onClick={openCreateModal}
-            title="Add new rule"
-          >
-            <Plus className="w-4 h-4" /> Add Rule
-          </button>
-        </div>
+        <h2 className="text-2xl font-bold">Point Rules</h2>
+        <button
+          onClick={() => {
+            setEditingRule(null);
+            setModalOpen(true);
+          }}
+          className="flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg"
+        >
+          <Plus className="w-4 h-4" /> Add Rule
+        </button>
       </div>
-      <p className="text-gray-500">Define how users earn loyalty points through actions and events. Create, edit or remove rules below.</p>
-      {/* Behavioral Rewards */}
-      <section className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-            <Gift className="w-5 h-5 text-orange-400" /> Behavioral Rewards
-          </h3>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={openCreateModal}
-              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-(--btn-text) bg-gray-200 rounded-lg hover:bg-(--btn-hover-bg)"
-              title="Add new bonus rule"
+      {/* Rules */}
+      <div className="space-y-3">
+        {loading ? (
+          <p className="text-gray-500">Loading...</p>
+        ) : rules.length === 0 ? (
+          <p className="text-gray-500">No rules found</p>
+        ) : (
+          rules.map((rule) => (
+            <div
+              key={rule.id}
+              className="flex justify-between items-center p-4 border rounded-lg"
             >
-              <Plus className="w-4 h-4" /> Add New Bonus Rule
-            </button>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          {loading ? (
-            <div className="text-center py-6 text-sm text-gray-500">Loading rules…</div>
-          ) : rules.length === 0 ? (
-            <div className="text-center py-6 text-sm text-gray-500">No rules defined yet.</div>
-          ) : (
-            rules.map((rule) => (
-              <div key={rule.id} className="relative">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex-1">
-                    <RuleToggle rule={{ id: rule.id, ruleTitle: rule.ruleTitle, description: rule.description, points: rule.points, isActive: rule.isActive, title: rule.ruleTitle, desc: rule.description }} onPointsChange={handlePointsChange} />
-                  </div>
-
-                  {/* Edit / Delete buttons always visible */}
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => openEditModal(rule)}
-                      className="p-2 rounded-md bg-white border border-gray-200 shadow-sm hover:bg-gray-50"
-                      title="Edit rule"
-                    >
-                      <Edit className="w-4 h-4 text-gray-600" />
-                    </button>
-
-                    {confirmDeleteId === rule.id ? (
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleDelete(rule.id)}
-                          disabled={deletingId === rule.id}
-                          className="px-3 py-1 text-xs font-semibold text-white bg-gray-600 rounded"
-                        >
-                          {deletingId === rule.id ? 'Deleting...' : 'Confirm'}
-                        </button>
-                        <button
-                          onClick={() => setConfirmDeleteId(null)}
-                          className="px-2 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => handleDelete(rule.id)}
-                        className="p-2 rounded-md bg-white border border-gray-200 shadow-sm hover:bg-red-50"
-                        title="Delete rule"
-                      >
-                        <Trash2 className="w-4 h-4 text-red-600" />
-                      </button>
-                    )}
-                  </div>
-                </div>
+              <div>
+                <h4 className="font-semibold">{rule.ruleTitle}</h4>
+                <p className="text-sm text-gray-500">{rule.description}</p>
+                <p className="text-sm">Points: {rule.points}</p>
               </div>
-            ))
-          )}
-        </div>
-      </section>
 
-      {/* Modal for create / edit */}
-      {/* Message banner */}
-      {message && (
-        <div className={`fixed top-6 left-1/2 transform -translate-x-1/2 z-50 px-4 py-2 rounded shadow max-w-md w-full text-center ${message.type === 'success' ? 'bg-green-600 text-white' : message.type === 'error' ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'}`} role="status" aria-live="polite">
-          {message.text}
-        </div>
-      )}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setEditingRule(rule);
+                    setModalOpen(true);
+                  }}
+                  className="p-2 border rounded"
+                >
+                  <Edit className="w-4 h-4" />
+                </button>
 
-      <Modal open={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingRule ? "Edit Bonus Rule" : "Create Bonus Rule"}>
+                {confirmDeleteId === rule.id ? (
+                  <button
+                    onClick={() => handleDelete(rule.id)}
+                    className="px-3 py-1 bg-red-600 text-white rounded"
+                  >
+                    Confirm
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleDelete(rule.id)}
+                    className="p-2 border rounded"
+                  >
+                    <Trash2 className="w-4 h-4 text-red-600" />
+                  </button>
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Modal */}
+      <Modal
+        open={modalOpen}
+        title={editingRule ? "Edit Rule" : "Create Rule"}
+        onClose={() => setModalOpen(false)}
+      >
         <RuleForm
           initial={editingRule}
           loading={saving}
-          onCancel={() => {
-            setIsModalOpen(false);
-            setEditingRule(null);
-          }}
-          onSave={(data) => {
-            handleModalSave(data);
-          }}
+          onCancel={() => setModalOpen(false)}
+          onSave={handleSave}
         />
       </Modal>
     </div>
   );
 };
 
-/** Form inside modal */
+/** ================= FORM ================= */
 const RuleForm: React.FC<{
   initial: EarningRule | null;
-  loading?: boolean;
-  onSave: (payload: { ruleTitle: string; description: string; points: number; isActive: boolean }) => void;
+  loading: boolean;
+  onSave: (payload: Omit<EarningRule, "id">) => void;
   onCancel: () => void;
 }> = ({ initial, loading, onSave, onCancel }) => {
-  const [title, setTitle] = useState(initial?.ruleTitle || "");
-  const [desc, setDesc] = useState(initial?.description || "");
-  const [points, setPoints] = useState<number>(initial?.points ?? 0);
-  const [isActive, setIsActive] = useState<boolean>(initial?.isActive ?? true);
-
-  const handleSubmit = (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (!title.trim()) {
-      // show an inline message (could be extended to show field-level error)
-      return;
-    }
-    onSave({ ruleTitle: title.trim(), description: desc.trim(), points: Number(points || 0), isActive });
-  };
+  const [ruleTitle, setRuleTitle] = useState(initial?.ruleTitle ?? "");
+  const [description, setDescription] = useState(initial?.description ?? "");
+  const [points, setPoints] = useState(initial?.points ?? 0);
+  const [isActive, setIsActive] = useState(initial?.isActive ?? true);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Rule Title</label>
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSave({ ruleTitle, description, points, isActive });
+      }}
+      className="space-y-4"
+    >
+      <input
+        value={ruleTitle}
+        onChange={(e) => setRuleTitle(e.target.value)}
+        placeholder="Rule title"
+        className="w-full border rounded px-3 py-2"
+      />
+
+      <input
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        placeholder="Description"
+        className="w-full border rounded px-3 py-2"
+      />
+
+      <input
+        type="number"
+        value={points}
+        onChange={(e) => setPoints(Number(e.target.value))}
+        className="w-full border rounded px-3 py-2"
+      />
+
+      <label className="flex items-center gap-2">
         <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="e.g. Signup Bonus"
-          className="w-full border-2 border-gray-400 rounded-lg px-3 py-2 appearance-none focus:border-gray-500 focus:ring-0"
+          type="checkbox"
+          checked={isActive}
+          onChange={(e) => setIsActive(e.target.checked)}
         />
-      </div>
+        Active
+      </label>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-        <input
-          value={desc}
-          onChange={(e) => setDesc(e.target.value)}
-          placeholder="Short description (shown to admins)"
-          className="w-full border-2 border-gray-400 rounded-lg px-3 py-2 appearance-none focus:border-gray-500 focus:ring-0"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Points</label>
-        <input
-          type="number"
-          value={points}
-          onChange={(e) => setPoints(parseInt(e.target.value || "0"))}
-          placeholder="e.g. 50"
-          className="w-full border-2 border-gray-400 rounded-lg px-3 py-2 appearance-none focus:border-gray-500 focus:ring-0"
-        />
-      </div>
-
-      <div className="flex items-center gap-3">
-        <input id="active" type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} className="h-4 w-4 text-gray-600 border-gray-300 rounded focus:ring-red-500" />
-        <label htmlFor="active" className="text-sm text-gray-700">Active</label>
-      </div>
-
-      <div className="flex justify-end gap-3 pt-2 border-t mt-2">
-        <button type="button" onClick={onCancel} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+      <div className="flex justify-end gap-3">
+        <button type="button" onClick={onCancel}>
           Cancel
         </button>
-        <button type="submit" disabled={loading} className="px-4 py-2 text-sm font-medium text-gray-800 bg-gray-200 rounded-lg hover:bg-gray-400">
-          {loading ? (initial ? 'Updating...' : 'Creating...') : initial ? "Update Rule" : "Create Rule"}
+        <button
+          type="submit"
+          disabled={loading}
+          className="px-4 py-2 bg-gray-800 text-white rounded"
+        >
+          {loading ? "Saving..." : "Save"}
         </button>
       </div>
     </form>
