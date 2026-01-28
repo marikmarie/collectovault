@@ -28,11 +28,12 @@ export const authService = {
     }
     
     if (userData) {
-      const { id, collectoId } = userData;
+      const { id, collectoId, userName } = userData;
 
       // Store them as requested
       localStorage.setItem("clientId", id);
       localStorage.setItem("collectoId", collectoId.toString());
+      localStorage.setItem("userName", userName);
 
     }
 
