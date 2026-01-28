@@ -63,33 +63,68 @@ const PointRules: React.FC = () => {
     fetchRules();
   }, []);
 
-  const handleSave = async (payload: Omit<EarningRule, "id">) => {
+const handleSave = async (payload: Omit<EarningRule, "id">) => {
     setSaving(true);
     try {
-      if (editingRule) {
-        await collectovault.savePointRule(vendorId, { id: editingRule.id, ...payload });
-        setRules((prev) => prev.map((r) => (r.id === editingRule.id ? { ...r, ...payload } : r)));
+      // 1. Prepare payload with vendorId
+      const finalPayload = editingRule 
+        ? { id: editingRule.id, ...payload, collectoId: vendorId } 
+        : { ...payload, collectoId: vendorId };
+
+      // 2. Execute Request
+      const res = await collectovault.savePointRule(vendorId, finalPayload);
+
+      // 3. THE CHECK: Validate based on your Controller's response structure
+      if (res.data?.success) {
+        if (editingRule) {
+          // Update local state for Edit
+          setRules((prev) => 
+            prev.map((r) => (r.id === editingRule.id ? { ...r, ...payload } : r))
+          );
+          alert("Rule updated successfully"); // Or use a toast
+        } else {
+          // Add newly created rule from server response (res.data.data contains the new rule)
+          const newRule = res.data.data;
+          setRules((prev) => [newRule, ...prev]);
+          alert(res.data.message || "Rule created successfully");
+        }
+        
+        setModalOpen(false);
+        setEditingRule(null);
       } else {
-        const res = await collectovault.savePointRule(vendorId, payload);
-        setRules((prev) => [res.data?.data, ...prev]);
+        // Handle logic errors (e.g., validation failed)
+        alert(res.data?.error || "Failed to save rule");
       }
+    } catch (err: any) {
+      // Handle network/server errors
+      const errorMsg = err.response?.data?.error || "An error occurred while saving.";
+      alert(errorMsg);
     } finally {
       setSaving(false);
-      setModalOpen(false);
-      setEditingRule(null);
     }
   };
 
   const handleDelete = async (ruleId: number) => {
+    // Only proceed if the user clicked "Confirm" in the UI overlay
     if (confirmDeleteId !== ruleId) {
       setConfirmDeleteId(ruleId);
       return;
     }
-    await collectovault.deletePointRule(vendorId, ruleId);
-    setRules((prev) => prev.filter((r) => r.id !== ruleId));
-    setConfirmDeleteId(null);
-  };
 
+    try {
+      const res = await collectovault.deletePointRule(vendorId, ruleId);
+      
+      // Check for success before removing from UI
+      if (res.data?.success || res.status === 200) {
+        setRules((prev) => prev.filter((r) => r.id !== ruleId));
+        setConfirmDeleteId(null);
+      } else {
+        alert(res.data?.message || "Could not delete the rule.");
+      }
+    } catch (err) {
+      alert("Error connecting to the server for deletion.");
+    }
+  };
   return (
     <div className="max-w-6xl mx-auto py-8 px-4">
       {/* Header Section */}

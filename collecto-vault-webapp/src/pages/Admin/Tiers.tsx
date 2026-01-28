@@ -42,21 +42,52 @@ const Tiers: React.FC = () => {
     }
   };
 
+  // const handleSaveTier = async (formData: Omit<Tier, 'id'>) => {
+  //   setLoading(true);
+  //   try {
+  //     const payload = editingTier ? { ...formData, id: editingTier.id } : formData;
+  //     await collectovault.saveTierRule(vendorId, payload);
+  //     showMessage('success', `Tier ${editingTier ? 'updated' : 'created'}`);
+  //     setIsModalOpen(false);
+  //     fetchTiers();
+  //   } catch (err) {
+  //     showMessage('error', 'Could not save changes');
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
   const handleSaveTier = async (formData: Omit<Tier, 'id'>) => {
     setLoading(true);
     try {
-      const payload = editingTier ? { ...formData, id: editingTier.id } : formData;
-      await collectovault.saveTierRule(vendorId, payload);
-      showMessage('success', `Tier ${editingTier ? 'updated' : 'created'}`);
-      setIsModalOpen(false);
-      fetchTiers();
-    } catch (err) {
-      showMessage('error', 'Could not save changes');
+      // 1. Prepare payload (making sure collectoId is included if your backend expects it in the body)
+      const payload = editingTier 
+        ? { ...formData, id: editingTier.id, collectoId: vendorId } 
+        : { ...formData, collectoId: vendorId };
+
+      // 2. Execute Request
+      const res = await collectovault.saveTierRule(vendorId, payload);
+
+      // 3. THE CHECK: Verify the API response actually reports success
+      // We check for res.data?.success (standard for your API) or a 2xx status code
+      if (res.data?.success || res.status === 201 || res.status === 200) {
+        showMessage('success', `Tier ${editingTier ? 'updated' : 'created'} successfully!`);
+        setIsModalOpen(false);
+        fetchTiers(); // Refresh the list
+      } else {
+        // Handle case where API returns 200 but 'success' is false (e.g., validation error)
+        const errorMsg = res.data?.message || res.data?.error || 'Validation failed';
+        showMessage('error', errorMsg);
+      }
+    } catch (err: any) {
+      // 4. Handle Network or Server errors (400s, 500s)
+      const errorMsg = err.response?.data?.message || err.response?.data?.error || 'Could not connect to server';
+      showMessage('error', errorMsg);
     } finally {
       setLoading(false);
     }
   };
-
+  
   const deleteTier = async (ruleId: number) => {
     if (!window.confirm("Remove this loyalty tier?")) return;
     setLoading(true);
