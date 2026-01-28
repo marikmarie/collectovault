@@ -13,9 +13,6 @@ import {
   ChevronDown
 } from 'lucide-react';
 
-// Import local logo
-// Ensure logo.png is in the same directory or update path
-// import logoImg from './logo.png'; 
 
 // Import Tab Components
 import Dashboard from './Dashboard';
