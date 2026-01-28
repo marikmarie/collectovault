@@ -60,10 +60,21 @@ const Tiers: React.FC = () => {
   const handleSaveTier = async (formData: Omit<Tier, 'id'>) => {
     setLoading(true);
     try {
-      // 1. Prepare payload (making sure collectoId is included if your backend expects it in the body)
+      // 1. Map frontend field names to backend field names
       const payload = editingTier 
-        ? { ...formData, id: editingTier.id, collectoId: vendorId } 
-        : { ...formData, collectoId: vendorId };
+        ? { 
+            id: editingTier.id, 
+            name: formData.name,
+            pointsRequired: formData.threshold,
+            earningMultiplier: formData.multiplier,
+            collectoId: vendorId 
+          } 
+        : { 
+            name: formData.name,
+            pointsRequired: formData.threshold,
+            earningMultiplier: formData.multiplier,
+            collectoId: vendorId 
+          };
 
       // 2. Execute Request
       const res = await collectovault.saveTierRule(vendorId, payload);
