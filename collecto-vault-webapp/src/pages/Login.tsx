@@ -116,7 +116,7 @@ export default function LoginPage() {
           console.warn('Failed to create customer record:', err);
         }
 
-        navigate(pendingPayload!.type === 'client' ? '/dashboard' : '/admin/dashboard');
+        navigate(pendingPayload!.type === 'client' ? '/dashboard' : '/adminDashboard');
       } else {
         setError("Invalid verification code.");
       }

@@ -23,7 +23,7 @@ const handleSignOut = () => {
 };
 
 const navLinks = [
-    { name: "Dashboard", path: "/admin/dashboard", icon: LayoutDashboard },
+    { name: "Dashboard", path: "/adminDashboard", icon: LayoutDashboard },
     { name: "Users", path: "/admin/users", icon: Users },
     { name: "Packages", path: "/admin/packages", icon: Package },
     { name: "Tiers", path: "/admin/tiers", icon: Award },
@@ -61,7 +61,7 @@ export default function NavBar() {
                 <div className="max-w-full mx-auto px-6 h-16 flex items-center justify-between">
                     
                     {/* Logo & Title */}
-                    <div className="flex items-center gap-4 cursor-pointer" onClick={() => navigate('/admin/dashboard')}>
+                    <div className="flex items-center gap-4 cursor-pointer" onClick={() => navigate('/adminDashboard')}>
                         <span className="text-xl font-extrabold text-[#d81b60] tracking-wider">
                             CVault <span className="text-gray-400 font-medium text-sm ml-1">ADMIN</span>
                         </span>

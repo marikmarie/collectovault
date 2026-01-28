@@ -20,9 +20,7 @@ export const collectovault = {
     api.post(`/tier/${vendorId}`, data),
   deleteTierRules: (vendorId: string, ruleId: number) =>
     api.delete(`/tier/${vendorId}/tier/${ruleId}`),
-  editleteTierRules: (vendorId: string, ruleId: number) =>
-    api.delete(`/tier/${vendorId}/tier/${ruleId}`),
-
+  
   //point packages
   getPackages: (vendorId: string) => api.get(`/vaultPackages/${vendorId}`),
   getPackageById: (id: string) => api.get(`/vaultPackages/${id}/`),
@@ -30,6 +28,4 @@ export const collectovault = {
     api.post(`/vaultPackages/${vendorId}`, data),
   deletePackages: (vendorId: string, ruleId: number) =>
     api.delete(`/vaultPackages/${vendorId}/packages/${ruleId}`),
-  editletePackages: (vendorId: string, ruleId: number) =>
-    api.delete(`/vaultPackages/${vendorId}/packages/${ruleId}`),
-};
+ };

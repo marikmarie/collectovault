@@ -1,6 +1,5 @@
-// Tiers.tsx
 import React, { useState, useEffect } from 'react';
-import { Trophy, Plus, Trash2, Edit, X, Loader2 } from 'lucide-react';
+import { Trophy, Plus, Trash2, Edit2, X, Loader2, Target, Zap } from 'lucide-react';
 import { collectovault } from '../../api/collectovault';
 
 // --- Type Definitions ---
@@ -9,11 +8,8 @@ interface Tier {
   name: string;
   threshold: number;
   multiplier: number;
-  color?: string;
-  tailwindColorClass?: string;
 }
 
-// --- Main Component ---
 const Tiers: React.FC = () => {
   const [tiers, setTiers] = useState<Tier[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -27,67 +23,53 @@ const Tiers: React.FC = () => {
     fetchTiers();
   }, []);
 
-  // --- API Actions ---
-
   const fetchTiers = async () => {
     setLoading(true);
     try {
       const res = await collectovault.getTierRules(vendorId);
-      // Adjusting based on common API response structures
       const data = res.data?.data || res.data || [];
-      
       const mappedTiers: Tier[] = data.map((tier: any) => ({
         id: tier.id,
         name: tier.name || tier.tier_name,
         threshold: tier.threshold || tier.min_points || 0,
         multiplier: tier.multiplier || tier.earn_multiplier || 1.0,
-        tailwindColorClass: 'bg-orange-50 text-orange-600 border-orange-100', // Default style
       }));
-      
-      setTiers(mappedTiers);
+      setTiers(mappedTiers.sort((a, b) => a.threshold - b.threshold));
     } catch (err) {
-      showMessage('error', 'Failed to fetch tier hierarchy');
+      showMessage('error', 'Failed to fetch tiers');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSaveTier = async (formData: Omit<Tier, 'id' | 'tailwindColorClass'>) => {
+  const handleSaveTier = async (formData: Omit<Tier, 'id'>) => {
     setLoading(true);
     try {
-      // Both Create and Update use saveTierRule based on your API file
-      const payload = editingTier 
-        ? { ...formData, id: editingTier.id } // Include ID for updates
-        : formData;
-
+      const payload = editingTier ? { ...formData, id: editingTier.id } : formData;
       await collectovault.saveTierRule(vendorId, payload);
-      
-      showMessage('success', `Tier ${editingTier ? 'updated' : 'created'} successfully`);
+      showMessage('success', `Tier ${editingTier ? 'updated' : 'created'}`);
       setIsModalOpen(false);
-      fetchTiers(); // Refresh list from source of truth
+      fetchTiers();
     } catch (err) {
-      showMessage('error', 'Could not save tier changes');
+      showMessage('error', 'Could not save changes');
     } finally {
       setLoading(false);
     }
   };
 
   const deleteTier = async (ruleId: number) => {
+    if (!window.confirm("Remove this loyalty tier?")) return;
     setLoading(true);
     try {
-      // Using the specific delete method from your API file
       await collectovault.deleteTierRules(vendorId, ruleId);
-      
       setTiers(prev => prev.filter(t => t.id !== ruleId));
-      showMessage('success', 'Tier removed successfully');
+      showMessage('success', 'Tier removed');
     } catch (err) {
-      showMessage('error', 'Failed to delete tier');
+      showMessage('error', 'Failed to delete');
     } finally {
       setLoading(false);
     }
   };
-
-  // --- Helpers ---
 
   const showMessage = (type: 'success' | 'error', text: string) => {
     setMessage({ type, text });
@@ -95,39 +77,39 @@ const Tiers: React.FC = () => {
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto px-6 py-8 text-slate-900">
       {/* Toast Notification */}
       {message && (
-        <div className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-xl text-white animate-in slide-in-from-right-5 ${
-          message.type === 'success' ? 'bg-green-600' : 'bg-red-600'
+        <div className={`fixed top-6 right-6 z-50 px-5 py-2.5 rounded-xl shadow-lg text-white text-sm font-medium animate-in slide-in-from-top-2 duration-300 ${
+          message.type === 'success' ? 'bg-emerald-500' : 'bg-rose-500'
         }`}>
           {message.text}
         </div>
       )}
 
-      <div className="flex justify-between items-end">
+      {/* Header Section */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10">
         <div>
-          <h2 className="text-3xl font-extrabold text-gray-900">Tiers & Loyalty</h2>
-          <p className="text-gray-500 mt-1">Define how customers level up based on points.</p>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-800">Tier Hierarchy</h2>
+          <p className="text-sm text-slate-500 mt-0.5">Manage customer progression and point accelerators.</p>
         </div>
         <button
           onClick={() => { setEditingTier(null); setIsModalOpen(true); }}
-          className="flex items-center gap-2 px-5 py-2.5 bg-orange-600 text-white rounded-xl font-semibold hover:bg-orange-700 transition-all shadow-md active:scale-95"
+          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-all shadow-sm active:scale-95"
         >
-          <Plus className="w-5 h-5" /> Add Tier
+          <Plus className="w-4 h-4" /> 
+          Add New Tier
         </button>
       </div>
 
-      <hr className="border-gray-100" />
-
       {loading && tiers.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-          <Loader2 className="w-10 h-10 animate-spin mb-4" />
-          <p>Syncing vault data...</p>
+        <div className="flex flex-col items-center justify-center py-24 text-slate-300">
+          <Loader2 className="w-8 h-8 animate-spin mb-3 text-indigo-500" />
+          <p className="text-xs font-medium uppercase tracking-wider">Loading Configuration...</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {tiers.map((tier) => (
+          {tiers.map((tier, ) => (
             <TierCard 
               key={tier.id} 
               tier={tier} 
@@ -135,108 +117,133 @@ const Tiers: React.FC = () => {
               onRemove={deleteTier} 
             />
           ))}
+          {tiers.length === 0 && !loading && (
+            <div className="col-span-full py-20 text-center border-2 border-dashed border-slate-100 rounded-3xl">
+               <p className="text-slate-400 text-sm">No tiers configured yet.</p>
+            </div>
+          )}
         </div>
       )}
 
+      {/* Modal Integration */}
       {isModalOpen && (
-        <TierModal
-          initialData={editingTier}
-          onClose={() => setIsModalOpen(false)}
-          onSave={handleSaveTier}
-          isSubmitting={loading}
-        />
+        <Modal title={editingTier ? 'Update Tier' : 'New Tier'} onClose={() => setIsModalOpen(false)}>
+          <TierForm 
+            initial={editingTier} 
+            isSubmitting={loading} 
+            onSave={handleSaveTier} 
+            onCancel={() => setIsModalOpen(false)} 
+          />
+        </Modal>
       )}
     </div>
   );
 };
 
-// --- Sub-Components ---
+// --- Refined Sub-Components ---
 
 const TierCard: React.FC<{ tier: Tier; onEdit: (t: Tier) => void; onRemove: (id: number) => void }> = ({ tier, onEdit, onRemove }) => (
-  <div className="bg-white border border-gray-200 rounded-2xl p-5 hover:shadow-xl transition-all group relative">
-    <div className="flex items-center gap-4">
-      <div className={`w-12 h-12 rounded-full flex items-center justify-center ${tier.tailwindColorClass}`}>
-        <Trophy className="w-6 h-6" />
+  <div className="bg-white border border-slate-200 rounded-2xl p-5 hover:border-indigo-200 hover:shadow-xl hover:shadow-indigo-500/5 transition-all group">
+    <div className="flex justify-between items-center mb-6">
+      <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">
+        <Trophy className="w-5 h-5" />
       </div>
-      <div className="flex-1">
-        <h4 className="font-bold text-gray-800 text-lg">{tier.name}</h4>
-        <p className="text-sm text-gray-500">{tier.threshold.toLocaleString()} Points Required</p>
+      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button onClick={() => onEdit(tier)} className="p-1.5 text-slate-400 hover:text-indigo-600 rounded-md hover:bg-indigo-50 transition-colors">
+          <Edit2 className="w-3.5 h-3.5" />
+        </button>
+        <button onClick={() => onRemove(tier.id)} className="p-1.5 text-slate-400 hover:text-rose-600 rounded-md hover:bg-rose-50 transition-colors">
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
       </div>
     </div>
-    
-    <div className="mt-4 pt-4 border-t border-gray-50 flex justify-between items-center">
-      <span className="text-sm font-medium text-gray-600">Multiplier: <b className="text-orange-600">{tier.multiplier}x</b></span>
-      <div className="flex gap-1">
-        <button onClick={() => onEdit(tier)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-blue-600 transition-colors">
-          <Edit className="w-4 h-4" />
-        </button>
-        <button onClick={() => onRemove(tier.id)} className="p-2 hover:bg-red-50 rounded-lg text-gray-400 hover:text-red-600 transition-colors">
-          <Trash2 className="w-4 h-4" />
-        </button>
+
+    <div className="space-y-1 mb-6">
+      <h4 className="text-lg font-bold text-slate-800">{tier.name}</h4>
+      <div className="flex items-center gap-1.5 text-slate-500 text-xs font-medium">
+        <Target className="w-3 h-3 text-slate-400" />
+        Starts at {tier.threshold.toLocaleString()} pts
       </div>
+    </div>
+
+    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+      <div className="flex items-center gap-2">
+        <div className="w-6 h-6 bg-white rounded-md flex items-center justify-center shadow-sm">
+          <Zap className="w-3 h-3 text-amber-500 fill-amber-500" />
+        </div>
+        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-tight">Boost</span>
+      </div>
+      <span className="text-lg font-bold text-slate-800">{tier.multiplier}x</span>
     </div>
   </div>
 );
 
-const TierModal: React.FC<{ initialData: Tier | null; onClose: () => void; onSave: (data: any) => void; isSubmitting: boolean }> = ({ initialData, onClose, onSave, isSubmitting }) => {
+const Modal: React.FC<{ title: string; onClose: () => void; children: React.ReactNode }> = ({ title, onClose, children }) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/20 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="absolute inset-0" onClick={onClose} />
+    <div className="relative z-10 w-full max-w-sm bg-white rounded-2xl p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-base font-bold text-slate-800">{title}</h3>
+        <button onClick={onClose} className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors text-slate-400"><X className="w-4 h-4" /></button>
+      </div>
+      {children}
+    </div>
+  </div>
+);
+
+const TierForm: React.FC<{ initial: Tier | null; isSubmitting: boolean; onSave: (data: any) => void; onCancel: () => void }> = ({ initial, isSubmitting, onSave, onCancel }) => {
   const [formData, setFormData] = useState({
-    name: initialData?.name || '',
-    threshold: initialData?.threshold || 0,
-    multiplier: initialData?.multiplier || 1.0
+    name: initial?.name || '',
+    threshold: initial?.threshold || 0,
+    multiplier: initial?.multiplier || 1.0
   });
 
+  const inputClass = "w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none";
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl animate-in zoom-in-95 duration-200">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-xl font-bold">{initialData ? 'Update Tier' : 'New Tier'}</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X /></button>
-        </div>
+    <div className="space-y-4">
+      <div className="space-y-1.5">
+        <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 ml-1">Tier Name</label>
+        <input 
+          type="text"
+          value={formData.name}
+          onChange={e => setFormData({...formData, name: e.target.value})}
+          className={inputClass} 
+          placeholder="e.g. Platinum"
+        />
+      </div>
 
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Tier Name</label>
-            <input 
-              type="text"
-              value={formData.name}
-              onChange={e => setFormData({...formData, name: e.target.value})}
-              className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-orange-500 focus:border-orange-500" 
-              placeholder="e.g. Gold"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Min. Points</label>
-              <input 
-                type="number"
-                value={formData.threshold}
-                onChange={e => setFormData({...formData, threshold: Number(e.target.value)})}
-                className="w-full border-gray-300 rounded-lg shadow-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Multiplier</label>
-              <input 
-                type="number"
-                step="0.1"
-                value={formData.multiplier}
-                onChange={e => setFormData({...formData, multiplier: Number(e.target.value)})}
-                className="w-full border-gray-300 rounded-lg shadow-sm"
-              />
-            </div>
-          </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 ml-1">Min. Points</label>
+          <input 
+            type="number"
+            value={formData.threshold}
+            onChange={e => setFormData({...formData, threshold: Number(e.target.value)})}
+            className={inputClass}
+          />
         </div>
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 ml-1">Multiplier</label>
+          <input 
+            type="number"
+            step="0.1"
+            value={formData.multiplier}
+            onChange={e => setFormData({...formData, multiplier: Number(e.target.value)})}
+            className={inputClass}
+          />
+        </div>
+      </div>
 
-        <div className="mt-8 flex gap-3">
-          <button onClick={onClose} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg font-medium hover:bg-gray-50">Cancel</button>
-          <button 
-            disabled={isSubmitting}
-            onClick={() => onSave(formData)}
-            className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700 disabled:opacity-50"
-          >
-            {isSubmitting ? 'Saving...' : 'Save Tier'}
-          </button>
-        </div>
+      <div className="flex gap-2 pt-4">
+        <button onClick={onCancel} className="flex-1 px-4 py-2 text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors">Cancel</button>
+        <button 
+          disabled={isSubmitting || !formData.name}
+          onClick={() => onSave(formData)}
+          className="flex-2 px-6 py-2 bg-indigo-600 text-white rounded-xl font-bold text-xs hover:bg-indigo-700 disabled:opacity-40 shadow-md shadow-indigo-100 transition-all"
+        >
+          {isSubmitting ? 'Saving...' : 'Save Settings'}
+        </button>
       </div>
     </div>
   );

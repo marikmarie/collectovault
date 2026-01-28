@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {  Plus, Edit, Trash2, X } from "lucide-react";
+import { Plus, Edit3, Trash2, X, Zap, CheckCircle2, AlertCircle } from "lucide-react";
 import { collectovault } from "../../api/collectovault";
 
 /** ================= TYPES ================= */
@@ -21,16 +21,16 @@ const Modal: React.FC<{
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-lg bg-white rounded-xl shadow-xl">
-        <div className="flex items-center justify-between p-4 border-b">
-          <h3 className="text-lg font-semibold">{title}</h3>
-          <button onClick={onClose}>
-            <X className="w-5 h-5 text-gray-600" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/20 backdrop-blur-sm">
+      <div className="absolute inset-0" onClick={onClose} />
+      <div className="relative z-10 w-full max-w-md bg-white rounded-2xl shadow-2xl border border-zinc-100">
+        <div className="flex items-center justify-between p-5 border-b border-zinc-50">
+          <h3 className="text-lg font-bold text-zinc-900">{title}</h3>
+          <button onClick={onClose} className="p-1 hover:bg-zinc-100 rounded-full transition-colors">
+            <X className="w-5 h-5 text-zinc-400" />
           </button>
         </div>
-        <div className="p-4">{children}</div>
+        <div className="p-6">{children}</div>
       </div>
     </div>
   );
@@ -43,13 +43,10 @@ const PointRules: React.FC = () => {
   const [rules, setRules] = useState<EarningRule[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-
   const [modalOpen, setModalOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<EarningRule | null>(null);
-
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
-  /** ================= FETCH ================= */
   const fetchRules = async () => {
     setLoading(true);
     try {
@@ -66,24 +63,13 @@ const PointRules: React.FC = () => {
     fetchRules();
   }, []);
 
-  /** ================= SAVE (CREATE / UPDATE) ================= */
   const handleSave = async (payload: Omit<EarningRule, "id">) => {
     setSaving(true);
     try {
       if (editingRule) {
-        // UPDATE
-        await collectovault.savePointRule(vendorId, {
-          id: editingRule.id,
-          ...payload,
-        });
-
-        setRules((prev) =>
-          prev.map((r) =>
-            r.id === editingRule.id ? { ...r, ...payload } : r
-          )
-        );
+        await collectovault.savePointRule(vendorId, { id: editingRule.id, ...payload });
+        setRules((prev) => prev.map((r) => (r.id === editingRule.id ? { ...r, ...payload } : r)));
       } else {
-        // CREATE
         const res = await collectovault.savePointRule(vendorId, payload);
         setRules((prev) => [res.data?.data, ...prev]);
       }
@@ -94,88 +80,109 @@ const PointRules: React.FC = () => {
     }
   };
 
-  /** ================= DELETE ================= */
   const handleDelete = async (ruleId: number) => {
     if (confirmDeleteId !== ruleId) {
       setConfirmDeleteId(ruleId);
       return;
     }
-
     await collectovault.deletePointRule(vendorId, ruleId);
     setRules((prev) => prev.filter((r) => r.id !== ruleId));
     setConfirmDeleteId(null);
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Point Rules</h2>
+    <div className="max-w-6xl mx-auto py-8 px-4">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
+        <div>
+          <h2 className="text-2xl font-black text-zinc-900 tracking-tight">Earning Rules</h2>
+          <p className="text-zinc-500 text-sm mt-1">Define how customers earn points across your platform.</p>
+        </div>
         <button
-          onClick={() => {
-            setEditingRule(null);
-            setModalOpen(true);
-          }}
-          className="flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg"
+          onClick={() => { setEditingRule(null); setModalOpen(true); }}
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-zinc-900 text-white rounded-full font-bold text-sm hover:bg-black transition-all shadow-lg shadow-zinc-200"
         >
-          <Plus className="w-4 h-4" /> Add Rule
+          <Plus className="w-4 h-4" /> Add New Rule
         </button>
       </div>
 
-      {/* Rules */}
-      <div className="space-y-3">
-        {loading ? (
-          <p className="text-gray-500">Loading...</p>
-        ) : rules.length === 0 ? (
-          <p className="text-gray-500">No rules found</p>
-        ) : (
-          rules.map((rule) => (
+      {/* Rules Grid */}
+      {loading ? (
+        <div className="flex justify-center items-center py-20">
+          <div className="w-8 h-8 border-4 border-zinc-100 border-t-zinc-900 rounded-full animate-spin" />
+        </div>
+      ) : rules.length === 0 ? (
+        <div className="text-center py-20 border-2 border-dashed border-zinc-100 rounded-3xl">
+          <AlertCircle className="w-10 h-10 text-zinc-300 mx-auto mb-3" />
+          <p className="text-zinc-400 font-medium">No rules established yet.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {rules.map((rule) => (
             <div
               key={rule.id}
-              className="flex justify-between items-center p-4 border rounded-lg"
+              className="group relative bg-white border border-zinc-200 rounded-2xl p-5 hover:border-zinc-900 transition-all duration-300 shadow-sm hover:shadow-md"
             >
+              <div className="flex justify-between items-start mb-4">
+                <div className={`p-2 rounded-xl ${rule.isActive ? 'bg-zinc-50 text-zinc-900' : 'bg-zinc-100 text-zinc-400'}`}>
+                  <Zap className={`w-5 h-5 ${rule.isActive ? 'fill-zinc-900' : ''}`} />
+                </div>
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => { setEditingRule(rule); setModalOpen(true); }}
+                    className="p-2 text-zinc-400 hover:text-zinc-900"
+                  >
+                    <Edit3 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(rule.id)}
+                    className="p-2 text-zinc-400 hover:text-red-600"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
               <div>
-                <h4 className="font-semibold">{rule.ruleTitle}</h4>
-                <p className="text-sm text-gray-500">{rule.description}</p>
-                <p className="text-sm">Points: {rule.points}</p>
+                <div className="flex items-center gap-2 mb-1">
+                   <h4 className="font-bold text-zinc-900">{rule.ruleTitle}</h4>
+                   {rule.isActive ? (
+                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                   ) : (
+                     <span className="text-[10px] bg-zinc-100 px-1.5 py-0.5 rounded text-zinc-500 font-bold uppercase">Draft</span>
+                   )}
+                </div>
+                <p className="text-sm text-zinc-500 line-clamp-2 leading-relaxed h-10 mb-4">
+                  {rule.description}
+                </p>
+                
+                <div className="flex items-end justify-between pt-4 border-t border-zinc-50">
+                  <div className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Reward</div>
+                  <div className="text-2xl font-black text-zinc-900">
+                    +{rule.points} <span className="text-xs font-medium text-zinc-500 uppercase">pts</span>
+                  </div>
+                </div>
               </div>
 
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    setEditingRule(rule);
-                    setModalOpen(true);
-                  }}
-                  className="p-2 border rounded"
-                >
-                  <Edit className="w-4 h-4" />
-                </button>
-
-                {confirmDeleteId === rule.id ? (
-                  <button
-                    onClick={() => handleDelete(rule.id)}
-                    className="px-3 py-1 bg-red-600 text-white rounded"
-                  >
-                    Confirm
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handleDelete(rule.id)}
-                    className="p-2 border rounded"
-                  >
-                    <Trash2 className="w-4 h-4 text-red-600" />
-                  </button>
-                )}
-              </div>
+              {/* Delete Confirmation Overlay */}
+              {confirmDeleteId === rule.id && (
+                <div className="absolute inset-0 bg-white/95 rounded-2xl flex flex-col items-center justify-center p-6 text-center z-10">
+                  <p className="text-sm font-bold text-zinc-900 mb-4">Remove this rule permanently?</p>
+                  <div className="flex gap-2 w-full">
+                    <button onClick={() => setConfirmDeleteId(null)} className="flex-1 px-3 py-2 text-xs font-bold bg-zinc-100 rounded-lg">Cancel</button>
+                    <button onClick={() => handleDelete(rule.id)} className="flex-1 px-3 py-2 text-xs font-bold bg-red-600 text-white rounded-lg">Confirm</button>
+                  </div>
+                </div>
+              )}
             </div>
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      )}
 
-      {/* Modal */}
+      {/* Modal Section */}
       <Modal
         open={modalOpen}
-        title={editingRule ? "Edit Rule" : "Create Rule"}
+        title={editingRule ? "Modify Rule" : "Create New Rule"}
         onClose={() => setModalOpen(false)}
       >
         <RuleForm
@@ -201,54 +208,73 @@ const RuleForm: React.FC<{
   const [points, setPoints] = useState(initial?.points ?? 0);
   const [isActive, setIsActive] = useState(initial?.isActive ?? true);
 
+  const inputClasses = "w-full border-zinc-200 bg-zinc-50 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-900 focus:bg-white transition-all outline-none";
+
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
         onSave({ ruleTitle, description, points, isActive });
       }}
-      className="space-y-4"
+      className="space-y-5"
     >
-      <input
-        value={ruleTitle}
-        onChange={(e) => setRuleTitle(e.target.value)}
-        placeholder="Rule title"
-        className="w-full border rounded px-3 py-2"
-      />
+      <div className="space-y-1">
+        <label className="text-[11px] font-bold text-zinc-400 uppercase ml-1">Rule Name</label>
+        <input
+          value={ruleTitle}
+          onChange={(e) => setRuleTitle(e.target.value)}
+          placeholder="e.g., Birthday Bonus"
+          className={inputClasses}
+          required
+        />
+      </div>
 
-      <input
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-        placeholder="Description"
-        className="w-full border rounded px-3 py-2"
-      />
+      <div className="space-y-1">
+        <label className="text-[11px] font-bold text-zinc-400 uppercase ml-1">Description</label>
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Briefly explain how this works..."
+          className={inputClasses}
+          rows={2}
+        />
+      </div>
 
-      <input
-        type="number"
-        value={points}
-        onChange={(e) => setPoints(Number(e.target.value))}
-        className="w-full border rounded px-3 py-2"
-      />
+      <div className="space-y-1">
+        <label className="text-[11px] font-bold text-zinc-400 uppercase ml-1">Points Value</label>
+        <input
+          type="number"
+          value={points}
+          onChange={(e) => setPoints(Number(e.target.value))}
+          className={inputClasses}
+          required
+        />
+      </div>
 
-      <label className="flex items-center gap-2">
+      <label className="flex items-center gap-3 p-3 bg-zinc-50 rounded-xl cursor-pointer">
         <input
           type="checkbox"
           checked={isActive}
           onChange={(e) => setIsActive(e.target.checked)}
+          className="w-4 h-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900"
         />
-        Active
+        <span className="text-sm font-medium text-zinc-700">Set as Active</span>
       </label>
 
-      <div className="flex justify-end gap-3">
-        <button type="button" onClick={onCancel}>
-          Cancel
+      <div className="flex gap-3 pt-4">
+        <button 
+          type="button" 
+          onClick={onCancel}
+          className="flex-1 py-3 text-sm font-bold text-zinc-500 hover:text-zinc-900 transition-colors"
+        >
+          Discard
         </button>
         <button
           type="submit"
           disabled={loading}
-          className="px-4 py-2 bg-gray-800 text-white rounded"
+          className="flex-2 px-8 py-3 bg-zinc-900 text-white rounded-xl font-bold text-sm hover:bg-black disabled:opacity-50 transition-all"
         >
-          {loading ? "Saving..." : "Save"}
+          {loading ? "Processing..." : "Save Rule"}
         </button>
       </div>
     </form>

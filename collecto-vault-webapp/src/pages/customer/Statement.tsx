@@ -1,5 +1,5 @@
 // StatementWithPoints.tsx
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import TopNav from "../../components/TopNav";
 import {
   ArrowDownLeft,
@@ -49,13 +49,11 @@ export default function StatementWithPoints() {
   );
 
   const [staffId, setStaffId] = useState<string>("");
-  //const [mobileAmount, setMobileAmount] = useState<number>(0);
   const [mobileAmount, setMobileAmount] = useState<number | undefined>(
     undefined,
   );
 
   // Selection / modals
-
   const [payingInvoice, setPayingInvoice] = useState<string | null>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
   const [selectedTransaction, setSelectedTransaction] = useState<any | null>(
@@ -64,7 +62,7 @@ export default function StatementWithPoints() {
 
   // Payment controls (single combined flow)
   const [payPhone, setPayPhone] = useState("");
-  const [pointsToUse, setPointsToUse] = useState<number | null>(null);
+  const [pointsToUse, setPointsToUse] = useState<number>(0);
 
   // Verification states for phone
   const [verifying, setVerifying] = useState(false);
@@ -79,60 +77,45 @@ export default function StatementWithPoints() {
 
   const [ugxPerPoint, setUgxPerPoint] = useState<number>(1);
 
+  // Payment result / transaction tracking
+  const [paymentResult, setPaymentResult] = useState<null | {
+    transactionId: string | null;
+    message?: string;
+    status?: string;
+  }>(null);
+  const [queryLoading, setQueryLoading] = useState(false);
+  const [queryError, setQueryError] = useState<string | null>(null);
+  const [lastQueriedStatus, setLastQueriedStatus] = useState<string | null>(
+    null,
+  );
+
   const { toast, showToast } = useLocalToast();
 
-  const verifyPhoneNumber = useCallback(async (number: string) => {
-    const trimmed = number.trim();
-    if (trimmed.length < 10) return;
+  // ---------- Helpers ----------
+  const pointsToUGX = (points: number) => Math.round(points * ugxPerPoint);
+  const ugxToPoints = (ugx: number) => Math.ceil(ugx / ugxPerPoint);
 
-    try {
-      setVerifying(true);
-      setVerified(false);
-      setAccountName(null);
-      setPhoneError(null);
+  const computeMaxPointsForInvoice = (
+    invoiceAmount: number,
+    invoicePointsEquivalent: number,
+  ) => {
+    const maxFromAmount = Math.max(
+      0,
+      Math.floor((invoiceAmount - 1) / ugxPerPoint),
+    ); // ensure > 0 mobile portion
+    return Math.min(pointsBalance, invoicePointsEquivalent, maxFromAmount);
+  };
 
-      const res = await api.post("/verifyPhoneNumber", {
-        vaultOTPToken,
-        collectoId,
-        clientId,
-        phoneNumber: trimmed,
-      });
+  // Safe derived invoice data lookup
+  const getInvoiceById = useCallback(
+    (id: string | null) => {
+      if (!id) return null;
+      return invoices.find((i) => i.details?.id === id) ?? null;
+    },
+    [invoices],
+  );
 
-      const payload = res?.data ?? {};
-      const nested = payload?.data ?? {};
-      const deeper = nested?.data ?? {};
-
-      const name =
-        (deeper?.name && String(deeper.name).trim()) ||
-        (nested?.name && String(nested.name).trim()) ||
-        (payload?.name && String(payload.name).trim()) ||
-        null;
-
-      const verifiedFlag = Boolean(
-        nested?.verifyPhoneNumber ??
-        deeper?.verifyPhoneNumber ??
-        String(payload?.status_message ?? "").toLowerCase() === "success",
-      );
-
-      if (verifiedFlag) {
-        setVerified(true);
-        if (name) setAccountName(name);
-      } else {
-        setPhoneError(
-          nested?.message || payload?.message || "Verification failed",
-        );
-      }
-    } catch (err: any) {
-      setPhoneError(
-        err?.response?.data?.message ||
-          err?.message ||
-          "Error verifying number",
-      );
-    } finally {
-      setVerifying(false);
-    }
-  }, []);
-
+  // ---------- API / fetchers ----------
   const fetchActivePackages = useCallback(async () => {
     setLoadingType("packages");
     setLoading(true);
@@ -186,7 +169,6 @@ export default function StatementWithPoints() {
       setLoading(true);
       setLoadingType("invoices");
       try {
-        // console.log(vaultOTPToken);
         const res = await invoiceService.getInvoices({
           vaultOTPToken,
           collectoId,
@@ -285,30 +267,63 @@ export default function StatementWithPoints() {
       await fetchInvoices();
       await fetchTransactions();
     })();
-  }, [
-    fetchActivePackages,
-    fetchCustomerAndRelated,
-    fetchInvoices,
-    fetchTransactions,
-  ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // Helpers
-  const pointsToUGX = (points: number) => Math.round(points * ugxPerPoint);
-  const ugxToPoints = (ugx: number) => Math.ceil(ugx / ugxPerPoint);
+  // ---------- Phone verification ----------
+  const verifyPhoneNumber = useCallback(async (number: string) => {
+    const trimmed = number.trim();
+    if (trimmed.length < 10) return;
 
-  // Compute safe max points for the FlexPay (ensure mobile portion > 0)
-  const computeMaxPointsForInvoice = (
-    invoiceAmount: number,
-    invoicePointsEquivalent: number,
-  ) => {
-    // Ensure at least 1 UGX remains for mobile money after applying points
-    // maxPoints = floor((invoiceAmount - 1) / ugxPerPoint)
-    const maxFromAmount = Math.max(
-      0,
-      Math.floor((invoiceAmount - 1) / ugxPerPoint),
-    );
-    return Math.min(pointsBalance, invoicePointsEquivalent, maxFromAmount);
-  };
+    try {
+      setVerifying(true);
+      setVerified(false);
+      setAccountName(null);
+      setPhoneError(null);
+
+      const res = await api.post("/verifyPhoneNumber", {
+        vaultOTPToken,
+        collectoId,
+        clientId,
+        phoneNumber: trimmed,
+      });
+
+      const payload = res?.data ?? {};
+      const nested = payload?.data ?? {};
+      const deeper = nested?.data ?? {};
+
+      const name =
+        (deeper?.name && String(deeper.name).trim()) ||
+        (nested?.name && String(nested.name).trim()) ||
+        (payload?.name && String(payload.name).trim()) ||
+        null;
+
+      const verifiedFlag = Boolean(
+        nested?.verifyPhoneNumber ??
+        deeper?.verifyPhoneNumber ??
+        String(payload?.status_message ?? "").toLowerCase() === "success",
+      );
+
+      if (verifiedFlag) {
+        setVerified(true);
+        if (name) setAccountName(name);
+      } else {
+        setPhoneError(
+          nested?.message || payload?.message || "Verification failed",
+        );
+      }
+    } catch (err: any) {
+      setPhoneError(
+        err?.response?.data?.message ||
+          err?.message ||
+          "Error verifying number",
+      );
+    } finally {
+      setVerifying(false);
+    }
+  }, []);
+
+  // ---------- Payment handler ----------
   const handlePayInvoice = async (invoiceId: string) => {
     try {
       setLoading(true);
@@ -317,20 +332,19 @@ export default function StatementWithPoints() {
         (inv) => inv.details?.id === invoiceId,
       );
 
-      // 1. Calculate balance
       const balanceDue = Number(
         targetInvoice?.amount_less ??
           targetInvoice?.details?.invoice_amount ??
           0,
       );
 
-      // 2. Points (optional)
       const pointsUse = Math.max(0, Math.floor(pointsToUse || 0));
       const pointsValueUGX = pointsUse * ugxPerPoint;
 
-      // 3. Mobile Amount (editable by user)
       const mobilePayment =
-        mobileAmount ?? Math.max(0, balanceDue - pointsValueUGX);
+        typeof mobileAmount === "number"
+          ? mobileAmount
+          : Math.max(0, balanceDue - pointsValueUGX);
 
       if (!payPhone || !verified) {
         showToast(
@@ -341,12 +355,17 @@ export default function StatementWithPoints() {
         return;
       }
 
-      // 4. Format Phone
+      // Sanity check: ensure mobilePayment >= 1 UGX (to enforce mixed payment)
+      if (mobilePayment <= 0) {
+        showToast("Please leave a mobile money portion > 0 UGX.", "error");
+        setLoading(false);
+        return;
+      }
+
       const formattedPhone = payPhone.startsWith("0")
         ? payPhone.replace(/^0/, "256")
         : payPhone;
 
-      // 5. Build payload
       const payload: any = {
         vaultOTPToken,
         collectoId,
@@ -354,11 +373,10 @@ export default function StatementWithPoints() {
         reference: invoiceId,
         paymentOption: "mobilemoney",
         phone: formattedPhone,
-        staffId: staffId || "", // from input
+        staffId: staffId || "",
         amount: mobilePayment,
       };
 
-      // Include points only if > 0
       if (pointsUse > 0) {
         payload.points = {
           points_used: pointsUse,
@@ -366,31 +384,36 @@ export default function StatementWithPoints() {
         };
       }
 
-      // 6. Execute Request
       const response = await invoiceService.payInvoice(payload);
 
-      const responseData = response.data?.data;
+      // Response parsing (robust)
+      const apiPayload = response.data;
+      const transactionId = apiPayload?.data?.transactionId ?? null;
 
-      // 7. Optimistic UI update
+      // Optimistic UI update
       if (pointsUse > 0) {
         setPointsBalance((p) => Math.max(0, p - pointsUse));
       }
 
+      // Refresh lists
       await Promise.all([fetchInvoices(), fetchTransactions()]);
 
-      // 8. Reset states
-      setPayingInvoice(null);
-      setPointsToUse(null);
-      setMobileAmount(undefined);
+      // Keep modal open and show payment result + query button
+      setPaymentResult({
+        transactionId,
+        message:
+          apiPayload?.data?.message || "Payment initiated — check your phone.",
+        status: apiPayload?.status_message || undefined,
+      });
+
+      // Clear the phone verification and input but leave payingInvoice open
       setStaffId("");
       setPayPhone("");
       setAccountName(null);
       setVerified(false);
+      setPhoneError(null);
 
-      // 9. Show success message
-      const successMsg =
-        responseData?.message || "Payment initiated — check your phone.";
-      showToast(successMsg, "success");
+      showToast("Payment initiated — transaction available below.", "success");
     } catch (err: any) {
       console.error("Payment failed:", err);
 
@@ -402,6 +425,160 @@ export default function StatementWithPoints() {
     }
   };
 
+  // ---------- Query transaction status ----------
+  const queryTxStatus = async (txId?: string | null) => {
+    if (!txId) {
+      setQueryError("No transaction ID found to track.");
+      return;
+    }
+
+    setQueryLoading(true);
+    setQueryError(null);
+    setLastQueriedStatus(null);
+
+    try {
+      const res = await api.post("/requestToPayStatus", {
+        vaultOTPToken,
+        collectoId,
+        clientId,
+        transactionId: String(txId),
+      });
+
+      const data = res?.data ?? {};
+      const status = String(data?.status || "pending").toLowerCase();
+      const message = data?.message || data?.status_message || null;
+
+      if (["confirmed", "success", "paid", "completed"].includes(status)) {
+        setLastQueriedStatus("success");
+        // Refresh transactions to reflect the confirmed status
+        await fetchTransactions();
+        // update paymentResult if it refers to this txId
+        setPaymentResult((prev) =>
+          prev
+            ? { ...prev, status: "success", message: message ?? prev.message }
+            : prev,
+        );
+        // Also update selectedTransaction if it matches
+        if (selectedTransaction?.transactionId === txId) {
+          setSelectedTransaction((s: any) => ({
+            ...s,
+            paymentStatus: "SUCCESS",
+            confirmedAt: new Date().toISOString(),
+          }));
+        }
+      } else if (["pending", "processing", "in_progress"].includes(status)) {
+        setLastQueriedStatus("pending");
+        setPaymentResult((prev) =>
+          prev
+            ? { ...prev, status: "pending", message: message ?? prev.message }
+            : prev,
+        );
+      } else if (status === "failed") {
+        setLastQueriedStatus("failed");
+        setPaymentResult((prev) =>
+          prev
+            ? { ...prev, status: "failed", message: message ?? prev.message }
+            : prev,
+        );
+        if (selectedTransaction?.transactionId === txId) {
+          setSelectedTransaction((s: any) => ({
+            ...s,
+            paymentStatus: "FAILED",
+          }));
+        }
+      } else {
+        setQueryError(
+          message || "Transaction status unknown. Please check your phone.",
+        );
+      }
+    } catch (err: any) {
+      console.error("Status Query Error:", err);
+      const errorMessage =
+        err?.response?.data?.message || "Unable to reach payment server.";
+      setQueryError(errorMessage);
+    } finally {
+      setQueryLoading(false);
+    }
+  };
+
+  // When user opens payingInvoice, initialize controls
+  useEffect(() => {
+    if (!payingInvoice) {
+      // reset local modal-only state when modal closed
+      setPointsToUse(0);
+      setMobileAmount(undefined);
+      setStaffId("");
+      setPayPhone("");
+      setAccountName(null);
+      setVerified(false);
+      setPhoneError(null);
+      setPaymentResult(null);
+      setQueryError(null);
+      setLastQueriedStatus(null);
+      return;
+    }
+
+    const invoice = getInvoiceById(payingInvoice);
+    if (!invoice) {
+      setPointsToUse(0);
+      setMobileAmount(undefined);
+      return;
+    }
+
+    const amount = Number(
+      invoice?.amount_less ?? invoice?.details?.invoice_amount ?? 0,
+    );
+
+    // sensible defaults
+    setPointsToUse(0);
+    setMobileAmount(amount);
+    // clear previous paymentResult when opening for a fresh attempt
+    setPaymentResult(null);
+    setQueryError(null);
+    setLastQueriedStatus(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [payingInvoice, invoices]);
+
+  // Helper: compute safeMaxPoints for the currently opened invoice
+  const currentInvoice = useMemo(
+    () => getInvoiceById(payingInvoice),
+    [getInvoiceById, payingInvoice],
+  );
+  const currentInvoiceAmount = useMemo(() => {
+    if (!currentInvoice) return 0;
+    return Number(
+      currentInvoice?.amount_less ??
+        currentInvoice?.details?.invoice_amount ??
+        0,
+    );
+  }, [currentInvoice]);
+  const currentPointsEquivalent =
+    currentInvoice?.pointsEquivalent ?? ugxToPoints(currentInvoiceAmount);
+  const safeMaxPoints = computeMaxPointsForInvoice(
+    currentInvoiceAmount,
+    currentPointsEquivalent,
+  );
+
+  // Update mobileAmount when slider changes (user applied points)
+  const onSliderChange = (pts: number) => {
+    const clamped = Math.max(0, Math.min(safeMaxPoints, pts));
+    setPointsToUse(clamped);
+    const remaining = Math.max(0, currentInvoiceAmount - pointsToUGX(clamped));
+    setMobileAmount(remaining);
+  };
+
+  // When user edits mobileAmount manually, keep points in sync (best-effort)
+  const onMobileAmountChange = (value: number) => {
+    const newMobile = Math.max(0, value);
+    setMobileAmount(newMobile);
+
+    const impliedPointsUGX = Math.max(0, currentInvoiceAmount - newMobile);
+    const impliedPoints = ugxToPoints(impliedPointsUGX);
+    const newPts = Math.max(0, Math.min(safeMaxPoints, impliedPoints));
+    setPointsToUse(newPts);
+  };
+
+  // ---------- Render ----------
   return (
     <div className="min-h-screen bg-[#f6f7fb] font-sans pb-20">
       <TopNav />
@@ -529,14 +706,6 @@ export default function StatementWithPoints() {
                           onClick={(e) => {
                             e.stopPropagation();
                             setPayingInvoice(invId);
-                            // pick a sensible default: min(balance, pointsEquivalent but ensure mixed constraint)
-                            const defaultMax = computeMaxPointsForInvoice(
-                              amount,
-                              pointsEquivalent,
-                            );
-                            setPointsToUse(
-                              Math.max(0, Math.min(pointsBalance, defaultMax)),
-                            );
                           }}
                           className="text-[11px] text-black uppercase bg-gray-200 px-3 py-1 rounded hover:bg-gray-300 transition"
                         >
@@ -615,11 +784,6 @@ export default function StatementWithPoints() {
               <button
                 onClick={() => {
                   setPayingInvoice(null);
-                  setAccountName(null);
-                  setVerified(false);
-                  setPayPhone("");
-                  setPhoneError(null);
-                  setPointsToUse(null);
                 }}
                 className="text-gray-400 hover:text-gray-600 p-2 rounded-md"
               >
@@ -628,7 +792,7 @@ export default function StatementWithPoints() {
             </div>
 
             <div className="rounded-2xl overflow-hidden mb-3 border border-pink-50 shadow-sm">
-              <div className="bg-linear-to-r from-pink-50 via-white to-yellow-50 px-4 py-2">
+              <div className="px-4 py-2">
                 <div className="flex justify-between items-center">
                   <div>
                     <p className="text-[11px] text-gray-600 font-medium mb-0.5">
@@ -646,20 +810,18 @@ export default function StatementWithPoints() {
                     <p className="text-base font-extrabold text-[#D81B60] leading-tight">
                       UGX{" "}
                       {Number(
-                        invoices.find((i) => i.details?.id === payingInvoice)
-                          ?.amount_less ??
-                          invoices.find((i) => i.details?.id === payingInvoice)
-                            ?.details?.invoice_amount ??
+                        getInvoiceById(payingInvoice)?.amount_less ??
+                          getInvoiceById(payingInvoice)?.details
+                            ?.invoice_amount ??
                           0,
                       ).toLocaleString()}
                     </p>
                     <p className="text-[11px] text-gray-500 leading-tight">
                       Equivalent:{" "}
                       {Math.ceil(
-                        (invoices.find((i) => i.details?.id === payingInvoice)
-                          ?.amount_less ??
-                          invoices.find((i) => i.details?.id === payingInvoice)
-                            ?.details?.invoice_amount ??
+                        (getInvoiceById(payingInvoice)?.amount_less ??
+                          getInvoiceById(payingInvoice)?.details
+                            ?.invoice_amount ??
                           0) / ugxPerPoint,
                       ).toLocaleString()}{" "}
                       pts
@@ -671,111 +833,103 @@ export default function StatementWithPoints() {
 
             {/* FlexPay controls */}
             <div className="mb-4">
-              <p className="text-sm font-bold text-gray-700 uppercase mb-2">
-                Apply points (optional)
-              </p>
-              <p className="text-sm text-gray-600">
-                Slide to choose how many points to apply.
-              </p>
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <p className="text-sm font-bold text-gray-700 uppercase mb-1">
+                    Apply points (Slide)
+                  </p>
+                </div>
 
-              <div className="mt-4">
+                {/* Show points balance / value */}
+                <div className="text-right text-xs">
+                  <p className="font-semibold">Balance</p>
+                  <p>{pointsBalance.toLocaleString()} pts</p>
+                  <p className="text-gray-500">
+                    UGX {pointsToUGX(pointsBalance).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-2">
+                <input
+                  type="range"
+                  min={0}
+                  max={safeMaxPoints}
+                  value={pointsToUse}
+                  onChange={(e) => onSliderChange(Number(e.target.value))}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-xs text-gray-600 mt-1">
+                  <span>0 pts</span>
+                  <span>{safeMaxPoints.toLocaleString()} pts</span>
+                </div>
+
+                <div className="mt-2 flex items-center gap-3">
+                  <div className="flex-1">
+                    <p className="text-xs text-gray-500">Points applied</p>
+                    <p className="text-lg font-bold">
+                      {pointsToUse.toLocaleString()} pts
+                    </p>
+                  </div>
+
+                  <div className="flex-1 text-right">
+                    <p className="text-xs text-gray-500">Value</p>
+                    <p className="text-lg font-bold">
+                      UGX {pointsToUGX(pointsToUse).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Staff ID and Amount inputs */}
+                <div className="flex items-start gap-3 mt-4">
+                  <div className="flex-1" style={{ flexBasis: "40%" }}>
+                    <label className="text-xs font-bold text-gray-500 uppercase block mb-1">
+                      Staff ID
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Staff ID"
+                      value={staffId}
+                      onChange={(e) => setStaffId(e.target.value)}
+                      className="w-full py-1.5 px-2 text-sm border border-gray-200 rounded-lg focus:border-[#D81B60] outline-none transition-colors"
+                    />
+                  </div>
+
+                  <div className="flex-1" style={{ flexBasis: "60%" }}>
+                    <label className="text-xs font-bold text-gray-500 uppercase block mb-1">
+                      Amount (mobile money)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="Amount"
+                      value={
+                        typeof mobileAmount === "number" ? mobileAmount : ""
+                      }
+                      onChange={(e) =>
+                        onMobileAmountChange(Number(e.target.value))
+                      }
+                      className="w-full py-1.5 px-2 text-sm border border-gray-200 rounded-lg focus:border-[#D81B60] outline-none transition-colors"
+                    />
+                    <p className="text-xs text-gray-400 mt-1">
+                      Total invoice: UGX {currentInvoiceAmount.toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Optional warning if points exceed invoice */}
                 {(() => {
-                  const invoice = invoices.find(
-                    (i) => i.details?.id === payingInvoice,
+                  const remaining = Math.max(
+                    0,
+                    currentInvoiceAmount - pointsToUGX(pointsToUse ?? 0),
                   );
-                  const amount = Number(
-                    invoice?.amount_less ??
-                      invoice?.details?.invoice_amount ??
-                      0,
-                  );
-                  const pointsEquivalent =
-                    invoice?.pointsEquivalent ?? ugxToPoints(amount);
-                  const safeMaxPoints = computeMaxPointsForInvoice(
-                    amount,
-                    pointsEquivalent,
-                  );
-
-                  // Initialize pointsToUse if null
-                  if (pointsToUse === null) {
-                    setPointsToUse(0); // default 0 since points are optional
-                    setMobileAmount(amount); // set mobile amount to full invoice
+                  if ((pointsToUse ?? 0) > 0 && remaining <= 0) {
+                    return (
+                      <p className="text-xs mt-2 text-red-600">
+                        Reduce points so that there is a mobile-money portion.
+                      </p>
+                    );
                   }
-
-                  return (
-                    <>
-                      {/* Single optional slider */}
-                      <div className="mt-2">
-                        <input
-                          type="range"
-                          min={0}
-                          max={safeMaxPoints}
-                          value={pointsToUse ?? 0}
-                          onChange={(e) => {
-                            const pts = Number(e.target.value);
-                            setPointsToUse(pts);
-                            const remaining = Math.max(
-                              0,
-                              amount - pointsToUGX(pts),
-                            );
-                            setMobileAmount(remaining);
-                          }}
-                          className="w-full"
-                        />
-                        <div className="flex justify-between text-xs text-gray-600 mt-1">
-                          <span>0 pts</span>
-                          <span>{safeMaxPoints.toLocaleString()} pts</span>
-                        </div>
-                      </div>
-
-                      {/* Staff ID and Amount inputs */}
-                      <div className="flex items-start gap-3 mt-3">
-                        <div className="flex-1" style={{ flexBasis: "40%" }}>
-                          <label className="text-xs font-bold text-gray-500 uppercase block mb-1">
-                            Staff ID
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="Staff ID"
-                            value={staffId}
-                            onChange={(e) => setStaffId(e.target.value)}
-                            className="w-full py-2 px-3 border rounded-xl focus:border-[#D81B60] outline-none"
-                          />
-                        </div>
-
-                        <div className="flex-1" style={{ flexBasis: "60%" }}>
-                          <label className="text-xs font-bold text-gray-500 uppercase block mb-1">
-                            Amount
-                          </label>
-                          <input
-                            type="number"
-                            placeholder="Amount"
-                            value={mobileAmount}
-                            onChange={(e) =>
-                              setMobileAmount(Number(e.target.value))
-                            }
-                            className="w-full py-2 px-3 border rounded-xl focus:border-[#D81B60] outline-none"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Optional warning if points exceed invoice */}
-                      {(() => {
-                        const remaining = Math.max(
-                          0,
-                          amount - pointsToUGX(pointsToUse ?? 0),
-                        );
-                        if ((pointsToUse ?? 0) > 0 && remaining <= 0) {
-                          return (
-                            <p className="text-xs mt-2 text-red-600">
-                              Reduce points so that there is a mobile-money
-                              portion.
-                            </p>
-                          );
-                        }
-                        return null;
-                      })()}
-                    </>
-                  );
+                  return null;
                 })()}
               </div>
             </div>
@@ -800,7 +954,7 @@ export default function StatementWithPoints() {
                   }}
                   placeholder="07XXXXXXXX"
                   maxLength={10}
-                  className={`w-full py-2 px-4 bg-gray-50 border-2 rounded-xl outline-none focus:border-[#D81B60] transition-all ${
+                  className={`w-full py-1.5 px-3 bg-gray-50 border-2 rounded-lg text-sm outline-none focus:border-[#D81B60] transition-all ${
                     verified
                       ? "border-green-500"
                       : phoneError
@@ -809,7 +963,6 @@ export default function StatementWithPoints() {
                   }`}
                 />
                 {verifying && (
-                  /* Adjusted top-4 to a centered positioning */
                   <div className="absolute right-4 top-1/2 -translate-y-1/2">
                     <Loader2 className="w-5 h-5 animate-spin text-[#D81B60]" />
                   </div>
@@ -832,28 +985,76 @@ export default function StatementWithPoints() {
               )}
             </div>
 
+            {/* Action buttons */}
             <div className="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
               <button
                 onClick={() => {
                   setPayingInvoice(null);
-                  setAccountName(null);
-                  setVerified(false);
-                  setPayPhone("");
-                  setPhoneError(null);
-                  setPointsToUse(null);
                 }}
-                className="bg-gray-200 text-black font-semibold py-2 px-6 rounded-lg"
+                className="bg-gray-100 text-gray-700 font-bold py-1.5 px-4 rounded-md text-sm hover:bg-gray-200 transition-colors"
               >
                 Cancel
               </button>
-              <Button
-                onClick={() => handlePayInvoice(payingInvoice!)}
-                disabled={loading || verifying || !verified}
-                className="bg-[#e9e0e3] text-gray-900 font-semibold py-2 px-6 rounded-lg"
-              >
-                {loading ? "Processing..." : "Continue"}
-              </Button>
+
+              <div className="flex items-center gap-3">
+                <Button
+                  onClick={() => handlePayInvoice(payingInvoice!)}
+                  disabled={loading || verifying || !verified}
+                  className="bg-[#e9e0e3] text-gray-900 font-bold py-1.5 px-5 rounded-md text-sm disabled:opacity-50"
+                >
+                  {loading ? "Processing..." : "Continue"}
+                </Button>
+
+                {/* If a paymentResult exists show transactionId + Query button */}
+                {paymentResult?.transactionId && (
+                  <div className="flex items-center gap-2">
+                    <div className="text-xs text-gray-600 mr-2">
+                      <div className="font-bold">TX:</div>
+                      <div className="truncate max-w-40">
+                        {paymentResult.transactionId}
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => queryTxStatus(paymentResult.transactionId)}
+                      disabled={queryLoading}
+                      className="bg-white border border-gray-200 px-2.5 py-1 rounded-md text-[10px] font-bold hover:bg-gray-50 transition-colors"
+                    >
+                      {queryLoading ? "Querying..." : "Query status"}
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
+
+            {/* Payment result / query feedback */}
+            {paymentResult && (
+              <div className="mt-4 p-3 rounded-lg bg-gray-50 border border-gray-100">
+                <p className="text-sm font-bold">Payment initiated</p>
+                <p className="text-xs text-gray-600">{paymentResult.message}</p>
+
+                {lastQueriedStatus && (
+                  <p className="mt-2 text-xs">
+                    Latest check:{" "}
+                    <span
+                      className={
+                        lastQueriedStatus === "success"
+                          ? "text-green-600 font-bold"
+                          : lastQueriedStatus === "pending"
+                            ? "text-yellow-600 font-bold"
+                            : "text-red-600 font-bold"
+                      }
+                    >
+                      {lastQueriedStatus.toUpperCase()}
+                    </span>
+                  </p>
+                )}
+
+                {queryError && (
+                  <p className="mt-2 text-xs text-red-600">{queryError}</p>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -986,13 +1187,39 @@ export default function StatementWithPoints() {
               )}
             </div>
 
-            <div className="mt-8 pt-4 border-t border-gray-100">
+            <div className="mt-8 pt-4 border-t border-gray-100 space-y-3">
+              <button
+                onClick={() => queryTxStatus(selectedTransaction.transactionId)}
+                className="w-full bg-white border text-gray-800 font-bold py-3 rounded-xl hover:bg-gray-50 transition-colors"
+              >
+                {queryLoading ? "Querying..." : "Query status"}
+              </button>
+
               <button
                 onClick={() => setSelectedTransaction(null)}
                 className="w-full bg-[#D81B60] text-white font-bold py-3 rounded-xl hover:bg-[#c01a5e] transition-colors"
               >
                 Close
               </button>
+              {queryError && (
+                <p className="text-xs text-red-600">{queryError}</p>
+              )}
+              {lastQueriedStatus && (
+                <p className="text-xs">
+                  Last check:{" "}
+                  <span
+                    className={
+                      lastQueriedStatus === "success"
+                        ? "text-green-600 font-bold"
+                        : lastQueriedStatus === "pending"
+                          ? "text-yellow-600 font-bold"
+                          : "text-red-600 font-bold"
+                    }
+                  >
+                    {lastQueriedStatus.toUpperCase()}
+                  </span>
+                </p>
+              )}
             </div>
           </div>
         </div>

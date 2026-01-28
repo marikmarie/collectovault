@@ -36,7 +36,7 @@ export default function App() {
       <Route path="/statement" element={<ProtectedRoute><Statement /></ProtectedRoute>} />
       <Route path="/services" element={<ProtectedRoute><Services /></ProtectedRoute>} />
       <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
-      <Route path="/admin/dashboard" element={<ProtectedRoute><Layout /></ProtectedRoute>} />
+      <Route path="/adminDashboard" element={<ProtectedRoute><Layout /></ProtectedRoute>} />
       {/* <Route path="/admin/*" element={<Layout />} /> */}
 
       <Route path="/login" element={<Login />} />
