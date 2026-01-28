@@ -42,21 +42,6 @@ const Tiers: React.FC = () => {
     }
   };
 
-  // const handleSaveTier = async (formData: Omit<Tier, 'id'>) => {
-  //   setLoading(true);
-  //   try {
-  //     const payload = editingTier ? { ...formData, id: editingTier.id } : formData;
-  //     await collectovault.saveTierRule(vendorId, payload);
-  //     showMessage('success', `Tier ${editingTier ? 'updated' : 'created'}`);
-  //     setIsModalOpen(false);
-  //     fetchTiers();
-  //   } catch (err) {
-  //     showMessage('error', 'Could not save changes');
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
   const handleSaveTier = async (formData: Omit<Tier, 'id'>) => {
     setLoading(true);
     try {
@@ -84,7 +69,8 @@ const Tiers: React.FC = () => {
       if (res.data?.success || res.status === 201 || res.status === 200) {
         showMessage('success', `Tier ${editingTier ? 'updated' : 'created'} successfully!`);
         setIsModalOpen(false);
-        fetchTiers(); // Refresh the list
+        setEditingTier(null);
+        fetchTiers(); // Refresh the list to get latest data from server
       } else {
         // Handle case where API returns 200 but 'success' is false (e.g., validation error)
         const errorMsg = res.data?.message || res.data?.error || 'Validation failed';

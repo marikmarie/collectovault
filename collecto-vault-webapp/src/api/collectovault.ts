@@ -3,34 +3,34 @@ import api from "./index";
 
 export const collectovault = {
   //point rules
-  getPointRules: (vendorId: string) => api.get(`/pointRules/${vendorId}/`),
-  getPointRulesById: (id: string) => api.get(`/pointRules/${id}/`),
+  getPointRules: (vendorId: string) => api.get(`/pointRules/${vendorId}`),
+  getPointRulesById: (id: string) => api.get(`/pointRules/${id}`),
 
   savePointRule: (vendorId: string, data: any) =>
-    data.id ? api.put(`/pointRules/${data.id}`, data) : api.post(`/pointRules/${vendorId}`, data),
+    data.id ? api.put(`/pointRules/update/${data.id}`, data) : api.post(`/pointRules/create/${vendorId}`, data),
   updatePointRule: (ruleId: number, data: any) =>
-    api.put(`/pointRules/${ruleId}`, data),
+    api.put(`/pointRules/update/${ruleId}`, data),
   deletePointRule: (vendorId: string, ruleId: number) =>
-    api.delete(`/pointRules/${vendorId}/${ruleId}`),
+    api.delete(`/pointRules/delete/${vendorId}/${ruleId}`),
 
 
   //tier rules
   getTierRules: (vendorId: string) => api.get(`/tier/${vendorId}`),
-  getTierRuleById: (id: string) => api.get(`/tier/${id}/`),
+  getTierRuleById: (id: string) => api.get(`/tier/${id}`),
   saveTierRule: (vendorId: string, data: any) =>
-    data.id ? api.put(`/tier/${data.id}`, data) : api.post(`/tier/${vendorId}`, data),
+    data.id ? api.put(`/tier/update/${data.id}`, data) : api.post(`/tier/create/${vendorId}`, data),
   updateTierRule: (tierId: number, data: any) =>
-    api.put(`/tier/${tierId}`, data),
+    api.put(`/tier/update/${tierId}`, data),
   deleteTierRules: (vendorId: string, ruleId: number) =>
-    api.delete(`/tier/${vendorId}/${ruleId}`),
+    api.delete(`/tier/delete/${vendorId}/${ruleId}`),
   
   //point packages
   getPackages: (vendorId: string) => api.get(`/vaultPackages/${vendorId}`),
-  getPackageById: (id: string) => api.get(`/vaultPackages/${id}/`),
+  getPackageById: (id: string) => api.get(`/vaultPackages/${id}`),
   savePackages: (vendorId: string, data: any) =>
-    data.id ? api.put(`/vaultPackages/${data.id}`, data) : api.post(`/vaultPackages/${vendorId}`, data),
+    data.id ? api.put(`/vaultPackages/update/${data.id}`, data) : api.post(`/vaultPackages/create/${vendorId}`, data),
   updatePackages: (packageId: number, data: any) =>
-    api.put(`/vaultPackages/${packageId}`, data),
+    api.put(`/vaultPackages/update/${packageId}`, data),
   deletePackages: (vendorId: string, ruleId: number) =>
-    api.delete(`/vaultPackages/${vendorId}/${ruleId}`),
+    api.delete(`/vaultPackages/delete/${vendorId}/${ruleId}`),
  };
