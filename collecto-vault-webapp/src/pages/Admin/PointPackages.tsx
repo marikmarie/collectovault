@@ -81,26 +81,48 @@ const PointPackages: React.FC = () => {
     fetchPackages();
   }, []);
 
-  const handleSave = async (data: Omit<Package, "id">) => {
+const handleSave = async (data: Omit<Package, "id">) => {
     setSaving(true);
     try {
+      // 1. Map frontend 'points' to backend 'pointsAmount'
       const payload = {
         name: data.name,
         pointsAmount: data.points,
         price: data.price,
         isPopular: data.isPopular,
+        collectoId: vendorId // Ensure this is sent in the body
       };
 
-      if (editing) {
-        await collectovault.savePackages(vendorId, { id: editing.id, ...payload });
-      } else {
-        await collectovault.savePackages(vendorId, payload);
-      }
+      // 2. Execute Request
+      const res = await collectovault.savePackages(vendorId, editing 
+        ? { id: editing.id, ...payload } 
+        : payload
+      );
 
-      await fetchPackages();
-      setShowModal(false);
-      setEditing(null);
-    } catch (e) {
+      // 3. THE CHECK: Verify backend success property
+      if (res.data?.success) {
+        const savedData = res.data.data; // This is the 'vaultPackage' from your controller
+        
+        if (editing) {
+          // Update local state for Edit
+          setPackages((prev) => 
+            prev.map((p) => (p.id === editing.id ? mapApiPackage(savedData) : p))
+          );
+        } else {
+          // Add new package from server response to the top of the list
+          setPackages((prev) => [mapApiPackage(savedData), ...prev]);
+        }
+
+        setShowModal(false);
+        setEditing(null);
+        // Optional: show a success toast here
+      } else {
+        // Handle logic errors (e.g., validation failed)
+        alert(res.data?.error || "Failed to save package");
+      }
+    } catch (e: any) {
+      const errorMsg = e.response?.data?.error || "An error occurred while saving the package.";
+      alert(errorMsg);
       console.error("Save failed", e);
     } finally {
       setSaving(false);
@@ -109,15 +131,21 @@ const PointPackages: React.FC = () => {
 
   const handleDelete = async (id: number) => {
     try {
-      await collectovault.deletePackages(vendorId, id);
-      setPackages((p) => p.filter((x) => x.id !== id));
-    } catch (e) {
+      const res = await collectovault.deletePackages(vendorId, id);
+      
+      // Check for success before removing from UI
+      if (res.data?.success || res.status === 200) {
+        setPackages((p) => p.filter((x) => x.id !== id));
+      } else {
+        alert(res.data?.message || "Could not delete this package.");
+      }
+    } catch (e: any) {
+      alert("Error connecting to server for deletion.");
       console.error("Delete failed", e);
     } finally {
       setDeleteId(null);
     }
   };
-
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10">
