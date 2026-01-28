@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   LogOut,
   User,
   LayoutDashboard,
   Trophy,
-  Coins, // Fixed: Now used in navItems for "Point Rules"
+  Coins,
   Settings,
   Users,
   CreditCard,
@@ -13,8 +13,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 
-
-// Import Tab Components
+// Import Tab Components (Placeholders - ensure these files exist)
 import Dashboard from './Dashboard';
 import PointRules from './PointRules'; 
 import Tiers from './Tiers';
@@ -23,6 +22,14 @@ import UsersManagement from './UsersPage';
 
 // --- Type Definitions ---
 type Tab = 'dashboard' | 'tiers' | 'rules' | 'packages' | 'users';
+
+interface UserData {
+  clientId: number | null;
+  collectoId: number | null;
+  name: string;
+  initials: string;
+  photo?: string;
+}
 
 // --- Configuration ---
 const THEME_GRADIENT = "linear-gradient(to right top, #18010e, #2b0a1f, #3f0b31, #530a46, #67095d, #880666, #aa056b, #cb0d6c, #ef4155, #ff743c, #ffa727, #f2d931)";
@@ -54,10 +61,7 @@ interface NavItemProps {
 }
 
 const NavItem: React.FC<NavItemProps> = ({ id, label, icon, isActive, onClick }) => {
-  // Styles for the dark gradient background (Glassmorphism)
-  // Active: Semi-transparent white background with a bright yellow border accent
   const activeClasses = 'bg-white/20 text-white border-r-4 border-[#f2d931] shadow-inner backdrop-blur-sm';
-  // Inactive: Lower opacity white, hover brightens it
   const inactiveClasses = 'text-white/60 hover:bg-white/10 hover:text-white border-r-4 border-transparent';
 
   return (
@@ -74,25 +78,61 @@ const NavItem: React.FC<NavItemProps> = ({ id, label, icon, isActive, onClick })
   );
 };
 
-// --- Main Component ---
+// --- Main Layout Component ---
 
 export default function Layout() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-
-  const CurrentTabComponent = TabContent[activeTab];
-
-  const handleViewProfile = () => {
-    alert('Viewing Profile...');
-    setIsProfileMenuOpen(false);
-  };
   
+  // State for Dynamic User Data
+  const [user, setUser] = useState<UserData>({
+    clientId: null,
+    collectoId: null,
+    name: 'Loading...',
+    initials: 'AD'
+  });
+
+  useEffect(() => {
+    // 1. Retrieve the stored auth response
+    const rawData = localStorage.getItem('auth_session'); 
+    
+    if (rawData) {
+      try {
+        const parsedResponse = JSON.parse(rawData);
+        // Navigate the nested structure from your API: data -> data -> user
+        const apiUser = parsedResponse.data?.data;
+
+        if (apiUser) {
+          // 2. Generate Initials (e.g., "Collecto Account" -> "CA")
+          const nameParts = apiUser.name.split(' ');
+          const initials = nameParts.length > 1 
+            ? (nameParts[0][0] + nameParts[1][0]).toUpperCase()
+            : nameParts[0].substring(0, 2).toUpperCase();
+
+          // 3. Store the specific IDs as requested
+          setUser({
+            clientId: apiUser.id, // Stored as clientId per instruction
+            collectoId: apiUser.collectoId,
+            name: apiUser.name,
+            initials: initials,
+            photo: apiUser.photo
+          });
+        }
+      } catch (error) {
+        console.error("Error parsing user session:", error);
+      }
+    }
+  }, []);
+
   const handleLogout = () => {
     if(window.confirm("Are you sure you want to log out?")) {
-        console.log("Logging out...");
+        localStorage.removeItem('auth_session');
+        window.location.href = '/login';
     }
   };
+
+  const CurrentTabComponent = TabContent[activeTab];
 
   return (
     <div className="flex h-screen bg-gray-100 overflow-hidden font-sans">
@@ -115,12 +155,9 @@ export default function Layout() {
         style={{ background: THEME_GRADIENT }}
       >
         <div className="flex flex-col h-full">
-          {/* Sidebar Logo Area */}
           <div className="p-6 border-b border-white/10 flex justify-center items-center">
-            {/* Logo Image */}
             <div className="bg-white/90 p-3 rounded-xl shadow-lg w-full flex justify-center backdrop-blur-sm">
                 <img 
-                    // src={"logo.png"} 
                     src="/logo.png"
                     alt="CollectoVault Logo" 
                     className="h-12 w-auto object-contain"
@@ -128,7 +165,6 @@ export default function Layout() {
             </div>
           </div>
 
-          {/* Navigation */}
           <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
              <div className="text-xs font-black text-yellow-50 uppercase tracking-wider mb-4 px-4">
                 Main Menu
@@ -148,7 +184,6 @@ export default function Layout() {
               ))}
           </nav>
 
-          {/* Sidebar Footer / Logout */}
           <div className="p-6 border-t border-white/10 bg-black/10">
             <button
               onClick={handleLogout}
@@ -170,7 +205,6 @@ export default function Layout() {
             style={{ background: THEME_GRADIENT }}
         >
             <div className="flex items-center gap-4">
-                {/* Mobile Menu Button */}
                 <button
                 className="p-2 text-white/80 hover:bg-white/10 rounded-lg lg:hidden transition-colors"
                 onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -189,11 +223,15 @@ export default function Layout() {
                     className="flex items-center gap-3 p-2 rounded-full hover:bg-white/10 transition-colors border border-white/20"
                     onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
                 >
-                    <div className="w-9 h-9 rounded-full bg-white text-[#aa056b] flex items-center justify-center font-bold text-sm shadow-sm">
-                        TM
+                    <div className="w-9 h-9 rounded-full bg-white text-[#aa056b] flex items-center justify-center font-bold text-sm shadow-sm overflow-hidden">
+                        {user.photo ? (
+                          <img src={user.photo} alt="Profile" className="w-full h-full object-cover" />
+                        ) : (
+                          user.initials
+                        )}
                     </div>
                     <div className="hidden sm:block text-right">
-                        <p className="text-sm font-semibold leading-none">Samson Kwiz</p>
+                        <p className="text-sm font-semibold leading-none">{user.name}</p>
                         <p className="text-[10px] text-white/70 mt-1 uppercase tracking-wide">Administrator</p>
                     </div>
                     <ChevronDown className={`w-4 h-4 text-white/70 transition-transform ${isProfileMenuOpen ? 'rotate-180' : ''}`} />
@@ -205,22 +243,21 @@ export default function Layout() {
                         <div className="fixed inset-0 z-10" onClick={() => setIsProfileMenuOpen(false)} />
                         <div className="absolute right-0 mt-3 w-56 bg-white rounded-xl shadow-2xl py-2 z-20 border border-gray-100 animate-in fade-in slide-in-from-top-2 duration-200">
                             <div className="px-4 py-3 border-b border-gray-100 mb-1">
-                                <p className="text-sm font-semibold text-gray-900">Tukas M</p>
-                                <p className="text-xs text-gray-500">admin@company.com</p>
+                                <p className="text-sm font-semibold text-gray-900">{user.name}</p>
+                                <p className="text-[10px] text-gray-500 font-mono">Collecto ID: {user.collectoId}</p>
                             </div>
-                            <a
-                                href="#"
-                                onClick={handleViewProfile}
-                                className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            <button
+                                onClick={() => setIsProfileMenuOpen(false)}
+                                className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                             >
                                 <User className="w-4 h-4 text-gray-400" /> View Profile
-                            </a>
-                            <a
-                                href="#"
-                                className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            </button>
+                            <button
+                                onClick={() => setIsProfileMenuOpen(false)}
+                                className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                             >
                                 <Settings className="w-4 h-4 text-gray-400" /> Settings
-                            </a>
+                            </button>
                             <div className="h-px bg-gray-100 my-1" />
                             <button
                                 onClick={handleLogout}
@@ -236,14 +273,11 @@ export default function Layout() {
 
         {/* Scrollable Tab Content */}
         <div className="flex-1 overflow-y-auto bg-gray-50/50 p-6 md:p-8 relative">
-          {/* Decorative background circle to tie content to theme */}
           <div className="absolute top-0 left-0 w-full h-64 bg-linear-to-b from-gray-200 to-transparent pointer-events-none -z-10" />
-          
-           <div className="w-full">
+          <div className="w-full">
              <CurrentTabComponent />
            </div>
         </div>
-
       </main>
     </div>
   );
