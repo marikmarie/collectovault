@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { Theme, defaultTheme, themes } from "./themes";
+import { type Theme, defaultTheme, themes } from "./themes";
 import "./theme.css";
 
 type ThemeContextValue = {

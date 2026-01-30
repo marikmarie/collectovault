@@ -18,7 +18,7 @@ export type Theme = {
 
 export const defaultTheme: Theme = {
   name: "default",
-  logoUrl: "/images/logo.svg",
+  logoUrl: "logo.png",
   headerGradient:
     "linear-gradient(to right top, #18010e, #2b0a1f, #3f0b31, #530a46, #67095d)",
   colors: {

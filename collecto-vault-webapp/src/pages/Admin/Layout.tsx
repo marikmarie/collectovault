@@ -13,6 +13,8 @@ import {
   ChevronDown
 } from 'lucide-react';
 
+import { useTheme } from '../../theme/ThemeProvider';
+
 // Import Tab Components
 import Dashboard from './Dashboard';
 import PointRules from './PointRules'; 
@@ -31,7 +33,6 @@ interface UserData {
 }
 
 // --- Configuration ---
-const THEME_GRADIENT = "linear-gradient(to right top, #18010e, #2b0a1f, #3f0b31, #530a46, #67095d, #880666, #aa056b, #cb0d6c, #ef4155, #ff743c, #ffa727, #f2d931)";
 
 const navItems: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
@@ -98,6 +99,8 @@ export default function Layout() {
 
   const CurrentTabComponent = TabContent[activeTab];
 
+  const { theme } = useTheme();
+
   return (
     <div className="flex h-screen bg-gray-100 overflow-hidden font-sans">
       
@@ -116,12 +119,12 @@ export default function Layout() {
           lg:translate-x-0 lg:static lg:shadow-xl
           ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
-        style={{ background: THEME_GRADIENT }}
+        style={{ background: 'var(--header-gradient)' }}
       >
         <div className="flex flex-col h-full">
           <div className="p-6 border-b border-white/10 flex justify-center items-center">
             <div className="bg-white/90 p-3 rounded-xl shadow-lg w-full flex justify-center backdrop-blur-sm">
-                <img src="/logo.png" alt="Logo" className="h-12 w-auto object-contain" />
+              <img src={theme.logoUrl ?? "/logo.png"} alt="Logo" className="h-12 w-auto object-contain" />
             </div>
           </div>
 
@@ -156,7 +159,7 @@ export default function Layout() {
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
-        <header className="shadow-md z-30 px-6 py-4 flex justify-between items-center text-white" style={{ background: THEME_GRADIENT }}>
+        <header className="shadow-md z-30 px-6 py-4 flex justify-between items-center text-white" style={{ background: 'var(--header-gradient)' }}>
             <div className="flex items-center gap-4">
                 <button className="p-2 lg:hidden" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
                     {isSidebarOpen ? <X /> : <Menu />}

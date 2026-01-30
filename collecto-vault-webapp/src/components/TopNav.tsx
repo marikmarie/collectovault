@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from "react";
+import { useTheme } from "../theme/ThemeProvider";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { clearVaultOtpToken } from "../api";
 import {
@@ -25,6 +26,8 @@ export default function TopNav() {
   const navigate = useNavigate();
   const location = useLocation();
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const { theme } = useTheme();
 
   // ---- USER DATA (from localStorage) ----
   const userName = localStorage.getItem("userName") || "User";
@@ -74,7 +77,7 @@ export default function TopNav() {
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           {/* Logo */}
           <div onClick={() => navigate("/dashboard")} className="cursor-pointer">
-            <img src="/logo.png" alt="Logo" className="h-20 w-auto" />
+            <img src={theme.logoUrl ?? "logo.png"} alt="Logo" className="h-20 w-auto" />
           </div>
 
           {/* Nav */}
@@ -149,7 +152,7 @@ export default function TopNav() {
 
       {/* ================= MOBILE HEADER ================= */}
       <header className="lg:hidden h-16 px-4 flex items-center justify-between bg-white sticky top-0 z-40">
-        <img src="/logo.png" className="h-10" />
+        <img src={theme.logoUrl ?? "/logo.png"} className="h-10" />
         <div className="flex gap-3">
           <button onClick={() => openDrawer("notifications")}>
             <Bell size={20} />
