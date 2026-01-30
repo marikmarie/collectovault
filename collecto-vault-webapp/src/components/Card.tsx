@@ -7,6 +7,6 @@ type Props = {
 };
 
 export default function Card({ children, className = "", as: Component = "div" }: Props) {
-  const cls = `bg-slate-900/40 border border-slate-800 rounded-lg p-4 shadow-sm ${className}`;
+  const cls = `themed-card ${className}`;
   return <Component className={cls}>{children}</Component>;
 }

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { User, Briefcase,  ArrowRight,  RotateCw, ShieldCheck, ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom'; 
 import { authService } from '../api/authService';
+import { useTheme } from '../theme/ThemeProvider';
 import { setVaultOtpToken, getVaultOtpToken } from '../api';
 import { customerService } from '../api/customer';
 
@@ -141,13 +142,15 @@ export default function LoginPage() {
     }
   };
 
+  const { theme } = useTheme();
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#F9FAFB]">
       <div className="w-full max-w-[400px]">
         
         {/* Logo Section */}
         <div className="flex flex-col items-center mb-10">
-          <img src="/logo.png" alt="Logo" className="h-12 w-auto mb-2" />
+          <img src={theme.logoUrl ?? "/logo.png"} alt="Logo" className="h-12 w-auto mb-2" />
           <p className="text-gray-600 text-xs font-medium uppercase tracking-[0.2em]">Earn & Thrive</p>
         </div>
 

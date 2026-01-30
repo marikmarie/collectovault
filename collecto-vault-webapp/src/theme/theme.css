@@ -1,0 +1,50 @@
+:root {
+  --color-primary: #7c4dff;
+  --color-primary-text: #ffffff;
+  --color-secondary: #ffb86b;
+  --color-background: #0b1020;
+  --color-surface: #0f1724;
+  --color-text: #e6eef8;
+  --color-border: #1f2937;
+  --color-danger: #ef4444;
+  --header-gradient: linear-gradient(to right top, #18010e, #2b0a1f, #3f0b31, #530a46, #67095d);
+}
+
+.themed-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-weight: 600;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+.themed-btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+
+.themed-btn--primary { background-color: var(--color-primary); color: var(--color-primary-text); }
+.themed-btn--secondary { background-color: var(--color-secondary); color: var(--color-text); }
+.themed-btn--ghost { background-color: transparent; color: var(--color-text); }
+.themed-btn--danger { background-color: var(--color-danger); color: var(--color-primary-text); }
+
+.themed-card {
+  background-color: color-mix(in srgb, var(--color-surface) 60%, transparent);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+}
+
+.themed-header {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+.themed-header__bg {
+  position: absolute; inset: 0; pointer-events: none; opacity: 0.95; background: var(--header-gradient);
+}
+
+/* utility for small logo usage via CSS background if needed */
+.brand-logo {
+  width: 160px; height: 40px; background-size: contain; background-repeat: no-repeat; background-position: left center;
+}

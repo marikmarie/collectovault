@@ -22,8 +22,6 @@ export default function Header({
   //const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const customGradient =
-    "linear-gradient(to right top, #18010e, #2b0a1f, #3f0b31, #530a46, #67095d, #880666, #aa056b, #cb0d6c, #ef4155, #ff743c, #ffa727, #f2d931)";
 
   const handleCameraClick = () => {
     fileInputRef.current?.click();
@@ -53,10 +51,7 @@ export default function Header({
       )}
 
       {/* base gradient - Expanded to full width/height */}
-      <div
-        className="absolute inset-0 opacity-95 pointer-events-none"
-        style={{ background: customGradient }}
-      />
+      <div className="themed-header__bg" />
 
       {/* --- Decorative SVG layer --- */}
       <div className="absolute inset-0 pointer-events-none">

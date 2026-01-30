@@ -13,12 +13,12 @@ export type Props = BaseButtonAttrs & {
   children?: React.ReactNode;
 };
 
-// Updated variants to use gray backgrounds and black text
+// Use themed utility classes defined in src/theme/theme.css
 const variantClasses: Record<Variant, string> = {
-  primary: "bg-gray-200 hover:bg-gray-300 text-black",
-  secondary: "bg-gray-100 hover:bg-gray-200 text-black",
-  ghost: "bg-transparent hover:bg-gray-100 text-black",
-  danger: "bg-red-100 hover:bg-red-200 text-red-700", // Kept a hint of red for danger, or use gray if preferred
+  primary: "themed-btn themed-btn--primary",
+  secondary: "themed-btn themed-btn--secondary",
+  ghost: "themed-btn themed-btn--ghost",
+  danger: "themed-btn themed-btn--danger",
 };
 
 const Button: React.FC<Props> = ({
@@ -30,9 +30,8 @@ const Button: React.FC<Props> = ({
   onClick,
   ...rest
 }) => {
-  // Added 'text-black' to base to ensure it applies everywhere
   const base =
-    "inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md font-semibold shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-400 text-black";
+    "inline-flex items-center justify-center gap-2 rounded-md shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2";
   
   const disabledOrLoading = disabled || loading;
   const cls = `${base} ${variantClasses[variant]} ${disabledOrLoading ? "opacity-50 cursor-not-allowed" : ""} ${className}`;
