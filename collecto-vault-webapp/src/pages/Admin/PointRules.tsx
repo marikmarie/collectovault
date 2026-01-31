@@ -162,7 +162,7 @@ const handleSave = async (payload: Omit<EarningRule, "id">) => {
                 <div className={`p-2 rounded-xl ${rule.isActive ? 'bg-zinc-50 text-zinc-900' : 'bg-zinc-100 text-zinc-400'}`}>
                   <Zap className={`w-5 h-5 ${rule.isActive ? 'fill-zinc-900' : ''}`} />
                 </div>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex gap-1">
                   <button
                     onClick={() => { setEditingRule(rule); setModalOpen(true); }}
                     className="p-2 text-zinc-400 hover:text-zinc-900"

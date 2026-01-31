@@ -176,7 +176,7 @@ const TierCard: React.FC<{ tier: Tier; onEdit: (t: Tier) => void; onRemove: (id:
       <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">
         <Trophy className="w-5 h-5" />
       </div>
-      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="flex gap-1">
         <button onClick={() => onEdit(tier)} className="p-1.5 text-slate-400 hover:text-indigo-600 rounded-md hover:bg-indigo-50 transition-colors">
           <Edit2 className="w-3.5 h-3.5" />
         </button>

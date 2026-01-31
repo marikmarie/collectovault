@@ -178,7 +178,7 @@ const handleSave = async (data: Omit<Package, "id">) => {
                   <div className="p-2 bg-gray-50 rounded-lg group-hover:bg-white border border-transparent group-hover:border-gray-100 transition-colors">
                     <Coins className="w-5 h-5 text-zinc-400" />
                   </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex gap-1">
                     <button onClick={() => { setEditing(p); setShowModal(true); }} className="p-1.5 text-gray-400 hover:text-zinc-900 transition-colors">
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>

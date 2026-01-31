@@ -78,7 +78,7 @@ const Dashboard: React.FC = () => {
         {/* Header */}
         <div className="mb-12">
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-linear-to-br from-purple-500 to-purple-600 rounded-lg">
+            <div className="p-2 bg-linear-to-br from-[#aa056b] to-[#c41882] rounded-lg">
               <Activity className="w-6 h-6 text-white" />
             </div>
             <h1 className="text-4xl font-bold bg-linear-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
@@ -122,7 +122,7 @@ const Dashboard: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Featured Card */}
           <div className="lg:col-span-2 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100">
-            <div className="bg-linear-to-r from-purple-500 to-purple-600 p-8 text-white">
+            <div className="bg-linear-to-r from-[#bb107a] to-[#af1775] p-8 text-white">
               <div className="flex items-center gap-3 mb-4">
                 <Star className="w-6 h-6" />
                 <h2 className="text-2xl font-bold">Premium Features</h2>

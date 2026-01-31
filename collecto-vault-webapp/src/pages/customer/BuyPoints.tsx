@@ -154,7 +154,11 @@ export default function BuyPointsModal({
     const fetchActivePackages = async () => {
       try {
         setLoadingPackages(true);
-        const res = await api.get("/vaultPackages");
+
+        //const vendorId = 
+        const collectoId = localStorage.getItem("collectoId") || undefined;
+        
+        const res = await api.get(`/vaultPackages/${collectoId}`);
         // Map API fields (pointsAmount -> points, isPopular -> recommended)
         const apiData: ApiPackage[] = res.data?.data ?? [];
         const mapped = apiData.map((pkg) => ({
