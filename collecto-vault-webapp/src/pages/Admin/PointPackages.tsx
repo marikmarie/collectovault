@@ -2,9 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Coins, Plus, Edit2, Trash2, X, Star } from "lucide-react";
 import { collectovault } from "../../api/collectovault";
 
-/** --------------------
- * Types
- * -------------------- */
+
 interface Package {
   id: number;
   name: string;

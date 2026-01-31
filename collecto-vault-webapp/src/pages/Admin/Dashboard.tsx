@@ -1,103 +1,171 @@
-import React from 'react';
-import { Users, Coins, Trophy, DollarSign } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Users, Coins, Trophy, DollarSign, TrendingUp, Star, Activity } from 'lucide-react';
 
-
-// --- Mock Data ---
-const stats = [
-  {
-    name: 'Total Users',
-    value: '1,245',
-    icon: <Users className="w-6 h-6 text-red-600" />,
-    color: 'bg-red-50',
-  },
-  {
-    name: 'Total Points Issued',
-    value: '5,020,400',
-    icon: <Coins className="w-6 h-6 text-orange-500" />,
-    color: 'bg-orange-50',
-  },
-  {
-    name: 'Top Tier Members (Gold)',
-    value: '230',
-    icon: <Trophy className="w-6 h-6 text-yellow-600" />,
-    color: 'bg-yellow-50',
-  },
-  {
-    name: 'Package Revenue (MoM)',
-    value: 'UGX 5.2M',
-    icon: <DollarSign className="w-6 h-6 text-green-600" />,
-    color: 'bg-green-50',
-  },
-];
+interface DashboardData {
+  totalUsers: number;
+  totalPointsIssued: number;
+  topTierMembers: number;
+  packageRevenue: string;
+}
 
 const Dashboard: React.FC = () => {
-  return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <h2 className="text-2xl font-bold text-gray-900">System Overview</h2>
+  const [dashboardData, setDashboardData] = useState<DashboardData>({
+    totalUsers: 10,
+    totalPointsIssued: 50000,
+    topTierMembers: 4,
+    packageRevenue: 'UGX 1.1 M',
+  });
+  const [loading, setLoading] = useState(true);
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((item) => (
-          <div
-            key={item.name}
-            className="bg-white p-6 rounded-xl shadow-md border border-gray-200 transition-all hover:shadow-lg"
-          >
-            <div className="flex items-center gap-4">
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      // Replace with your actual endpoint
+      const response = await fetch('http://localhost:3000/api/admin/dashboard');
+      if (response.ok) {
+        const data = await response.json();
+        setDashboardData(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const stats = [
+    {
+      name: 'Total Users',
+      value: dashboardData.totalUsers.toLocaleString(),
+      icon: <Users className="w-8 h-8" />,
+      gradient: 'from-blue-500 to-blue-600',
+      lightBg: 'bg-blue-50',
+      textColor: 'text-blue-600',
+    },
+    {
+      name: 'Total Points Issued',
+      value: dashboardData.totalPointsIssued.toLocaleString(),
+      icon: <Coins className="w-8 h-8" />,
+      gradient: 'from-amber-500 to-amber-600',
+      lightBg: 'bg-amber-50',
+      textColor: 'text-amber-600',
+    },
+    {
+      name: 'Top Tier Members',
+      value: dashboardData.topTierMembers.toLocaleString(),
+      icon: <Trophy className="w-8 h-8" />,
+      gradient: 'from-yellow-500 to-yellow-600',
+      lightBg: 'bg-yellow-50',
+      textColor: 'text-yellow-600',
+    },
+    {
+      name: 'Package Revenue (MoM)',
+      value: dashboardData.packageRevenue,
+      icon: <DollarSign className="w-8 h-8" />,
+      gradient: 'from-green-500 to-green-600',
+      lightBg: 'bg-green-50',
+      textColor: 'text-green-600',
+    },
+  ];
+
+  return (
+    <div className="min-h-screen bg-linear-to-br from-gray-50 via-white to-gray-100 p-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-12">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-linear-to-br from-purple-500 to-purple-600 rounded-lg">
+              <Activity className="w-6 h-6 text-white" />
+            </div>
+            <h1 className="text-4xl font-bold bg-linear-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+              Welcome back! Here's your loyalty program overview
+            </h1>
+          </div>
+          {/* <p className="text-gray-600 ml-11">Welcome back! Here's your loyalty program overview</p> */}
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          {stats.map((item, idx) => (
+            <div
+              key={idx}
+              className="group relative overflow-hidden rounded-2xl bg-white p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-gray-200"
+            >
+              {/* Gradient background effect */}
               <div
-                className={`p-3 rounded-xl flex items-center justify-center ${item.color}`}
-              >
-                {item.icon}
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">{item.name}</p>
-                <p className="text-2xl font-semibold text-gray-900">
-                  {item.value}
+                className={`absolute top-0 right-0 w-24 h-24 bg-linear-to-br ${item.gradient} opacity-5 rounded-full -mr-12 -mt-12 group-hover:scale-150 transition-transform duration-500`}
+              />
+
+              {/* Content */}
+              <div className="relative z-10">
+                <div className="flex items-start justify-between mb-6">
+                  <div className={`p-4 rounded-xl ${item.lightBg} group-hover:scale-110 transition-transform duration-300`}>
+                    <div className={item.textColor}>{item.icon}</div>
+                  </div>
+                  <TrendingUp className="w-5 h-5 text-green-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+
+                <p className="text-gray-600 text-sm font-medium mb-2">{item.name}</p>
+                <p className={`text-3xl font-bold bg-linear-to-r ${item.gradient} bg-clip-text text-transparent`}>
+                  {loading ? '—' : item.value}
                 </p>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Charts/Recent Activity - Placeholder Sections */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Activity Card */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-md border border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Recent Loyalty Activity
-          </h3>
-          {/* List of activities */}
-          <div className="space-y-4 text-sm">
-            <p className="text-gray-700">User Mariam reached **Gold Tier**.</p>
-            <p className="text-gray-700">
-              New rule "Holiday Bonus" created by **Admin**.
-            </p>
-            <p className="text-gray-700">
-              Package "Pro Value" updated price to **UGX 55,000**.
-            </p>
-          </div>
-          <button className="mt-4 text-sm font-medium text-red-600 hover:text-red-700">
-            View All Activity →
-          </button>
+          ))}
         </div>
 
-        {/* Quick Actions Card */}
-        <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 space-y-3">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Quick Actions
-          </h3>
-          <button className="w-full text-left flex items-center gap-3 p-3 bg-red-50 text-red-600 font-medium rounded-lg hover:bg-red-100 transition-colors">
-            <Users className="w-5 h-5" />
-            Add New User
-          </button>
-          <button className="w-full text-left flex items-center gap-3 p-3 bg-orange-50 text-orange-600 font-medium rounded-lg hover:bg-orange-100 transition-colors">
-            <Trophy className="w-5 h-5" />
-            Create New Tier
-          </button>
-          <button className="w-full text-left flex items-center gap-3 p-3 bg-gray-50 text-gray-600 font-medium rounded-lg hover:bg-gray-100 transition-colors">
-            <Coins className="w-5 h-5" />
-            Issue Points Manually
-          </button>
+        {/* Quick Actions Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Featured Card */}
+          <div className="lg:col-span-2 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100">
+            <div className="bg-linear-to-r from-purple-500 to-purple-600 p-8 text-white">
+              <div className="flex items-center gap-3 mb-4">
+                <Star className="w-6 h-6" />
+                <h2 className="text-2xl font-bold">Premium Features</h2>
+              </div>
+              <p className="text-red-100 mb-6">Unlock powerful tools to manage your loyalty program efficiently</p>
+              <div className="grid grid-cols-2 gap-3">
+                <button className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 backdrop-blur-sm border border-white border-opacity-30">
+                  📊 View Reports
+                </button>
+                <button className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 backdrop-blur-sm border border-white border-opacity-30">
+                  ⚙️ Settings
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Stats Summary Card */}
+          <div className="rounded-2xl bg-white p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100">
+            <h3 className="text-lg font-bold text-gray-900 mb-6">System Status</h3>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                <span className="text-sm font-medium text-gray-700">API Status</span>
+                <span className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                  <span className="text-sm font-semibold text-green-600">Online</span>
+                </span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <span className="text-sm font-medium text-gray-700">Database</span>
+                <span className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                  <span className="text-sm font-semibold text-blue-600">Connected</span>
+                </span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg border border-purple-200">
+                <span className="text-sm font-medium text-gray-700">Services</span>
+                <span className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" />
+                  <span className="text-sm font-semibold text-purple-600">Active</span>
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
