@@ -238,12 +238,59 @@ const RuleForm: React.FC<{
   onSave: (payload: Omit<EarningRule, "id">) => void;
   onCancel: () => void;
 }> = ({ initial, loading, onSave, onCancel }) => {
+  const vendorId = localStorage.getItem("collectoId") || "141122";
+  const [allRules, setAllRules] = useState<EarningRule[]>([]);
   const [ruleTitle, setRuleTitle] = useState(initial?.ruleTitle ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [points, setPoints] = useState(initial?.points ?? 0);
   const [isActive, setIsActive] = useState(initial?.isActive ?? true);
+  const [loadingRules, setLoadingRules] = useState(false);
+  const [showNewRuleInput, setShowNewRuleInput] = useState(!initial);
 
+  // Fetch all rules for selection
+  useEffect(() => {
+    const fetchRules = async () => {
+      setLoadingRules(true);
+      try {
+        const res = await collectovault.getPointRules(vendorId);
+        setAllRules(res.data?.data ?? []);
+      } catch {
+        setAllRules([]);
+      } finally {
+        setLoadingRules(false);
+      }
+    };
+
+    fetchRules();
+  }, [vendorId]);
+
+  // Predefined rule suggestions
+  const predefinedRules = [
+    "Welcome Bonus",
+    "Birthday Bonus",
+    "Purchase Reward",
+    "Referral Bonus",
+    "Social Share Bonus",
+    "Review Bonus",
+    "Loyalty Bonus",
+    "Newsletter Signup",
+    "First Purchase",
+    "Milestone Achievement"
+  ];
+
+  const selectClasses = "w-full border border-zinc-200 bg-zinc-50 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-900 focus:bg-white transition-all outline-none";
   const inputClasses = "w-full border-zinc-200 bg-zinc-50 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-900 focus:bg-white transition-all outline-none";
+
+  const handleRuleSelect = (selectedTitle: string) => {
+    const selectedRule = allRules.find(r => r.ruleTitle === selectedTitle);
+    if (selectedRule) {
+      setRuleTitle(selectedRule.ruleTitle);
+      setDescription(selectedRule.description);
+      setPoints(selectedRule.points);
+      setIsActive(selectedRule.isActive);
+      setShowNewRuleInput(false);
+    }
+  };
 
   return (
     <form
@@ -255,13 +302,54 @@ const RuleForm: React.FC<{
     >
       <div className="space-y-1">
         <label className="text-[11px] font-bold text-zinc-400 uppercase ml-1">Rule Name</label>
-        <input
-          value={ruleTitle}
-          onChange={(e) => setRuleTitle(e.target.value)}
-          placeholder="e.g., Birthday Bonus"
-          className={inputClasses}
-          required
-        />
+        {!initial && (
+          <div className="space-y-2 mb-3">
+            <select
+              value={ruleTitle}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === "__new__") {
+                  setShowNewRuleInput(true);
+                  setRuleTitle("");
+                } else if (val === "__existing__") {
+                  setShowNewRuleInput(false);
+                  setRuleTitle("");
+                } else {
+                  handleRuleSelect(val);
+                }
+              }}
+              className={selectClasses}
+              disabled={loadingRules}
+            >
+              <option value="">Choose an option...</option>
+              {allRules.length > 0 && (
+                <optgroup label="Existing Rules">
+                  {allRules.map((rule) => (
+                    <option key={rule.id} value={rule.ruleTitle}>
+                      {rule.ruleTitle} (+{rule.points} pts)
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              <optgroup label="Suggestions">
+                {predefinedRules.map((suggestion) => (
+                  <option key={suggestion} value={suggestion}>
+                    {suggestion}
+                  </option>
+                ))}
+              </optgroup>
+            </select>
+          </div>
+        )}
+        {(!initial && showNewRuleInput) || initial ? (
+          <input
+            value={ruleTitle}
+            onChange={(e) => setRuleTitle(e.target.value)}
+            placeholder="e.g., Birthday Bonus"
+            className={inputClasses}
+            required
+          />
+        ) : null}
       </div>
 
       <div className="space-y-1">
