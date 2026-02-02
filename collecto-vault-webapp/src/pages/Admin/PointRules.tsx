@@ -282,13 +282,21 @@ const RuleForm: React.FC<{
   const inputClasses = "w-full border-zinc-200 bg-zinc-50 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-900 focus:bg-white transition-all outline-none";
 
   const handleRuleSelect = (selectedTitle: string) => {
+    // Always set the title so the select shows the chosen value
+    setRuleTitle(selectedTitle);
     const selectedRule = allRules.find(r => r.ruleTitle === selectedTitle);
     if (selectedRule) {
-      setRuleTitle(selectedRule.ruleTitle);
       setDescription(selectedRule.description);
       setPoints(selectedRule.points);
       setIsActive(selectedRule.isActive);
-      setShowNewRuleInput(false);
+      // show inputs for editing after selecting an existing rule
+      setShowNewRuleInput(true);
+    } else {
+      // suggestion or custom title: clear description/points so user can fill
+      setDescription("");
+      setPoints(0);
+      setIsActive(true);
+      setShowNewRuleInput(true);
     }
   };
 
@@ -322,7 +330,7 @@ const RuleForm: React.FC<{
               disabled={loadingRules}
             >
               <option value="">Choose an option...</option>
-              {/* {allRules.length > 0 && (
+              {allRules.length > 0 && (
                 <optgroup label="Existing Rules">
                   {allRules.map((rule) => (
                     <option key={rule.id} value={rule.ruleTitle}>
@@ -330,7 +338,7 @@ const RuleForm: React.FC<{
                     </option>
                   ))}
                 </optgroup>
-              )} */}
+              )}
               <optgroup label="Suggestions">
                 {predefinedRules.map((suggestion) => (
                   <option key={suggestion} value={suggestion}>
