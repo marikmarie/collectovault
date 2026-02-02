@@ -10,10 +10,10 @@ interface DashboardData {
 
 const Dashboard: React.FC = () => {
   const [dashboardData, setDashboardData] = useState<DashboardData>({
-    totalUsers: 10,
-    totalPointsIssued: 50000,
-    topTierMembers: 4,
-    packageRevenue: 'UGX 1.1 M',
+    totalUsers: 0,
+    totalPointsIssued: 0,
+    topTierMembers: 0,
+    packageRevenue: 'UGX 0',
   });
   const [loading, setLoading] = useState(true);
 
