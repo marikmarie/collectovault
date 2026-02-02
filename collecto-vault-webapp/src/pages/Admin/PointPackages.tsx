@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Coins, Plus, Edit2, Trash2, X, Star } from "lucide-react";
 import { collectovault } from "../../api/collectovault";
+import { Toast } from "../../components/Toast";
 
 
 interface Package {
@@ -33,16 +34,16 @@ const mapApiPackage = (p: ApiPackage): Package => ({
 const Modal: React.FC<{ open: boolean; title: string; onClose: () => void; children: React.ReactNode }> = ({ open, title, onClose, children }) => {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/20 backdrop-blur-sm">
       <div className="absolute inset-0" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-md bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
-        <div className="flex items-center justify-between p-5 border-b border-gray-50">
-          <h3 className="font-medium text-gray-900">{title}</h3>
-          <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
-            <X className="w-4 h-4" />
+      <div className="relative z-10 w-full max-w-md bg-white rounded-xl shadow-xl border border-zinc-100">
+        <div className="flex items-center justify-between p-4 border-b border-zinc-100">
+          <h3 className="text-base font-bold text-zinc-900">{title}</h3>
+          <button onClick={onClose} className="p-1 hover:bg-zinc-100 rounded-lg transition-colors">
+            <X className="w-4 h-4 text-zinc-400" />
           </button>
         </div>
-        <div className="p-6">{children}</div>
+        <div className="p-5">{children}</div>
       </div>
     </div>
   );
@@ -60,6 +61,7 @@ const PointPackages: React.FC = () => {
   const [editing, setEditing] = useState<Package | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const fetchPackages = async () => {
     setLoading(true);
@@ -106,21 +108,22 @@ const handleSave = async (data: Omit<Package, "id">) => {
           setPackages((prev) => 
             prev.map((p) => (p.id === editing.id ? mapApiPackage(savedData) : p))
           );
+          setToast({ message: "Package updated successfully", type: "success" });
         } else {
           // Add new package from server response to the top of the list
           setPackages((prev) => [mapApiPackage(savedData), ...prev]);
+          setToast({ message: "Package created successfully", type: "success" });
         }
 
         setShowModal(false);
         setEditing(null);
-        // Optional: show a success toast here
       } else {
         // Handle logic errors (e.g., validation failed)
-        alert(res.data?.error || "Failed to save package");
+        setToast({ message: res.data?.error || "Failed to save package", type: "error" });
       }
     } catch (e: any) {
       const errorMsg = e.response?.data?.error || "An error occurred while saving the package.";
-      alert(errorMsg);
+      setToast({ message: errorMsg, type: "error" });
       console.error("Save failed", e);
     } finally {
       setSaving(false);
@@ -134,26 +137,29 @@ const handleSave = async (data: Omit<Package, "id">) => {
       // Check for success before removing from UI
       if (res.data?.success || res.status === 200) {
         setPackages((p) => p.filter((x) => x.id !== id));
+        setDeleteId(null);
+        setToast({ message: "Package deleted successfully", type: "success" });
       } else {
-        alert(res.data?.message || "Could not delete this package.");
+        setToast({ message: res.data?.message || "Could not delete this package.", type: "error" });
       }
     } catch (e: any) {
-      alert("Error connecting to server for deletion.");
+      setToast({ message: "Error connecting to server for deletion.", type: "error" });
       console.error("Delete failed", e);
-    } finally {
-      setDeleteId(null);
     }
   };
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
+    <div className="max-w-6xl mx-auto px-4 py-8">
+      {/* Toast Notification */}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900 tracking-tight">Point Packages</h2>
-          <p className="text-sm text-gray-500 mt-1">Configure customer point bundles for purchase</p>
+          <h2 className="text-2xl font-bold text-zinc-900 tracking-tight">Point Packages</h2>
+          <p className="text-sm text-zinc-500 mt-1">Configure customer point bundles for purchase</p>
         </div>
         <button
           onClick={() => { setEditing(null); setShowModal(true); }}
-          className="flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white text-sm font-medium rounded-full hover:bg-black transition-all shadow-sm"
+          className="flex items-center gap-2 px-4 py-2.5 bg-zinc-900 text-white text-sm font-medium rounded-lg hover:bg-black transition-all"
         >
           <Plus className="w-4 h-4" /> New Package
         </button>
@@ -161,48 +167,48 @@ const handleSave = async (data: Omit<Package, "id">) => {
 
       {loading ? (
         <div className="flex justify-center py-20">
-          <div className="w-6 h-6 border-2 border-gray-200 border-t-zinc-900 rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-zinc-200 border-t-zinc-900 rounded-full animate-spin" />
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {packages.map((p) => (
-            <div key={p.id} className="group relative bg-white border border-gray-200 rounded-2xl p-4 transition-all hover:shadow-md hover:border-gray-300">
+            <div key={p.id} className="group relative bg-white border border-zinc-200 rounded-xl p-4 transition-all hover:shadow-md hover:border-zinc-300">
               {p.isPopular && (
-                <div className="absolute -top-2.5 right-4 flex items-center gap-1 bg-zinc-900 text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
-                  <Star className="w-2.5 h-2.5 fill-white" /> Popular
+                <div className="absolute -top-2 right-3 flex items-center gap-1 bg-zinc-900 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                  <Star className="w-2 h-2 fill-white" /> Popular
                 </div>
               )}
               
               <div className="flex flex-col h-full">
                 <div className="flex justify-between items-start mb-3">
-                  <div className="p-2 bg-gray-50 rounded-lg group-hover:bg-white border border-transparent group-hover:border-gray-100 transition-colors">
-                    <Coins className="w-5 h-5 text-zinc-400" />
+                  <div className="p-2 bg-zinc-50 rounded-lg group-hover:bg-white border border-transparent group-hover:border-zinc-200 transition-colors">
+                    <Coins className="w-4 h-4 text-zinc-400" />
                   </div>
                   <div className="flex gap-1">
-                    <button onClick={() => { setEditing(p); setShowModal(true); }} className="p-1.5 text-gray-400 hover:text-zinc-900 transition-colors">
-                      <Edit2 className="w-3.5 h-3.5" />
+                    <button onClick={() => { setEditing(p); setShowModal(true); }} className="p-1.5 text-zinc-400 hover:text-zinc-900 transition-colors">
+                      <Edit2 className="w-3 h-3" />
                     </button>
-                    <button onClick={() => setDeleteId(p.id)} className="p-1.5 text-gray-400 hover:text-red-500 transition-colors">
-                      <Trash2 className="w-3.5 h-3.5" />
+                    <button onClick={() => setDeleteId(p.id)} className="p-1.5 text-zinc-400 hover:text-red-600 transition-colors">
+                      <Trash2 className="w-3 h-3" />
                     </button>
                   </div>
                 </div>
 
-                <div className="mb-4">
-                  <h4 className="text-xs font-medium text-gray-400 uppercase tracking-tight mb-1">{p.name}</h4>
-                  <p className="text-xl font-bold text-zinc-900">{p.points.toLocaleString()} <span className="text-sm font-medium text-gray-500">pts</span></p>
+                <div className="mb-3">
+                  <h4 className="text-xs font-medium text-zinc-400 uppercase tracking-tight mb-1">{p.name}</h4>
+                  <p className="text-lg font-bold text-zinc-900">{p.points.toLocaleString()} <span className="text-xs font-medium text-zinc-500">pts</span></p>
                 </div>
 
-                <div className="mt-auto pt-3 border-t border-gray-50 flex justify-between items-center">
-                  <span className="text-sm font-semibold text-zinc-900">UGX {p.price.toLocaleString()}</span>
+                <div className="mt-auto pt-2 border-t border-zinc-100 flex justify-between items-center">
+                  <span className="text-xs font-semibold text-zinc-900">UGX {p.price.toLocaleString()}</span>
                 </div>
 
                 {deleteId === p.id && (
-                  <div className="absolute inset-0 bg-white/95 rounded-2xl flex flex-col items-center justify-center p-4 text-center z-10 border border-red-100">
-                    <p className="text-xs font-medium text-gray-900 mb-3">Delete this package?</p>
-                    <div className="flex gap-2">
-                      <button onClick={() => handleDelete(p.id)} className="px-3 py-1.5 bg-red-600 text-white text-[11px] font-bold rounded-lg uppercase">Delete</button>
-                      <button onClick={() => setDeleteId(null)} className="px-3 py-1.5 bg-gray-100 text-gray-600 text-[11px] font-bold rounded-lg uppercase">Cancel</button>
+                  <div className="absolute inset-0 bg-white/95 rounded-xl flex flex-col items-center justify-center p-4 text-center z-10 border border-red-100">
+                    <p className="text-xs font-medium text-zinc-900 mb-2">Delete this package?</p>
+                    <div className="flex gap-2 w-full">
+                      <button onClick={() => handleDelete(p.id)} className="flex-1 px-2 py-1 bg-red-600 text-white text-[11px] font-bold rounded transition-colors hover:bg-red-700">Delete</button>
+                      <button onClick={() => setDeleteId(null)} className="flex-1 px-2 py-1 bg-zinc-100 text-zinc-700 text-[11px] font-bold rounded transition-colors hover:bg-zinc-200">Cancel</button>
                     </div>
                   </div>
                 )}
@@ -233,44 +239,44 @@ const PackageForm: React.FC<{
   const [price, setPrice] = useState<number>(initial?.price || 0);
   const [isPopular, setIsPopular] = useState<boolean>(initial?.isPopular || false);
 
-  const inputStyle = "w-full bg-gray-50 border border-gray-200 px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:bg-white focus:border-zinc-900 transition-all";
+  const inputStyle = "w-full bg-zinc-50 border border-zinc-200 px-4 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:bg-white focus:border-zinc-900 transition-all";
 
   return (
-    <div className="space-y-5">
-      <div className="space-y-1.5">
-        <label className="text-[11px] font-bold text-gray-400 uppercase ml-1">Package Name</label>
+    <div className="space-y-4">
+      <div className="space-y-1">
+        <label className="text-[11px] font-bold text-zinc-400 uppercase ml-1">Package Name</label>
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Starter Pack" className={inputStyle} />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-1.5">
-          <label className="text-[11px] font-bold text-gray-400 uppercase ml-1">Points</label>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <label className="text-[11px] font-bold text-zinc-400 uppercase ml-1">Points</label>
           <input type="number" value={points} onChange={(e) => setPoints(Number(e.target.value))} className={inputStyle} />
         </div>
-        <div className="space-y-1.5">
-          <label className="text-[11px] font-bold text-gray-400 uppercase ml-1">Price (UGX)</label>
+        <div className="space-y-1">
+          <label className="text-[11px] font-bold text-zinc-400 uppercase ml-1">Price (UGX)</label>
           <input type="number" value={price} onChange={(e) => setPrice(Number(e.target.value))} className={inputStyle} />
         </div>
       </div>
 
-      <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors">
+      <label className="flex items-center gap-3 p-2.5 bg-zinc-50 rounded-lg cursor-pointer hover:bg-zinc-100 transition-colors">
         <input 
           type="checkbox" 
           checked={isPopular} 
           onChange={(e) => setIsPopular(e.target.checked)} 
-          className="w-4 h-4 rounded border-gray-300 text-zinc-900 focus:ring-zinc-900" 
+          className="w-4 h-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900" 
         />
-        <span className="text-sm text-gray-600 font-medium">Mark as Popular</span>
+        <span className="text-sm text-zinc-700 font-medium">Mark as Popular</span>
       </label>
 
-      <div className="flex gap-3 pt-2">
-        <button onClick={onCancel} className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors">
+      <div className="flex gap-3 pt-3">
+        <button onClick={onCancel} className="flex-1 px-4 py-2.5 text-sm font-medium text-zinc-600 hover:text-zinc-900 transition-colors">
           Cancel
         </button>
         <button 
           disabled={loading || !name} 
           onClick={() => onSave({ name, points, price, isPopular })} 
-          className="flex-2 px-8 py-2.5 text-sm font-medium bg-zinc-900 text-white rounded-xl hover:bg-black disabled:opacity-50 transition-all shadow-sm"
+          className="flex-1 px-6 py-2.5 text-sm font-bold bg-zinc-900 text-white rounded-lg hover:bg-black disabled:opacity-50 transition-all"
         >
           {loading ? "Saving..." : "Save Package"}
         </button>

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Plus, Edit3, Trash2, X, Zap, CheckCircle2, AlertCircle } from "lucide-react";
 import { collectovault } from "../../api/collectovault";
+import { Toast } from "../../components/Toast";
 
 /** ================= TYPES ================= */
 interface EarningRule {
@@ -23,14 +24,14 @@ const Modal: React.FC<{
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/20 backdrop-blur-sm">
       <div className="absolute inset-0" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-md bg-white rounded-2xl shadow-2xl border border-zinc-100">
-        <div className="flex items-center justify-between p-5 border-b border-zinc-50">
-          <h3 className="text-lg font-bold text-zinc-900">{title}</h3>
-          <button onClick={onClose} className="p-1 hover:bg-zinc-100 rounded-full transition-colors">
-            <X className="w-5 h-5 text-zinc-400" />
+      <div className="relative z-10 w-full max-w-md bg-white rounded-xl shadow-xl border border-zinc-100">
+        <div className="flex items-center justify-between p-4 border-b border-zinc-100">
+          <h3 className="text-base font-bold text-zinc-900">{title}</h3>
+          <button onClick={onClose} className="p-1 hover:bg-zinc-100 rounded-lg transition-colors">
+            <X className="w-4 h-4 text-zinc-400" />
           </button>
         </div>
-        <div className="p-6">{children}</div>
+        <div className="p-5">{children}</div>
       </div>
     </div>
   );
@@ -46,6 +47,7 @@ const PointRules: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<EarningRule | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const fetchRules = async () => {
     setLoading(true);
@@ -81,24 +83,24 @@ const handleSave = async (payload: Omit<EarningRule, "id">) => {
           setRules((prev) => 
             prev.map((r) => (r.id === editingRule.id ? { ...r, ...payload } : r))
           );
-          alert("Rule updated successfully"); // Or use a toast
+          setToast({ message: "Rule updated successfully", type: "success" });
         } else {
           // Add newly created rule from server response (res.data.data contains the new rule)
           const newRule = res.data.data;
           setRules((prev) => [newRule, ...prev]);
-          alert(res.data.message || "Rule created successfully");
+          setToast({ message: "Rule created successfully", type: "success" });
         }
         
         setModalOpen(false);
         setEditingRule(null);
       } else {
         // Handle logic errors (e.g., validation failed)
-        alert(res.data?.error || "Failed to save rule");
+        setToast({ message: res.data?.error || "Failed to save rule", type: "error" });
       }
     } catch (err: any) {
       // Handle network/server errors
       const errorMsg = err.response?.data?.error || "An error occurred while saving.";
-      alert(errorMsg);
+      setToast({ message: errorMsg, type: "error" });
     } finally {
       setSaving(false);
     }
@@ -118,15 +120,19 @@ const handleSave = async (payload: Omit<EarningRule, "id">) => {
       if (res.data?.success || res.status === 200) {
         setRules((prev) => prev.filter((r) => r.id !== ruleId));
         setConfirmDeleteId(null);
+        setToast({ message: "Rule deleted successfully", type: "success" });
       } else {
-        alert(res.data?.message || "Could not delete the rule.");
+        setToast({ message: res.data?.message || "Could not delete the rule.", type: "error" });
       }
     } catch (err) {
-      alert("Error connecting to the server for deletion.");
+      setToast({ message: "Error connecting to the server for deletion.", type: "error" });
     }
   };
   return (
     <div className="max-w-6xl mx-auto py-8 px-4">
+      {/* Toast Notification */}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
         <div>
@@ -135,7 +141,7 @@ const handleSave = async (payload: Omit<EarningRule, "id">) => {
         </div>
         <button
           onClick={() => { setEditingRule(null); setModalOpen(true); }}
-          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-zinc-900 text-white rounded-full font-bold text-sm hover:bg-black transition-all shadow-lg shadow-zinc-200"
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-zinc-900 text-white rounded-lg font-medium text-sm hover:bg-black transition-all"
         >
           <Plus className="w-4 h-4" /> Add New Rule
         </button>
@@ -152,48 +158,48 @@ const handleSave = async (payload: Omit<EarningRule, "id">) => {
           <p className="text-zinc-400 font-medium">No rules established yet.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {rules.map((rule) => (
             <div
               key={rule.id}
-              className="group relative bg-white border border-zinc-200 rounded-2xl p-5 hover:border-zinc-900 transition-all duration-300 shadow-sm hover:shadow-md"
+              className="group relative bg-white border border-zinc-200 rounded-xl p-4 hover:border-zinc-300 transition-all shadow-sm hover:shadow-md"
             >
-              <div className="flex justify-between items-start mb-4">
-                <div className={`p-2 rounded-xl ${rule.isActive ? 'bg-zinc-50 text-zinc-900' : 'bg-zinc-100 text-zinc-400'}`}>
-                  <Zap className={`w-5 h-5 ${rule.isActive ? 'fill-zinc-900' : ''}`} />
+              <div className="flex justify-between items-start mb-3">
+                <div className={`p-2 rounded-lg ${rule.isActive ? 'bg-zinc-50 text-zinc-900' : 'bg-zinc-100 text-zinc-400'}`}>
+                  <Zap className={`w-4 h-4 ${rule.isActive ? 'fill-zinc-900' : ''}`} />
                 </div>
                 <div className="flex gap-1">
                   <button
                     onClick={() => { setEditingRule(rule); setModalOpen(true); }}
-                    className="p-2 text-zinc-400 hover:text-zinc-900"
+                    className="p-1.5 text-zinc-400 hover:text-zinc-900 transition-colors"
                   >
-                    <Edit3 className="w-4 h-4" />
+                    <Edit3 className="w-3.5 h-3.5" />
                   </button>
                   <button
                     onClick={() => handleDelete(rule.id)}
-                    className="p-2 text-zinc-400 hover:text-red-600"
+                    className="p-1.5 text-zinc-400 hover:text-red-600 transition-colors"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
 
               <div>
-                <div className="flex items-center gap-2 mb-1">
-                   <h4 className="font-bold text-zinc-900">{rule.ruleTitle}</h4>
+                <div className="flex items-center gap-2 mb-2">
+                   <h4 className="font-bold text-sm text-zinc-900">{rule.ruleTitle}</h4>
                    {rule.isActive ? (
-                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                     <CheckCircle2 className="w-3 h-3 text-emerald-500" />
                    ) : (
-                     <span className="text-[10px] bg-zinc-100 px-1.5 py-0.5 rounded text-zinc-500 font-bold uppercase">Draft</span>
+                     <span className="text-[9px] bg-zinc-100 px-1.5 py-0.5 rounded text-zinc-500 font-bold uppercase">Draft</span>
                    )}
                 </div>
-                <p className="text-sm text-zinc-500 line-clamp-2 leading-relaxed h-10 mb-4">
+                <p className="text-xs text-zinc-500 line-clamp-2 leading-relaxed h-8 mb-3">
                   {rule.description}
                 </p>
                 
-                <div className="flex items-end justify-between pt-4 border-t border-zinc-50">
-                  <div className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Reward</div>
-                  <div className="text-2xl font-black text-zinc-900">
+                <div className="flex items-end justify-between pt-3 border-t border-zinc-100">
+                  <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Reward</div>
+                  <div className="text-xl font-black text-zinc-900">
                     +{rule.points} <span className="text-xs font-medium text-zinc-500 uppercase">pts</span>
                   </div>
                 </div>
@@ -201,11 +207,11 @@ const handleSave = async (payload: Omit<EarningRule, "id">) => {
 
               {/* Delete Confirmation Overlay */}
               {confirmDeleteId === rule.id && (
-                <div className="absolute inset-0 bg-white/95 rounded-2xl flex flex-col items-center justify-center p-6 text-center z-10">
-                  <p className="text-sm font-bold text-zinc-900 mb-4">Remove this rule permanently?</p>
+                <div className="absolute inset-0 bg-white/95 rounded-xl flex flex-col items-center justify-center p-4 text-center z-10">
+                  <p className="text-xs font-bold text-zinc-900 mb-3">Remove this rule permanently?</p>
                   <div className="flex gap-2 w-full">
-                    <button onClick={() => setConfirmDeleteId(null)} className="flex-1 px-3 py-2 text-xs font-bold bg-zinc-100 rounded-lg">Cancel</button>
-                    <button onClick={() => handleDelete(rule.id)} className="flex-1 px-3 py-2 text-xs font-bold bg-red-600 text-white rounded-lg">Confirm</button>
+                    <button onClick={() => setConfirmDeleteId(null)} className="flex-1 px-3 py-1.5 text-xs font-bold bg-zinc-100 text-zinc-700 rounded-lg hover:bg-zinc-200 transition-colors">Cancel</button>
+                    <button onClick={() => handleDelete(rule.id)} className="flex-1 px-3 py-1.5 text-xs font-bold bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">Confirm</button>
                   </div>
                 </div>
               )}
@@ -278,8 +284,8 @@ const RuleForm: React.FC<{
     "Milestone Achievement"
   ];
 
-  const selectClasses = "w-full border border-zinc-200 bg-zinc-50 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-900 focus:bg-white transition-all outline-none";
-  const inputClasses = "w-full border-zinc-200 bg-zinc-50 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-900 focus:bg-white transition-all outline-none";
+  const selectClasses = "w-full border border-zinc-200 bg-zinc-50 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-900 focus:bg-white transition-all outline-none";
+  const inputClasses = "w-full border-zinc-200 bg-zinc-50 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-900 focus:bg-white transition-all outline-none";
 
   const handleRuleSelect = (selectedTitle: string) => {
     const selectedRule = allRules.find(r => r.ruleTitle === selectedTitle);
@@ -374,7 +380,7 @@ const RuleForm: React.FC<{
         />
       </div>
 
-      <label className="flex items-center gap-3 p-3 bg-zinc-50 rounded-xl cursor-pointer">
+      <label className="flex items-center gap-3 p-2.5 bg-zinc-50 rounded-lg cursor-pointer hover:bg-zinc-100 transition-colors">
         <input
           type="checkbox"
           checked={isActive}
@@ -384,18 +390,18 @@ const RuleForm: React.FC<{
         <span className="text-sm font-medium text-zinc-700">Set as Active</span>
       </label>
 
-      <div className="flex gap-3 pt-4">
+      <div className="flex gap-3 pt-3">
         <button 
           type="button" 
           onClick={onCancel}
-          className="flex-1 py-3 text-sm font-bold text-zinc-500 hover:text-zinc-900 transition-colors"
+          className="flex-1 py-2.5 text-sm font-bold text-zinc-600 hover:text-zinc-900 transition-colors"
         >
           Discard
         </button>
         <button
           type="submit"
           disabled={loading}
-          className="flex-2 px-8 py-3 bg-zinc-900 text-white rounded-xl font-bold text-sm hover:bg-black disabled:opacity-50 transition-all"
+          className="flex-1 px-6 py-2.5 bg-zinc-900 text-white rounded-lg font-bold text-sm hover:bg-black disabled:opacity-50 transition-all"
         >
           {loading ? "Processing..." : "Save Rule"}
         </button>
