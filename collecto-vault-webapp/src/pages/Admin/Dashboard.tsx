@@ -119,20 +119,20 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Quick Actions Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Featured Card */}
-          <div className="lg:col-span-2 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100">
-            <div className="bg-linear-to-r from-[#bb107a] to-[#af1775] p-8 text-white">
-              <div className="flex items-center gap-3 mb-4">
-                <Star className="w-6 h-6" />
-                <h2 className="text-2xl font-bold">Premium Features</h2>
+          <div className="lg:col-span-2 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100">
+            <div className="bg-linear-to-r from-[#bb107a] to-[#af1775] p-4 text-white">
+              <div className="flex items-center gap-2 mb-3">
+                <Star className="w-5 h-5" />
+                <h2 className="text-lg font-bold">Premium Features</h2>
               </div>
-              <p className="text-red-100 mb-6">Unlock powerful tools to manage your loyalty program efficiently</p>
-              <div className="grid grid-cols-2 gap-3">
-                <button className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 backdrop-blur-sm border border-white border-opacity-30">
+              <p className="text-red-100 mb-4 text-sm">Unlock powerful tools to manage your loyalty program efficiently</p>
+              <div className="grid grid-cols-2 gap-2">
+                <button className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white font-medium py-2 px-3 rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-white border-opacity-30">
                   📊 View Reports
                 </button>
-                <button className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 backdrop-blur-sm border border-white border-opacity-30">
+                <button className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white font-medium py-2 px-3 rounded-lg text-sm transition-all duration-200 backdrop-blur-sm border border-white border-opacity-30">
                   ⚙️ Settings
                 </button>
               </div>
@@ -140,28 +140,28 @@ const Dashboard: React.FC = () => {
           </div>
 
           {/* Stats Summary Card */}
-          <div className="rounded-2xl bg-white p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100">
-            <h3 className="text-lg font-bold text-gray-900 mb-6">System Status</h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
-                <span className="text-sm font-medium text-gray-700">API Status</span>
+          <div className="rounded-xl bg-white p-4 shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100">
+            <h3 className="text-base font-bold text-gray-900 mb-3">System Status</h3>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between p-2.5 bg-green-50 rounded-lg border border-green-200">
+                <span className="text-xs font-medium text-gray-700">API Status</span>
                 <span className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                  <span className="text-sm font-semibold text-green-600">Online</span>
+                  <span className="text-xs font-semibold text-green-600">Online</span>
                 </span>
               </div>
-              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <span className="text-sm font-medium text-gray-700">Database</span>
+              <div className="flex items-center justify-between p-2.5 bg-blue-50 rounded-lg border border-blue-200">
+                <span className="text-xs font-medium text-gray-700">Database</span>
                 <span className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-                  <span className="text-sm font-semibold text-blue-600">Connected</span>
+                  <span className="text-xs font-semibold text-blue-600">Connected</span>
                 </span>
               </div>
-              <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg border border-purple-200">
-                <span className="text-sm font-medium text-gray-700">Services</span>
+              <div className="flex items-center justify-between p-2.5 bg-purple-50 rounded-lg border border-purple-200">
+                <span className="text-xs font-medium text-gray-700">Services</span>
                 <span className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" />
-                  <span className="text-sm font-semibold text-purple-600">Active</span>
+                  <span className="text-xs font-semibold text-purple-600">Active</span>
                 </span>
               </div>
             </div>
