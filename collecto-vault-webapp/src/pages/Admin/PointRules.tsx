@@ -272,16 +272,10 @@ const RuleForm: React.FC<{
 
   // Predefined rule suggestions
   const predefinedRules = [
-    "Welcome Bonus",
-    "Birthday Bonus",
-    "Purchase Reward",
+    "Purchase Points",
+    "5% per transaction",
     "Referral Bonus",
-    "Social Share Bonus",
-    "Review Bonus",
-    "Loyalty Bonus",
-    "Newsletter Signup",
-    "First Purchase",
-    "Milestone Achievement"
+
   ];
 
   const selectClasses = "w-full border border-zinc-200 bg-zinc-50 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-900 focus:bg-white transition-all outline-none";
@@ -328,7 +322,7 @@ const RuleForm: React.FC<{
               disabled={loadingRules}
             >
               <option value="">Choose an option...</option>
-              {allRules.length > 0 && (
+              {/* {allRules.length > 0 && (
                 <optgroup label="Existing Rules">
                   {allRules.map((rule) => (
                     <option key={rule.id} value={rule.ruleTitle}>
@@ -336,7 +330,7 @@ const RuleForm: React.FC<{
                     </option>
                   ))}
                 </optgroup>
-              )}
+              )} */}
               <optgroup label="Suggestions">
                 {predefinedRules.map((suggestion) => (
                   <option key={suggestion} value={suggestion}>
