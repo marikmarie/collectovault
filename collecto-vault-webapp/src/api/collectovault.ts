@@ -10,8 +10,8 @@ export const collectovault = {
     data.id ? api.put(`/pointRules/update/${data.id}`, data) : api.post(`/pointRules/create/${vendorId}`, data),
   updatePointRule: (ruleId: number, data: any) =>
     api.put(`/pointRules/update/${ruleId}`, data),
-  deletePointRule: (vendorId: string, ruleId: number) =>
-    api.delete(`/pointRules/delete/${vendorId}/${ruleId}`),
+  deletePointRule: (ruleId: number) =>
+    api.delete(`/pointRules/delete/$${ruleId}`),
 
 
   //tier rules
@@ -21,8 +21,8 @@ export const collectovault = {
     data.id ? api.put(`/tier/update/${data.id}`, data) : api.post(`/tier/create/${vendorId}`, data),
   updateTierRule: (tierId: number, data: any) =>
     api.put(`/tier/update/${tierId}`, data),
-  deleteTierRules: (vendorId: string, ruleId: number) =>
-    api.delete(`/tier/delete/${vendorId}/${ruleId}`),
+  deleteTierRules: (ruleId: number) =>
+    api.delete(`/tier/delete/${ruleId}`),
   
   //point packages
   getPackages: (vendorId: string) => api.get(`/vaultPackages/${vendorId}`),
@@ -33,6 +33,6 @@ export const collectovault = {
       : api.post(`/vaultPackages/create/${vendorId}`, { ...data, collectoId: vendorId }),
   updatePackages: (packageId: number, data: any) =>
     api.put(`/vaultPackages/update/${packageId}`, data),
-  deletePackages: (vendorId: string, ruleId: number) =>
-    api.delete(`/vaultPackages/delete/${vendorId}/${ruleId}`),
+  deletePackages: (ruleId: number) =>
+    api.delete(`/vaultPackages/delete/${ruleId}`),
  };

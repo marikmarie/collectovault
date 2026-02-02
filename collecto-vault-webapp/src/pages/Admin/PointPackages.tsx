@@ -132,7 +132,7 @@ const handleSave = async (data: Omit<Package, "id">) => {
 
   const handleDelete = async (id: number) => {
     try {
-      const res = await collectovault.deletePackages(vendorId, id);
+      const res = await collectovault.deletePackages(id);
       
       // Check for success before removing from UI
       if (res.data?.success || res.status === 200) {

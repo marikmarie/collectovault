@@ -89,7 +89,7 @@ const Tiers: React.FC = () => {
   const deleteTier = async (ruleId: number) => {
     setLoading(true);
     try {
-      await collectovault.deleteTierRules(vendorId, ruleId);
+      await collectovault.deleteTierRules(ruleId);
       setTiers(prev => prev.filter(t => t.id !== ruleId));
       showMessage('success', 'Tier removed successfully');
     } catch (err) {
