@@ -28,7 +28,9 @@ export const collectovault = {
   getPackages: (vendorId: string) => api.get(`/vaultPackages/${vendorId}`),
   getPackageById: (id: string) => api.get(`/vaultPackages/${id}`),
   savePackages: (vendorId: string, data: any) =>
-    data.id ? api.put(`/vaultPackages/update/${data.id}`, data) : api.post(`/vaultPackages/create/${vendorId}`, data),
+    data.id 
+      ? api.put(`/vaultPackages/update/${data.id}`, { ...data, collectoId: vendorId }) 
+      : api.post(`/vaultPackages/create/${vendorId}`, { ...data, collectoId: vendorId }),
   updatePackages: (packageId: number, data: any) =>
     api.put(`/vaultPackages/update/${packageId}`, data),
   deletePackages: (vendorId: string, ruleId: number) =>
