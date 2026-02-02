@@ -114,7 +114,7 @@ const handleSave = async (payload: Omit<EarningRule, "id">) => {
     }
 
     try {
-      const res = await collectovault.deletePointRule(vendorId, ruleId);
+      const res = await collectovault.deletePointRule(ruleId);
       
       // Check for success before removing from UI
       if (res.data?.success || res.status === 200) {
