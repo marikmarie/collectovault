@@ -73,15 +73,15 @@ const Dashboard: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-gray-50 via-white to-gray-100 p-8">
+    <div className="min-h-screen bg-linear-to-br from-gray-50 via-white to-gray-100 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-12">
+        <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-linear-to-br from-[#aa056b] to-[#c41882] rounded-lg">
-              <Activity className="w-6 h-6 text-white" />
+              <Activity className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-4xl font-bold bg-linear-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold bg-linear-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
               Welcome back! Here's your loyalty program overview
             </h1>
           </div>
@@ -89,28 +89,28 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {stats.map((item, idx) => (
             <div
               key={idx}
-              className="group relative overflow-hidden rounded-2xl bg-white p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-gray-200"
+              className="group relative overflow-hidden rounded-xl bg-white p-4 shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 hover:border-gray-200"
             >
               {/* Gradient background effect */}
               <div
-                className={`absolute top-0 right-0 w-24 h-24 bg-linear-to-br ${item.gradient} opacity-5 rounded-full -mr-12 -mt-12 group-hover:scale-150 transition-transform duration-500`}
+                className={`absolute top-0 right-0 w-20 h-20 bg-linear-to-br ${item.gradient} opacity-5 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-500`}
               />
 
               {/* Content */}
               <div className="relative z-10">
-                <div className="flex items-start justify-between mb-6">
-                  <div className={`p-4 rounded-xl ${item.lightBg} group-hover:scale-110 transition-transform duration-300`}>
+                <div className="flex items-start justify-between mb-3">
+                  <div className={`p-2.5 rounded-lg ${item.lightBg} group-hover:scale-110 transition-transform duration-300`}>
                     <div className={item.textColor}>{item.icon}</div>
                   </div>
-                  <TrendingUp className="w-5 h-5 text-green-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <TrendingUp className="w-4 h-4 text-green-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
 
-                <p className="text-gray-600 text-sm font-medium mb-2">{item.name}</p>
-                <p className={`text-3xl font-bold bg-linear-to-r ${item.gradient} bg-clip-text text-transparent`}>
+                <p className="text-gray-600 text-xs font-medium mb-1">{item.name}</p>
+                <p className={`text-2xl font-bold bg-linear-to-r ${item.gradient} bg-clip-text text-transparent`}>
                   {loading ? '—' : item.value}
                 </p>
               </div>
