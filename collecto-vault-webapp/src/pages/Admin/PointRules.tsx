@@ -330,15 +330,7 @@ const RuleForm: React.FC<{
               disabled={loadingRules}
             >
               <option value="">Choose an option...</option>
-              {allRules.length > 0 && (
-                <optgroup label="Existing Rules">
-                  {allRules.map((rule) => (
-                    <option key={rule.id} value={rule.ruleTitle}>
-                      {rule.ruleTitle} (+{rule.points} pts)
-                    </option>
-                  ))}
-                </optgroup>
-              )}
+              {/* Existing rules removed per request */}
               <optgroup label="Suggestions">
                 {predefinedRules.map((suggestion) => (
                   <option key={suggestion} value={suggestion}>
