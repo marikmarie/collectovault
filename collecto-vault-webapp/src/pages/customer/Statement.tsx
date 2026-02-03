@@ -1,5 +1,5 @@
 // StatementWithPoints.tsx
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import TopNav from "../../components/TopNav";
 import {
   ArrowDownLeft,
@@ -90,6 +90,47 @@ export default function StatementWithPoints() {
   );
 
   const { toast, showToast } = useLocalToast();
+
+  // Auto-poll interval reference for transaction status checks
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Auto-poll when a paymentResult exists and is not yet confirmed/failed
+  useEffect(() => {
+    const txId = paymentResult?.transactionId ?? null;
+
+    // stop polling if there's no tx or final status
+    if (!txId) {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+      return;
+    }
+
+    // If lastQueriedStatus indicates final state, don't poll
+    if (lastQueriedStatus === "success" || lastQueriedStatus === "failed") {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+      return;
+    }
+
+    // Start polling every 3 seconds
+    if (!pollIntervalRef.current) {
+      console.log("Statement: starting auto-poll for tx", txId);
+      pollIntervalRef.current = setInterval(() => {
+        queryTxStatus(txId);
+      }, 3000);
+    }
+
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+    };
+  }, [paymentResult?.transactionId, lastQueriedStatus]);
 
   // ---------- Helpers ----------
   const pointsToUGX = (points: number) => Math.round(points * ugxPerPoint);
@@ -1007,21 +1048,26 @@ export default function StatementWithPoints() {
 
                 {/* If a paymentResult exists show transactionId + Query button */}
                 {paymentResult?.transactionId && (
-                  <div className="flex items-center gap-2">
-                    <div className="text-xs text-gray-600 mr-2">
+                  <div className="flex items-center gap-3">
+                    <div className="text-xs text-gray-600">
                       <div className="font-bold">TX:</div>
-                      <div className="truncate max-w-40">
-                        {paymentResult.transactionId}
-                      </div>
+                      <div className="truncate max-w-40">{paymentResult.transactionId}</div>
                     </div>
 
-                    <button
-                      onClick={() => queryTxStatus(paymentResult.transactionId)}
-                      disabled={queryLoading}
-                      className="bg-white border border-gray-200 px-2.5 py-1 rounded-md text-[10px] font-bold hover:bg-gray-50 transition-colors"
-                    >
-                      {queryLoading ? "Querying..." : "Query status"}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <div className="text-xs text-amber-600 font-medium flex items-center gap-1">
+                        <span className="animate-spin">⏳</span>
+                        Auto-checking...
+                      </div>
+
+                      <button
+                        onClick={() => queryTxStatus(paymentResult.transactionId)}
+                        disabled={queryLoading}
+                        className="bg-white border border-gray-200 px-2.5 py-1 rounded-md text-[10px] font-bold hover:bg-gray-50 transition-colors"
+                      >
+                        {queryLoading ? "⏳ Checking..." : "🔄 Check now"}
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
