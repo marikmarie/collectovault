@@ -3,7 +3,7 @@ type Props = { currentTier: string; progress: number; tiers?: string[] };
 export default function TierProgress({
   currentTier,
   progress,
-  tiers = ["Blue", "Silver", "Gold", "Platinum"],
+  tiers = ["Bronze", "Silver", "Gold", "Platinum"],
 }: Props) {
   // progress is 0-100 from the API
   const pct = Math.max(0, Math.min(100, progress));
@@ -11,8 +11,7 @@ export default function TierProgress({
   const currentTierIndex = tiers.findIndex(t => t.toLowerCase() === currentTier.toLowerCase());
   const segmentCount = tiers.length - 1; 
 
-  // --- REVISED PROGRESS LOGIC ---
-  // baseOffset: The percentage position of the current tier dot
+  
   const baseOffset = (currentTierIndex / segmentCount) * 100;
   
   // activeSegmentWidth: The distance between two dots
