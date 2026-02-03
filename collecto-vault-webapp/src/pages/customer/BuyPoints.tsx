@@ -259,21 +259,25 @@ const handleConfirmPayment = async () => {
     // Extracting transactionId from the nested data property in the response
     const transactionId = data?.data?.transactionId || data?.transactionId || null;
 
-    if (apiStatus === "200") {
-      setTxId(transactionId);
-      setTxStatus("pending");
-      setStep("confirm");
+    console.log("Payment Response:", { apiStatus, transactionId, requestToPay: data?.data?.requestToPay });
 
-      // Check if prompt is active
+    if (apiStatus === "200" && transactionId) {
+      setTxId(transactionId);
+      
+      // If requestToPay prompt was sent, show pending/confirm step for user to verify payment on phone
       if (data?.data?.requestToPay === true) {
+        console.log("Request to pay sent, waiting for user confirmation on phone...");
         setTxStatus("pending");
         setStep("confirm");
-      } else if (String(data?.status_message).toLowerCase() === "success") {
+      } else {
+        // If no prompt flag but status is success, jump to success
+        console.log("Payment processed without prompt, marking as success");
         setTxStatus("success");
         setStep("success");
         onSuccess?.({ addedPoints: selectedPackage.points });
       }
     } else {
+      console.error("Payment response invalid:", { apiStatus, transactionId, statusMessage: data?.status_message });
       setTxStatus("failed");
       setStep("failure");
       setError(data?.status_message || "Payment initiation failed.");
@@ -289,6 +293,7 @@ const handleConfirmPayment = async () => {
 // --- Transaction Status Query ---
 const queryTxStatus = async () => {
   if (!txId) {
+    console.warn("No transaction ID found");
     setQueryError("No transaction ID found to track.");
     return;
   }
@@ -302,21 +307,23 @@ const queryTxStatus = async () => {
     const collectoId = localStorage.getItem('collectoId') ?? undefined;
     const clientId = localStorage.getItem('clientId') ?? undefined;
 
-    /** * Calling the updated status endpoint with full context
-     */
+    console.log("Querying payment status for txId:", txId);
+
     const res = await api.post("/requestToPayStatus", { 
       vaultOTPToken,
       collectoId,
       clientId,
       transactionId: String(txId),
-     
     });
 
     const data = res?.data;
+    console.log("Status response:", data);
     
     const status = String(data?.status || "pending").toLowerCase();
+    console.log("Parsed status:", status);
 
     if (["confirmed", "success", "paid", "completed"].includes(status)) {
+      console.log("✓ Payment confirmed!");
       setTxStatus("success");
       setStep("success");
       
@@ -324,19 +331,23 @@ const queryTxStatus = async () => {
         onSuccess?.({ addedPoints: selectedPackage.points });
       }
     } else if (["pending", "processing", "in_progress"].includes(status)) {
+      console.log("⏳ Still pending, user needs to confirm on phone");
       setTxStatus("pending");
+      setQueryError(null);
       // UI remains on the "confirm" step waiting for user to finish on phone
     } else if (status === "failed") {
+      console.log("✗ Payment failed");
       setTxStatus("failed");
       setStep("failure");
       setError(data?.message || "Transaction was declined or failed.");
     } else {
-      setQueryError(data?.message || "Transaction status unknown. Please check your phone.");
+      console.log("? Unknown status:", status);
+      setQueryError(data?.message || `Unknown status: ${status}. Please check your phone.`);
     }
   } catch (err: any) {
     console.error("Status Query Error:", err);
-    const errorMessage = err?.response?.data?.message || "Unable to reach payment server.";
-    setQueryError(errorMessage);
+    const errorMessage = err?.response?.data?.message || err?.message || "Unable to reach payment server.";
+    setQueryError("⚠️ " + errorMessage);
   } finally {
     setQueryLoading(false);
   }
@@ -554,17 +565,18 @@ const queryTxStatus = async () => {
           </div>
 
           {/* Transaction status area */}
-          {txStatus !== "idle" && (
-            <div className="mt-3 text-sm">
+          {txStatus !== "idle" && txId && (
+            <div className="mt-3 text-sm bg-slate-50 border border-slate-200 rounded-lg p-3">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <div className={`text-xs font-semibold ${
                     txStatus === "pending" ? "text-amber-600" : txStatus === "success" ? "text-green-600" : "text-red-600"
                   }`}>Status: {String(txStatus).toUpperCase()}</div>
+                  <div className="text-xs text-slate-500 mt-1">ID: {txId}</div>
                   {txStatus === "success" && (
-                    <div className="text-xs text-green-600">Points purchase completed</div>
+                    <div className="text-xs text-green-600 font-medium mt-1">✓ Points purchase completed</div>
                   )}
-                  {queryError && <div className="text-xs text-red-600">{queryError}</div>}
+                  {queryError && <div className="text-xs text-red-600 mt-1">⚠️ {queryError}</div>}
                 </div>
 
                 {txStatus === "pending" && (
@@ -572,9 +584,9 @@ const queryTxStatus = async () => {
                     <button
                       disabled={queryLoading}
                       onClick={queryTxStatus}
-                      className="text-sm font-semibold px-3 py-1 rounded-md bg-white border border-slate-200 shadow-sm"
+                      className="text-sm font-semibold px-3 py-1.5 rounded-md bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                     >
-                      {queryLoading ? 'Checking...' : 'Query status'}
+                      {queryLoading ? '⏳ Checking...' : '🔄 Query'}
                     </button>
                   </div>
                 )}
@@ -587,7 +599,7 @@ const queryTxStatus = async () => {
               <Button
                 onClick={() => setStep("select")}
                 variant="ghost"
-                className="bg-gray-50 border border-slate-200 hover:bg-gray-100 text-slate-900 px-4 py-2 rounded-md"
+                className="bg-gray-50 border border-slate-200 hover:bg-gray-200 text-black px-4 py-2 rounded-md"
               >
                 Change details
               </Button>
