@@ -92,7 +92,7 @@ export default function StatementWithPoints() {
   const { toast, showToast } = useLocalToast();
 
   // Auto-poll interval reference for transaction status checks
-  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Auto-poll when a paymentResult exists and is not yet confirmed/failed
   useEffect(() => {
@@ -440,12 +440,13 @@ export default function StatementWithPoints() {
       await Promise.all([fetchInvoices(), fetchTransactions()]);
 
       // Keep modal open and show payment result + query button
-      setPaymentResult({
+      const resultData = {
         transactionId,
         message:
           apiPayload?.data?.message || "Payment initiated — check your phone.",
         status: apiPayload?.status_message || undefined,
-      });
+      };
+      setPaymentResult(resultData);
 
       // Clear the phone verification and input but leave payingInvoice open
       setStaffId("");
@@ -454,7 +455,16 @@ export default function StatementWithPoints() {
       setVerified(false);
       setPhoneError(null);
 
-      showToast("Payment initiated — transaction available below.", "success");
+      showToast("Payment initiated — checking status...", "success");
+
+      // Immediately query status for the first time
+      console.log("🔍 Statement: Querying initial status for tx:", transactionId);
+      if (transactionId) {
+        // Small delay to ensure state is set
+        setTimeout(() => {
+          queryTxStatus(transactionId);
+        }, 500);
+      }
     } catch (err: any) {
       console.error("Payment failed:", err);
 
@@ -475,7 +485,8 @@ export default function StatementWithPoints() {
 
     setQueryLoading(true);
     setQueryError(null);
-    setLastQueriedStatus(null);
+    
+    console.log("📡 Statement: Querying status for tx:", txId);
 
     try {
       const res = await api.post("/requestToPayStatus", {
@@ -486,8 +497,12 @@ export default function StatementWithPoints() {
       });
 
       const data = res?.data ?? {};
-      const status = String(data?.status || "pending").toLowerCase();
-      const message = data?.message || data?.status_message || null;
+      console.log("📡 Statement: Query response:", data);
+      
+      const status = String(data?.status || data?.payment?.status || "pending").toLowerCase();
+      const message = data?.message || data?.status_message || data?.payment?.message || null;
+      
+      console.log("📡 Statement: Parsed status:", status, "message:", message);
 
       if (["confirmed", "success", "paid", "completed"].includes(status)) {
         setLastQueriedStatus("success");
@@ -1075,29 +1090,54 @@ export default function StatementWithPoints() {
 
             {/* Payment result / query feedback */}
             {paymentResult && (
-              <div className="mt-4 p-3 rounded-lg bg-gray-50 border border-gray-100">
-                <p className="text-sm font-bold">Payment initiated</p>
-                <p className="text-xs text-gray-600">{paymentResult.message}</p>
+              <div className={`mt-4 p-4 rounded-lg border-2 ${
+                lastQueriedStatus === "success"
+                  ? "bg-green-50 border-green-200"
+                  : lastQueriedStatus === "failed"
+                    ? "bg-red-50 border-red-200"
+                    : "bg-amber-50 border-amber-200"
+              }`}>
+                <div className="flex items-center gap-2 mb-2">
+                  {lastQueriedStatus === "success" && (
+                    <CheckCircle2 className="w-5 h-5 text-green-600" />
+                  )}
+                  {lastQueriedStatus === "failed" && (
+                    <AlertCircle className="w-5 h-5 text-red-600" />
+                  )}
+                  {(!lastQueriedStatus || lastQueriedStatus === "pending") && (
+                    <Loader2 className="w-5 h-5 text-amber-600 animate-spin" />
+                  )}
+                  <p className={`text-sm font-bold ${
+                    lastQueriedStatus === "success"
+                      ? "text-green-700"
+                      : lastQueriedStatus === "failed"
+                        ? "text-red-700"
+                        : "text-amber-700"
+                  }`}>
+                    {lastQueriedStatus === "success"
+                      ? "✅ Payment Confirmed!"
+                      : lastQueriedStatus === "failed"
+                        ? "❌ Payment Failed"
+                        : "⏳ Processing Payment..."}
+                  </p>
+                </div>
+                
+                <p className="text-xs text-gray-600 mb-2">{paymentResult.message}</p>
 
                 {lastQueriedStatus && (
-                  <p className="mt-2 text-xs">
-                    Latest check:{" "}
-                    <span
-                      className={
-                        lastQueriedStatus === "success"
-                          ? "text-green-600 font-bold"
-                          : lastQueriedStatus === "pending"
-                            ? "text-yellow-600 font-bold"
-                            : "text-red-600 font-bold"
-                      }
-                    >
-                      {lastQueriedStatus.toUpperCase()}
-                    </span>
+                  <p className={`text-xs font-semibold ${
+                    lastQueriedStatus === "success"
+                      ? "text-green-600"
+                      : lastQueriedStatus === "failed"
+                        ? "text-red-600"
+                        : "text-amber-600"
+                  }`}>
+                    Status: {lastQueriedStatus.toUpperCase()}
                   </p>
                 )}
 
                 {queryError && (
-                  <p className="mt-2 text-xs text-red-600">{queryError}</p>
+                  <p className="mt-2 text-xs text-red-600 font-medium">{queryError}</p>
                 )}
               </div>
             )}
