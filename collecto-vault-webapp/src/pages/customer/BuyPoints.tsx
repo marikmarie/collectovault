@@ -123,6 +123,32 @@ export default function BuyPointsModal({
   };
 
   const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Auto-poll transaction status every 3 seconds when pending
+  useEffect(() => {
+    if (txStatus !== "pending" || !txId) {
+      // Clear any existing interval
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+      return;
+    }
+
+    // Start polling
+    console.log("🔄 Starting auto-poll for txId:", txId);
+    pollIntervalRef.current = setInterval(() => {
+      queryTxStatus();
+    }, 3000); // Check every 3 seconds
+
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+    };
+  }, [txStatus, txId]);
 
   // Reset all internal UI state
   const resetState = () => {
@@ -581,12 +607,15 @@ const queryTxStatus = async () => {
 
                 {txStatus === "pending" && (
                   <div className="flex items-center gap-2">
+                    <div className="text-xs text-amber-600 font-medium flex items-center gap-1">
+                      <span className="animate-spin">⏳</span> Auto-checking...
+                    </div>
                     <button
                       disabled={queryLoading}
                       onClick={queryTxStatus}
                       className="text-sm font-semibold px-3 py-1.5 rounded-md bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                     >
-                      {queryLoading ? '⏳ Checking...' : '🔄 Query'}
+                      {queryLoading ? '⏳ Checking...' : '🔄 Check now'}
                     </button>
                   </div>
                 )}
