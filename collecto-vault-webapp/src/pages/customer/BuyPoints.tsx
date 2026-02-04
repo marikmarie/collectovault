@@ -64,6 +64,9 @@ export default function BuyPointsModal({
   const [txStatus, setTxStatus] = useState<"idle" | "pending" | "success" | "failed">("idle");
   const [queryLoading, setQueryLoading] = useState(false);
   const [queryError, setQueryError] = useState<string | null>(null);
+  
+  // Auto-poll interval reference
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const verifyPhoneNumber = async (passedPhone?: string) => {
   // Use passedPhone if available, otherwise fallback to state
@@ -188,6 +191,37 @@ export default function BuyPointsModal({
     requestAnimationFrame(() => scrollerRef.current?.scrollTo({ left: 0 }));
   }, [open]);
 
+  // Auto-poll transaction status every 3 seconds when txId exists and status is pending
+  useEffect(() => {
+    const queryId = txId;
+
+    // Stop polling if there's no tx or final status
+    if (!queryId || txStatus === "success" || txStatus === "failed") {
+      if (pollIntervalRef.current) {
+        console.log("BuyPoints: stopping auto-poll");
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+      return;
+    }
+
+    // Start polling every 3 seconds
+    if (!pollIntervalRef.current) {
+      console.log("BuyPoints: starting auto-poll for tx", queryId);
+      pollIntervalRef.current = setInterval(async () => {
+        console.log("BuyPoints: auto-poll tick for tx", queryId);
+        await queryTxStatus(queryId);
+      }, 3000);
+    }
+
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+    };
+  }, [txId, txStatus]);
+
   /* ---- Navigation Helpers ---- */
   const scrollNext = () => {
     const el = scrollerRef.current;
@@ -268,6 +302,14 @@ const handleConfirmPayment = async () => {
       if (data?.data?.requestToPay === true) {
         setTxStatus("pending");
         setStep("confirm");
+        
+        // Immediately query status for the first time
+        console.log("🔍 BuyPoints: Querying initial status for tx:", transactionId);
+        if (transactionId) {
+          setTimeout(() => {
+            queryTxStatus(transactionId);
+          }, 500);
+        }
       } else if (String(data?.status_message).toLowerCase() === "success") {
         setTxStatus("success");
         setStep("success");
@@ -286,9 +328,11 @@ const handleConfirmPayment = async () => {
   }
 };
 // --- Transaction Status Query ---
-// --- Transaction Status Query ---
-const queryTxStatus = async () => {
-  if (!txId) {
+const queryTxStatus = async (txIdParam?: string | number | null) => {
+  const queryTxId = txIdParam ?? txId;
+  
+  if (!queryTxId) {
+    console.warn("❌ queryTxStatus: No txId provided");
     setQueryError("No transaction ID found to track.");
     return;
   }
@@ -297,26 +341,31 @@ const queryTxStatus = async () => {
   setQueryError(null);
 
   try {
+    console.log("📡 BuyPoints: Querying status for tx:", queryTxId, "(from param:", !!txIdParam, ")");
+    
     // Retrieve identifiers for the request
     const vaultOTPToken = sessionStorage.getItem('vaultOtpToken') || undefined;
     const collectoId = localStorage.getItem('collectoId') ?? undefined;
     const clientId = localStorage.getItem('clientId') ?? undefined;
 
-    /** * Calling the updated status endpoint with full context
-     */
     const res = await api.post("/requestToPayStatus", { 
       vaultOTPToken,
       collectoId,
       clientId,
-      transactionId: String(txId),
-     
+      transactionId: String(queryTxId),
     });
 
     const data = res?.data;
+    console.log("📡 BuyPoints: Full query response:", JSON.stringify(data, null, 2));
     
-    const status = String(data?.status || "pending").toLowerCase();
+    // Extract status from various possible locations
+    let status = (data?.status || data?.payment?.status || data?.paymentStatus || "pending").toString().toLowerCase().trim();
+    const message = data?.message || data?.status_message || data?.payment?.message || null;
+    
+    console.log("📡 BuyPoints: Extracted status:", status, "| message:", message);
 
-    if (["confirmed", "success", "paid", "completed"].includes(status)) {
+    if (["confirmed", "success", "paid", "completed", "true"].includes(status)) {
+      console.log("✅ BuyPoints STATUS MATCH: success");
       setTxStatus("success");
       setStep("success");
       
@@ -324,17 +373,20 @@ const queryTxStatus = async () => {
         onSuccess?.({ addedPoints: selectedPackage.points });
       }
     } else if (["pending", "processing", "in_progress"].includes(status)) {
+      console.log("⏳ BuyPoints STATUS MATCH: pending");
       setTxStatus("pending");
       // UI remains on the "confirm" step waiting for user to finish on phone
-    } else if (status === "failed") {
+    } else if (status === "failed" || status === "false") {
+      console.log("❌ BuyPoints STATUS MATCH: failed");
       setTxStatus("failed");
       setStep("failure");
-      setError(data?.message || "Transaction was declined or failed.");
+      setError(message || "Transaction was declined or failed.");
     } else {
-      setQueryError(data?.message || "Transaction status unknown. Please check your phone.");
+      console.warn("⚠️ BuyPoints Unknown status:", status);
+      setQueryError(message || "Transaction status unknown. Please check your phone.");
     }
   } catch (err: any) {
-    console.error("Status Query Error:", err);
+    console.error("BuyPoints Status Query Error:", err);
     const errorMessage = err?.response?.data?.message || "Unable to reach payment server.";
     setQueryError(errorMessage);
   } finally {
@@ -525,6 +577,65 @@ const queryTxStatus = async () => {
   } else if (step === "confirm") {
     content = (
       <div className="text-center py-3">
+        {/* Status feedback - SHOW AT TOP if exists */}
+        {txStatus !== "idle" && (
+          <div className={`mb-4 p-4 rounded-lg border-2 ${
+            txStatus === "success"
+              ? "bg-green-50 border-green-300"
+              : txStatus === "failed"
+                ? "bg-red-50 border-red-300"
+                : "bg-blue-50 border-blue-300"
+          }`}>
+            <div className="flex items-center gap-2 mb-2">
+              {txStatus === "success" && (
+                <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
+              )}
+              {txStatus === "failed" && (
+                <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+              )}
+              {txStatus === "pending" && (
+                <Loader2 className="w-5 h-5 text-blue-600 animate-spin shrink-0" />
+              )}
+              <p className={`text-sm font-bold ${
+                txStatus === "success"
+                  ? "text-green-700"
+                  : txStatus === "failed"
+                    ? "text-red-700"
+                    : "text-blue-700"
+              }`}>
+                {txStatus === "success"
+                  ? "✅ Payment Confirmed!"
+                  : txStatus === "failed"
+                    ? "❌ Payment Failed"
+                    : "⏳ Processing Payment..."}
+              </p>
+            </div>
+            
+            {txStatus === "success" && (
+              <p className="text-xs text-green-600 font-medium">Points have been added to your account</p>
+            )}
+            {txStatus === "failed" && (
+              <p className="text-xs text-red-600 font-medium">Your payment was declined. Please try again.</p>
+            )}
+            {txStatus === "pending" && (
+              <div className="flex items-center gap-2 mt-2">
+                <p className="text-xs text-blue-600 font-medium flex-1">Checking status automatically...</p>
+                <button
+                  disabled={queryLoading}
+                  onClick={() => queryTxStatus()}
+                  className="text-xs font-semibold px-2 py-1 rounded-md bg-white border border-blue-200 hover:bg-blue-50 transition-colors"
+                >
+                  {queryLoading ? '⏳' : '🔄'} Check
+                </button>
+              </div>
+            )}
+            
+            {queryError && (
+              <p className="mt-2 text-xs text-red-600 font-medium">{queryError}</p>
+            )}
+          </div>
+        )}
+        
         <div className="mx-auto w-14 h-14 rounded-full bg-linear-to-br from-yellow-100 via-yellow-50 to-white flex items-center justify-center mb-2 shadow-sm text-2xl text-[#ffa727]">
           ⚠️
         </div>
@@ -552,35 +663,6 @@ const queryTxStatus = async () => {
           <div className="mt-3 text-sm text-slate-500">
             Mobile: <span className="text-slate-900 font-medium">{phone}</span>
           </div>
-
-          {/* Transaction status area */}
-          {txStatus !== "idle" && (
-            <div className="mt-3 text-sm">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <div className={`text-xs font-semibold ${
-                    txStatus === "pending" ? "text-amber-600" : txStatus === "success" ? "text-green-600" : "text-red-600"
-                  }`}>Status: {String(txStatus).toUpperCase()}</div>
-                  {txStatus === "success" && (
-                    <div className="text-xs text-green-600">Points purchase completed</div>
-                  )}
-                  {queryError && <div className="text-xs text-red-600">{queryError}</div>}
-                </div>
-
-                {txStatus === "pending" && (
-                  <div className="flex items-center gap-2">
-                    <button
-                      disabled={queryLoading}
-                      onClick={queryTxStatus}
-                      className="text-sm font-semibold px-3 py-1 rounded-md bg-white border border-slate-200 shadow-sm"
-                    >
-                      {queryLoading ? 'Checking...' : 'Query status'}
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
 
           <div className="mt-6">
             <div className="flex gap-3 items-center">

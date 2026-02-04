@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Coins, Trophy, DollarSign, TrendingUp, Star, Activity } from 'lucide-react';
+import api from '../../api';
 
 interface DashboardData {
   totalUsers: number;
@@ -25,11 +26,9 @@ const Dashboard: React.FC = () => {
     try {
       setLoading(true);
       // Replace with your actual endpoint
-      const response = await fetch('http://localhost:3000/api/admin/dashboard');
-      if (response.ok) {
-        const data = await response.json();
-        setDashboardData(data);
-      }
+     // const response = await fetch('http://localhost:3000/api/admin/dashboard');
+     const response = await api.get('/admin/dashboard');
+      setDashboardData(response.data);
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
     } finally {

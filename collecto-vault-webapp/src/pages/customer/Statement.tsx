@@ -14,11 +14,15 @@ import InvoiceDetailModal from "./InvoiceDetailModal";
 import Button from "../../components/Button";
 import { customerService } from "../../api/customer";
 
+/* =========================
+   Local Toast
+========================= */
 const useLocalToast = () => {
   const [toast, setToast] = useState<null | {
     type: "success" | "error" | "info";
     message: string;
   }>(null);
+
   const showToast = (
     message: string,
     type: "success" | "error" | "info" = "info",
@@ -26,13 +30,20 @@ const useLocalToast = () => {
     setToast({ message, type });
     window.setTimeout(() => setToast(null), 3500);
   };
+
   return { toast, showToast };
 };
 
+/* =========================
+   Storage
+========================= */
 const vaultOTPToken = sessionStorage.getItem("vaultOtpToken") || undefined;
 const collectoId = localStorage.getItem("collectoId") || undefined;
 const clientId = localStorage.getItem("clientId") || undefined;
 
+/* =========================
+   Component
+========================= */
 export default function StatementWithPoints() {
   // Lists
   const [invoices, setInvoices] = useState<any[]>([]);
@@ -60,11 +71,11 @@ export default function StatementWithPoints() {
     null,
   );
 
-  // Payment controls (single combined flow)
+  // Payment controls
   const [payPhone, setPayPhone] = useState("");
   const [pointsToUse, setPointsToUse] = useState<number>(0);
 
-  // Verification states for phone
+  // Phone verification
   const [verifying, setVerifying] = useState(false);
   const [verified, setVerified] = useState(false);
   const [accountName, setAccountName] = useState<string | null>(null);
@@ -77,12 +88,13 @@ export default function StatementWithPoints() {
 
   const [ugxPerPoint, setUgxPerPoint] = useState<number>(1);
 
-  // Payment result / transaction tracking
+  // Payment result / status
   const [paymentResult, setPaymentResult] = useState<null | {
     transactionId: string | null;
     message?: string;
     status?: string;
   }>(null);
+
   const [queryLoading, setQueryLoading] = useState(false);
   const [queryError, setQueryError] = useState<string | null>(null);
   const [lastQueriedStatus, setLastQueriedStatus] = useState<string | null>(
@@ -91,14 +103,40 @@ export default function StatementWithPoints() {
 
   const { toast, showToast } = useLocalToast();
 
-  // Auto-poll interval reference for transaction status checks
+  // Polling ref
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Auto-poll when a paymentResult exists and is not yet confirmed/failed
+  /* =========================
+     Helpers
+  ========================= */
+  const pointsToUGX = (points: number) => Math.round(points * ugxPerPoint);
+  const ugxToPoints = (ugx: number) => Math.ceil(ugx / ugxPerPoint);
+
+  const computeMaxPointsForInvoice = (
+    invoiceAmount: number,
+    invoicePointsEquivalent: number,
+  ) => {
+    const maxFromAmount = Math.max(
+      0,
+      Math.floor((invoiceAmount - 1) / ugxPerPoint),
+    );
+    return Math.min(pointsBalance, invoicePointsEquivalent, maxFromAmount);
+  };
+
+  const getInvoiceById = useCallback(
+    (id: string | null) => {
+      if (!id) return null;
+      return invoices.find((i) => i.details?.id === id) ?? null;
+    },
+    [invoices],
+  );
+
+  /* =========================
+     Auto Polling
+  ========================= */
   useEffect(() => {
     const txId = paymentResult?.transactionId ?? null;
 
-    // stop polling if there's no tx or final status
     if (!txId) {
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
@@ -107,7 +145,6 @@ export default function StatementWithPoints() {
       return;
     }
 
-    // If lastQueriedStatus indicates final state, don't poll
     if (lastQueriedStatus === "success" || lastQueriedStatus === "failed") {
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
@@ -116,11 +153,9 @@ export default function StatementWithPoints() {
       return;
     }
 
-    // Start polling every 3 seconds
     if (!pollIntervalRef.current) {
-      console.log("Statement: starting auto-poll for tx", txId);
-      pollIntervalRef.current = setInterval(() => {
-        queryTxStatus(txId);
+      pollIntervalRef.current = setInterval(async () => {
+        await queryTxStatus(txId);
       }, 3000);
     }
 
@@ -132,31 +167,9 @@ export default function StatementWithPoints() {
     };
   }, [paymentResult?.transactionId, lastQueriedStatus]);
 
-  // ---------- Helpers ----------
-  const pointsToUGX = (points: number) => Math.round(points * ugxPerPoint);
-  const ugxToPoints = (ugx: number) => Math.ceil(ugx / ugxPerPoint);
-
-  const computeMaxPointsForInvoice = (
-    invoiceAmount: number,
-    invoicePointsEquivalent: number,
-  ) => {
-    const maxFromAmount = Math.max(
-      0,
-      Math.floor((invoiceAmount - 1) / ugxPerPoint),
-    ); // ensure > 0 mobile portion
-    return Math.min(pointsBalance, invoicePointsEquivalent, maxFromAmount);
-  };
-
-  // Safe derived invoice data lookup
-  const getInvoiceById = useCallback(
-    (id: string | null) => {
-      if (!id) return null;
-      return invoices.find((i) => i.details?.id === id) ?? null;
-    },
-    [invoices],
-  );
-
-  // ---------- API / fetchers ----------
+  /* =========================
+     Fetchers
+  ========================= */
   const fetchActivePackages = useCallback(async () => {
     setLoadingType("packages");
     setLoading(true);
@@ -180,15 +193,9 @@ export default function StatementWithPoints() {
         (s: number, p: any) => s + (p.price || 0),
         0,
       );
+
       if (totalPoints > 0) {
         setUgxPerPoint(totalPrice / totalPoints);
-      } else if (mapped.length > 0) {
-        const avg =
-          mapped.reduce(
-            (s: number, p: any) => s + p.price / (p.points || 1),
-            0,
-          ) / mapped.length;
-        setUgxPerPoint(avg || 1);
       } else {
         setUgxPerPoint(1);
       }
@@ -216,6 +223,7 @@ export default function StatementWithPoints() {
           clientId,
           invoiceId: invoiceId ?? null,
         });
+
         const invoiceArray = res.data?.data?.data;
         const validatedData = Array.isArray(invoiceArray) ? invoiceArray : [];
 
@@ -272,6 +280,7 @@ export default function StatementWithPoints() {
     try {
       const customerRes = await customerService.getCustomerData(clientId);
       const cData = customerRes.data;
+
       if (cData?.customer) {
         setPointsBalance(cData.customer.currentPoints || 0);
         setTier(cData.currentTier?.name || "N/A");
@@ -284,7 +293,8 @@ export default function StatementWithPoints() {
             const next = cData.tiers[idx + 1];
             const diff = next.pointsRequired - cData.currentTier.pointsRequired;
             const earned =
-              cData.customer.currentPoints - cData.currentTier.pointsRequired;
+              cData.customer.currentPoints -
+              cData.currentTier.pointsRequired;
             setTierProgress(Math.min(100, Math.max(0, (earned / diff) * 100)));
           } else {
             setTierProgress(100);
@@ -311,7 +321,9 @@ export default function StatementWithPoints() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ---------- Phone verification ----------
+  /* =========================
+     Phone Verification
+  ========================= */
   const verifyPhoneNumber = useCallback(async (number: string) => {
     const trimmed = number.trim();
     if (trimmed.length < 10) return;
@@ -341,8 +353,8 @@ export default function StatementWithPoints() {
 
       const verifiedFlag = Boolean(
         nested?.verifyPhoneNumber ??
-        deeper?.verifyPhoneNumber ??
-        String(payload?.status_message ?? "").toLowerCase() === "success",
+          deeper?.verifyPhoneNumber ??
+          String(payload?.status_message ?? "").toLowerCase() === "success",
       );
 
       if (verifiedFlag) {
@@ -364,7 +376,9 @@ export default function StatementWithPoints() {
     }
   }, []);
 
-  // ---------- Payment handler ----------
+  /* =========================
+     Payment Handler
+  ========================= */
   const handlePayInvoice = async (invoiceId: string) => {
     try {
       setLoading(true);
@@ -396,7 +410,6 @@ export default function StatementWithPoints() {
         return;
       }
 
-      // Sanity check: ensure mobilePayment >= 1 UGX (to enforce mixed payment)
       if (mobilePayment <= 0) {
         showToast("Please leave a mobile money portion > 0 UGX.", "error");
         setLoading(false);
@@ -426,48 +439,48 @@ export default function StatementWithPoints() {
       }
 
       const response = await invoiceService.payInvoice(payload);
+      const apiPayload = response.data ?? {};
 
-      // Response parsing (robust)
-      const apiPayload = response.data;
-      const transactionId = apiPayload?.data?.transactionId ?? null;
+      const transactionId =
+        apiPayload?.data?.transactionId ??
+        apiPayload?.data?.transaction_id ??
+        apiPayload?.transactionId ??
+        apiPayload?.transaction_id ??
+        apiPayload?.txId ??
+        apiPayload?.tx_id ??
+        null;
 
-      // Optimistic UI update
+      const resultData = {
+        transactionId,
+        message:
+          apiPayload?.data?.message ||
+          apiPayload?.message ||
+          "Payment initiated — check your phone.",
+        status: apiPayload?.status_message || apiPayload?.status || undefined,
+      };
+
       if (pointsUse > 0) {
         setPointsBalance((p) => Math.max(0, p - pointsUse));
       }
 
-      // Refresh lists
-      await Promise.all([fetchInvoices(), fetchTransactions()]);
-
-      // Keep modal open and show payment result + query button
-      const resultData = {
-        transactionId,
-        message:
-          apiPayload?.data?.message || "Payment initiated — check your phone.",
-        status: apiPayload?.status_message || undefined,
-      };
       setPaymentResult(resultData);
+      showToast("Payment initiated — checking status...", "success");
 
-      // Clear the phone verification and input but leave payingInvoice open
+      if (transactionId) {
+        setTimeout(() => {
+          queryTxStatus(transactionId);
+        }, 400);
+      }
+
+      await Promise.allSettled([fetchInvoices(), fetchTransactions()]);
+
       setStaffId("");
       setPayPhone("");
       setAccountName(null);
       setVerified(false);
       setPhoneError(null);
-
-      showToast("Payment initiated — checking status...", "success");
-
-      // Immediately query status for the first time
-      console.log("🔍 Statement: Querying initial status for tx:", transactionId);
-      if (transactionId) {
-        // Small delay to ensure state is set
-        setTimeout(() => {
-          queryTxStatus(transactionId);
-        }, 500);
-      }
     } catch (err: any) {
       console.error("Payment failed:", err);
-
       const errorMsg =
         err?.response?.data?.message || err?.message || "Payment failed";
       showToast(errorMsg, "error");
@@ -476,91 +489,82 @@ export default function StatementWithPoints() {
     }
   };
 
-  // ---------- Query transaction status ----------
-  const queryTxStatus = async (txId?: string | null) => {
-    if (!txId) {
+  /* =========================
+     Query Tx Status
+  ========================= */
+  const queryTxStatus = async (txIdParam?: string | null) => {
+    const finalTxId = txIdParam ?? paymentResult?.transactionId;
+
+    if (!finalTxId) {
       setQueryError("No transaction ID found to track.");
       return;
     }
 
     setQueryLoading(true);
     setQueryError(null);
-    
-    console.log("📡 Statement: Querying status for tx:", txId);
 
     try {
       const res = await api.post("/requestToPayStatus", {
         vaultOTPToken,
         collectoId,
         clientId,
-        transactionId: String(txId),
+        transactionId: String(finalTxId),
       });
 
       const data = res?.data ?? {};
-      console.log("📡 Statement: Query response:", data);
-      
-      const status = String(data?.status || data?.payment?.status || "pending").toLowerCase();
-      const message = data?.message || data?.status_message || data?.payment?.message || null;
-      
-      console.log("📡 Statement: Parsed status:", status, "message:", message);
 
-      if (["confirmed", "success", "paid", "completed"].includes(status)) {
+      const statusRaw =
+        data?.status ??
+        data?.payment?.status ??
+        data?.paymentStatus ??
+        data?.data?.status ??
+        data?.data?.paymentStatus ??
+        data?.status_message ??
+        data?.payment?.status_message ??
+        "pending";
+
+      const status = String(statusRaw).toLowerCase().trim();
+
+      const message =
+        data?.message ??
+        data?.status_message ??
+        data?.payment?.message ??
+        null;
+
+      if (["confirmed", "success", "paid", "completed", "true"].includes(status)) {
         setLastQueriedStatus("success");
-        // Refresh transactions to reflect the confirmed status
         await fetchTransactions();
-        // update paymentResult if it refers to this txId
         setPaymentResult((prev) =>
-          prev
-            ? { ...prev, status: "success", message: message ?? prev.message }
-            : prev,
+          prev ? { ...prev, status: "success", message } : prev,
         );
-        // Also update selectedTransaction if it matches
-        if (selectedTransaction?.transactionId === txId) {
-          setSelectedTransaction((s: any) => ({
-            ...s,
-            paymentStatus: "SUCCESS",
-            confirmedAt: new Date().toISOString(),
-          }));
-        }
       } else if (["pending", "processing", "in_progress"].includes(status)) {
         setLastQueriedStatus("pending");
         setPaymentResult((prev) =>
-          prev
-            ? { ...prev, status: "pending", message: message ?? prev.message }
-            : prev,
+          prev ? { ...prev, status: "pending", message } : prev,
         );
-      } else if (status === "failed") {
+      } else if (["failed", "false"].includes(status)) {
         setLastQueriedStatus("failed");
         setPaymentResult((prev) =>
-          prev
-            ? { ...prev, status: "failed", message: message ?? prev.message }
-            : prev,
+          prev ? { ...prev, status: "failed", message } : prev,
         );
-        if (selectedTransaction?.transactionId === txId) {
-          setSelectedTransaction((s: any) => ({
-            ...s,
-            paymentStatus: "FAILED",
-          }));
-        }
       } else {
-        setQueryError(
-          message || "Transaction status unknown. Please check your phone.",
-        );
+        setQueryError(message || "Transaction status unknown.");
       }
     } catch (err: any) {
       console.error("Status Query Error:", err);
-      const errorMessage =
-        err?.response?.data?.message || "Unable to reach payment server.";
-      setQueryError(errorMessage);
+      setQueryError(
+        err?.response?.data?.message || "Unable to reach payment server.",
+      );
     } finally {
       setQueryLoading(false);
     }
   };
 
-  // When user opens payingInvoice, initialize controls
+  /* =========================
+     Modal Init (FIXED)
+  ========================= */
   useEffect(() => {
     if (!payingInvoice) {
-      // reset local modal-only state when modal closed
       setPointsToUse(0);
       setMobileAmount(undefined);
       setStaffId("");
@@ -575,31 +579,28 @@ export default function StatementWithPoints() {
     }
 
     const invoice = getInvoiceById(payingInvoice);
-    if (!invoice) {
-      setPointsToUse(0);
-      setMobileAmount(undefined);
-      return;
-    }
+    if (!invoice) return;
 
     const amount = Number(
       invoice?.amount_less ?? invoice?.details?.invoice_amount ?? 0,
     );
 
-    // sensible defaults
     setPointsToUse(0);
     setMobileAmount(amount);
-    // clear previous paymentResult when opening for a fresh attempt
     setPaymentResult(null);
     setQueryError(null);
     setLastQueriedStatus(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [payingInvoice, invoices]);
+  }, [payingInvoice]); // 🚨 IMPORTANT: invoices REMOVED
 
-  // Helper: compute safeMaxPoints for the currently opened invoice
+  /* =========================
+     Derived Values
+  ========================= */
   const currentInvoice = useMemo(
     () => getInvoiceById(payingInvoice),
     [getInvoiceById, payingInvoice],
   );
+
   const currentInvoiceAmount = useMemo(() => {
     if (!currentInvoice) return 0;
     return Number(
@@ -608,14 +609,15 @@ export default function StatementWithPoints() {
         0,
     );
   }, [currentInvoice]);
+
   const currentPointsEquivalent =
     currentInvoice?.pointsEquivalent ?? ugxToPoints(currentInvoiceAmount);
+
   const safeMaxPoints = computeMaxPointsForInvoice(
     currentInvoiceAmount,
     currentPointsEquivalent,
   );
 
-  // Update mobileAmount when slider changes (user applied points)
   const onSliderChange = (pts: number) => {
     const clamped = Math.max(0, Math.min(safeMaxPoints, pts));
     setPointsToUse(clamped);
@@ -623,7 +625,6 @@ export default function StatementWithPoints() {
     setMobileAmount(remaining);
   };
 
-  // When user edits mobileAmount manually, keep points in sync (best-effort)
   const onMobileAmountChange = (value: number) => {
     const newMobile = Math.max(0, value);
     setMobileAmount(newMobile);
@@ -634,9 +635,11 @@ export default function StatementWithPoints() {
     setPointsToUse(newPts);
   };
 
-  // ---------- Render ----------
+
+
   return (
-    <div className="min-h-screen bg-[#f6f7fb] font-sans pb-20">
+    
+ <div className="min-h-screen bg-[#f6f7fb] font-sans pb-20">
       <TopNav />
 
       {toast && (
@@ -827,7 +830,7 @@ export default function StatementWithPoints() {
       {/* Payment Modal — single Payment flow */}
       {payingInvoice && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl p-6 border border-gray-100">
+          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl p-6 border border-gray-100 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h4 className="text-xl font-extrabold text-gray-900">
@@ -847,7 +850,78 @@ export default function StatementWithPoints() {
               </button>
             </div>
 
-            <div className="rounded-2xl overflow-hidden mb-3 border border-pink-50 shadow-sm">
+            {/* Payment result / query feedback - SHOW AT TOP if exists */}
+            {paymentResult && (
+              <>
+                <div className={`mb-4 p-4 rounded-lg border-2 ${
+                  lastQueriedStatus === "success"
+                    ? "bg-green-50 border-green-300"
+                    : lastQueriedStatus === "failed"
+                      ? "bg-red-50 border-red-300"
+                      : "bg-blue-50 border-blue-300"
+                }`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    {lastQueriedStatus === "success" && (
+                      <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
+                    )}
+                    {lastQueriedStatus === "failed" && (
+                      <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+                    )}
+                    {(!lastQueriedStatus || lastQueriedStatus === "pending") && (
+                      <Loader2 className="w-5 h-5 text-blue-600 animate-spin shrink-0" />
+                    )}
+                    <p className={`text-sm font-bold ${
+                      lastQueriedStatus === "success"
+                        ? "text-green-700"
+                        : lastQueriedStatus === "failed"
+                          ? "text-red-700"
+                          : "text-blue-700"
+                    }`}>
+                      {lastQueriedStatus === "success"
+                        ? "✅ Payment Confirmed!"
+                        : lastQueriedStatus === "failed"
+                          ? "❌ Payment Failed"
+                          : "⏳ Processing Payment..."}
+                    </p>
+                  </div>
+                  
+                  <p className="text-xs text-gray-600 mb-2">{paymentResult.message}</p>
+
+                  {lastQueriedStatus && (
+                    <p className={`text-xs font-semibold ${
+                      lastQueriedStatus === "success"
+                        ? "text-green-600"
+                        : lastQueriedStatus === "failed"
+                          ? "text-red-600"
+                          : "text-blue-600"
+                    }`}>
+                      Status: {lastQueriedStatus.toUpperCase()}
+                    </p>
+                  )}
+
+                  {queryError && (
+                    <p className="mt-2 text-xs text-red-600 font-medium">{queryError}</p>
+                  )}
+
+                  {/* Query button in status box */}
+                  {lastQueriedStatus === "pending" && (
+                    <button
+                      onClick={() => queryTxStatus(paymentResult.transactionId)}
+                      disabled={queryLoading}
+                      className="mt-3 w-full bg-blue-600 text-white font-semibold py-2 px-3 rounded-md text-sm hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                    >
+                      {queryLoading ? "⏳ Checking..." : "🔄 Check Status Now"}
+                    </button>
+                  )}
+                </div>
+                <hr className="mb-4 border-gray-200" />
+              </>
+            )}
+
+            {/* Invoice and payment form - HIDE when result shows */}
+            {!paymentResult && (
+              <>
+                <div className="rounded-2xl overflow-hidden mb-3 border border-pink-50 shadow-sm">
               <div className="px-4 py-2">
                 <div className="flex justify-between items-center">
                   <div>
@@ -1041,104 +1115,39 @@ export default function StatementWithPoints() {
               )}
             </div>
 
-            {/* Action buttons */}
-            <div className="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
-              <button
-                onClick={() => {
-                  setPayingInvoice(null);
-                }}
-                className="bg-gray-100 text-gray-700 font-bold py-1.5 px-4 rounded-md text-sm hover:bg-gray-200 transition-colors"
-              >
-                Cancel
-              </button>
+                {/* Action buttons */}
+                <div className="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
+                  <button
+                    onClick={() => {
+                      setPayingInvoice(null);
+                    }}
+                    className="bg-gray-100 text-gray-700 font-bold py-1.5 px-4 rounded-md text-sm hover:bg-gray-200 transition-colors"
+                  >
+                    Cancel
+                  </button>
 
-              <div className="flex items-center gap-3">
-                <Button
-                  onClick={() => handlePayInvoice(payingInvoice!)}
-                  disabled={loading || verifying || !verified}
-                  className="bg-[#e9e0e3] text-gray-900 font-bold py-1.5 px-5 rounded-md text-sm disabled:opacity-50"
-                >
-                  {loading ? "Processing..." : "Continue"}
-                </Button>
-
-                {/* If a paymentResult exists show transactionId + Query button */}
-                {paymentResult?.transactionId && (
-                  <div className="flex items-center gap-3">
-                    <div className="text-xs text-gray-600">
-                      <div className="font-bold">TX:</div>
-                      <div className="truncate max-w-40">{paymentResult.transactionId}</div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <div className="text-xs text-amber-600 font-medium flex items-center gap-1">
-                        <span className="animate-spin">⏳</span>
-                        Auto-checking...
-                      </div>
-
-                      <button
-                        onClick={() => queryTxStatus(paymentResult.transactionId)}
-                        disabled={queryLoading}
-                        className="bg-white border border-gray-200 px-2.5 py-1 rounded-md text-[10px] font-bold hover:bg-gray-50 transition-colors"
-                      >
-                        {queryLoading ? "⏳ Checking..." : "🔄 Check now"}
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Payment result / query feedback */}
-            {paymentResult && (
-              <div className={`mt-4 p-4 rounded-lg border-2 ${
-                lastQueriedStatus === "success"
-                  ? "bg-green-50 border-green-200"
-                  : lastQueriedStatus === "failed"
-                    ? "bg-red-50 border-red-200"
-                    : "bg-amber-50 border-amber-200"
-              }`}>
-                <div className="flex items-center gap-2 mb-2">
-                  {lastQueriedStatus === "success" && (
-                    <CheckCircle2 className="w-5 h-5 text-green-600" />
-                  )}
-                  {lastQueriedStatus === "failed" && (
-                    <AlertCircle className="w-5 h-5 text-red-600" />
-                  )}
-                  {(!lastQueriedStatus || lastQueriedStatus === "pending") && (
-                    <Loader2 className="w-5 h-5 text-amber-600 animate-spin" />
-                  )}
-                  <p className={`text-sm font-bold ${
-                    lastQueriedStatus === "success"
-                      ? "text-green-700"
-                      : lastQueriedStatus === "failed"
-                        ? "text-red-700"
-                        : "text-amber-700"
-                  }`}>
-                    {lastQueriedStatus === "success"
-                      ? "✅ Payment Confirmed!"
-                      : lastQueriedStatus === "failed"
-                        ? "❌ Payment Failed"
-                        : "⏳ Processing Payment..."}
-                  </p>
+                  <Button
+                    onClick={() => handlePayInvoice(payingInvoice!)}
+                    disabled={loading || verifying || !verified}
+                    className="bg-[#e9e0e3] text-gray-900 font-bold py-1.5 px-5 rounded-md text-sm disabled:opacity-50"
+                  >
+                    {loading ? "Processing..." : "Continue"}
+                  </Button>
                 </div>
-                
-                <p className="text-xs text-gray-600 mb-2">{paymentResult.message}</p>
+              </>
+            )}
 
-                {lastQueriedStatus && (
-                  <p className={`text-xs font-semibold ${
-                    lastQueriedStatus === "success"
-                      ? "text-green-600"
-                      : lastQueriedStatus === "failed"
-                        ? "text-red-600"
-                        : "text-amber-600"
-                  }`}>
-                    Status: {lastQueriedStatus.toUpperCase()}
-                  </p>
-                )}
-
-                {queryError && (
-                  <p className="mt-2 text-xs text-red-600 font-medium">{queryError}</p>
-                )}
+            {/* Close button when showing result */}
+            {paymentResult && (
+              <div className="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => {
+                    setPayingInvoice(null);
+                  }}
+                  className="bg-gray-900 text-white font-bold py-2 px-6 rounded-md text-sm hover:bg-gray-800 transition-colors"
+                >
+                  Close
+                </button>
               </div>
             )}
           </div>

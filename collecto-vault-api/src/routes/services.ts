@@ -101,11 +101,17 @@ router.post("/invoiceDetails", async (req: Request, res: Response) => {
     console.log(BASE_URL);
     console.log(response.data);
 
+    // Process invoice points with earning rule (ruleId should be passed from request or retrieved from client config)
     try {
-      await processInvoicesForPoints(response.data, collectoId, clientId);
+      const { ruleId } = req.body;
+      if (ruleId) {
+        await processInvoicesForPoints(response.data, collectoId, clientId, ruleId);
+      } else {
+        console.log("No ruleId provided in request. Skipping point calculation. Please pass ruleId or configure default rule for client.");
+      }
     } catch (pointsErr: any) {
       console.error("Error processing invoice points:", pointsErr.message);
-     }
+    }
 
     return res.json(response.data);
   } catch (error: any) {
@@ -124,29 +130,30 @@ router.post("/invoiceDetails", async (req: Request, res: Response) => {
 async function processInvoicesForPoints(
   response: any,
   collectoId: string,
-  clientId: string
+  clientId: string,
+  ruleId: number
 ) {
   if (!response?.data?.data || !Array.isArray(response.data.data)) {
     console.log("No invoice data to process");
     return;
   }
 
-  const invoiceList = response.data.data;
-  const earningRules = await earningRuleRepository.findActive(collectoId);
-
-  // Find "Make Purchase" or "transaction" type earning rule
-  const purchaseRule = earningRules.find(
-    (rule) =>
-      rule.ruleTitle.toLowerCase().includes("make purchase") ||
-      rule.ruleTitle.toLowerCase().includes("transaction")
-  );
-
-  if (!purchaseRule) {
-    console.log("No 'Make Purchase' or 'transaction' earning rule found");
+  if (!ruleId) {
+    console.log("No earning rule ID provided for client", clientId);
     return;
   }
 
-  console.log(`Using earning rule: ${purchaseRule.ruleTitle} with ${purchaseRule.points} points`);
+  const invoiceList = response.data.data;
+
+  // Fetch the specific earning rule by ID
+  const purchaseRule = await earningRuleRepository.findById(ruleId);
+
+  if (!purchaseRule) {
+    console.log(`Earning rule with ID ${ruleId} not found for client ${clientId}`);
+    return;
+  }
+
+  console.log(`Using earning rule ID ${ruleId}: ${purchaseRule.ruleTitle} with ${purchaseRule.points} points for client ${clientId}`);
 
   for (const invoice of invoiceList) {
     try {
@@ -205,7 +212,7 @@ async function processInvoicesForPoints(
       }
 
       console.log(
-        `Invoice ${invoiceId} processed: Customer ${customer.id} earned ${pointsEarned} points`
+        `Invoice ${invoiceId} processed: Customer ${customer.id} earned ${pointsEarned} points using rule ID ${ruleId}`
       );
     } catch (invoiceErr: any) {
       console.error(
