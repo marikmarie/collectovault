@@ -216,7 +216,7 @@ export default function LoginPage() {
                       type="text"
                       value={idValue}
                       onChange={(e) => { setIdValue(e.target.value); setError(''); }}
-                      placeholder={userType === 'client' ? "324CV38" : "STF-001"}
+                      placeholder={userType === 'client' ? "324CV38" : "CollectoId"}
                       className="block w-full pl-11 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-[#67095D]/5 focus:border-[#67095D] focus:bg-white transition-all outline-none text-sm font-medium"
                       required
                       disabled={isProcessing}
