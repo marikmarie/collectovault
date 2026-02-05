@@ -9,6 +9,7 @@ interface DashboardData {
   packageRevenue: string;
 }
 
+
 const Dashboard: React.FC = () => {
   const [dashboardData, setDashboardData] = useState<DashboardData>({
     totalUsers: 0,
@@ -25,10 +26,28 @@ const Dashboard: React.FC = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      // Replace with your actual endpoint
-     // const response = await fetch('http://localhost:3000/api/admin/dashboard');
-     const response = await api.get('/admin/dashboard');
-      setDashboardData(response.data);
+      const collectoId = localStorage.getItem('collectoId');
+      
+      if (!collectoId) {
+        console.error('collectoId not found in localStorage');
+        setLoading(false);
+        return;
+      }
+
+      const response = await api.get('/admin/dashboard', {
+        params: {
+          collectoId: collectoId,
+        },
+      });
+      
+      // Handle the nested data structure from API response
+      const data = response.data?.data || response.data;
+      setDashboardData({
+        totalUsers: data.totalUsers || 0,
+        totalPointsIssued: data.totalPointsIssued || 0,
+        topTierMembers: data.topTierMembers || 0,
+        packageRevenue: data.packageRevenue || 'UGX 0',
+      });
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
     } finally {
