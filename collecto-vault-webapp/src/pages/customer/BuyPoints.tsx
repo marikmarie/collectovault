@@ -4,7 +4,15 @@ import Modal from "../../components/Modal";
 import Card from "../../components/Card";
 import Button from "../../components/Button";
 import api from "../../api"; // Your axios instance
-import { Zap, Heart, Star, X, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import {
+  Zap,
+  Heart,
+  Star,
+  X,
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
+} from "lucide-react";
 
 type Package = {
   id: number | string;
@@ -44,12 +52,14 @@ export default function BuyPointsModal({
   const [loadingPackages, setLoadingPackages] = useState(false);
   const [selectedId, setSelectedId] = useState<string | number | null>(null);
   const selectedPackage = packages.find(
-    (p) => String(p.id) === String(selectedId)
+    (p) => String(p.id) === String(selectedId),
   );
 
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [paymentMode, setPaymentMode] = useState<"mobilemoney" | "bank">("mobilemoney");
+  const [paymentMode, setPaymentMode] = useState<"mobilemoney" | "bank">(
+    "mobilemoney",
+  );
   const [phone, setPhone] = useState<string>("");
   const [step, setStep] = useState<ModalStep>("select");
 
@@ -61,30 +71,38 @@ export default function BuyPointsModal({
 
   // Transaction tracking / query states
   const [txId, setTxId] = useState<string | number | null>(null);
-  const [txStatus, setTxStatus] = useState<"idle" | "pending" | "success" | "failed">("idle");
+  const [txStatus, setTxStatus] = useState<
+    "idle" | "pending" | "success" | "failed"
+  >("idle");
   const [queryLoading, setQueryLoading] = useState(false);
   const [queryError, setQueryError] = useState<string | null>(null);
-  
+
   // Auto-poll interval reference
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const verifyPhoneNumber = async (passedPhone?: string) => {
-  // Use passedPhone if available, otherwise fallback to state
-  const phoneToVerify = passedPhone || phone;
-  const trimmed = String(phoneToVerify || "").trim();
-  
-  if (!trimmed || trimmed.length < 10) return;
+    // Use passedPhone if available, otherwise fallback to state
+    const phoneToVerify = passedPhone || phone;
+    const trimmed = String(phoneToVerify || "").trim();
+
+    if (!trimmed || trimmed.length < 10) return;
     try {
       setVerifying(true);
       setVerified(false);
       setAccountName(null);
       setPhoneError(null);
 
-        const vaultOTPToken = sessionStorage.getItem('vaultOtpToken') || undefined;
-        const collectoId = localStorage.getItem("collectoId") || undefined;
-        const clientId = localStorage.getItem("clientId") || undefined;
-      
-        const res = await api.post("/verifyPhoneNumber", { vaultOTPToken,collectoId,clientId,phoneNumber: trimmed });
+      const vaultOTPToken =
+        sessionStorage.getItem("vaultOtpToken") || undefined;
+      const collectoId = localStorage.getItem("collectoId") || undefined;
+      const clientId = localStorage.getItem("clientId") || undefined;
+
+      const res = await api.post("/verifyPhoneNumber", {
+        vaultOTPToken,
+        collectoId,
+        clientId,
+        phoneNumber: trimmed,
+      });
 
       // Response shapes:
       // { status, status_message, data: { verifyPhoneNumber: true, message, data: { name, phone } } }
@@ -93,13 +111,16 @@ export default function BuyPointsModal({
       const nested = payload?.data ?? {};
       const deeper = nested?.data ?? {};
 
-      const name = (deeper?.name && String(deeper.name).trim())
-        || (nested?.name && String(nested.name).trim())
-        || (payload?.name && String(payload.name).trim())
-        || null;
+      const name =
+        (deeper?.name && String(deeper.name).trim()) ||
+        (nested?.name && String(nested.name).trim()) ||
+        (payload?.name && String(payload.name).trim()) ||
+        null;
 
       const verifiedFlag = Boolean(
-        nested?.verifyPhoneNumber ?? deeper?.verifyPhoneNumber ?? (String(payload?.status_message ?? "").toLowerCase() === "success")
+        nested?.verifyPhoneNumber ??
+        deeper?.verifyPhoneNumber ??
+        String(payload?.status_message ?? "").toLowerCase() === "success",
       );
 
       const serverMessage = nested?.message ?? payload?.message ?? null;
@@ -113,13 +134,19 @@ export default function BuyPointsModal({
         // Not verified: show server message if provided and do not set a default name
         setAccountName(null);
         setVerified(false);
-        setPhoneError(serverMessage ?? "Could not verify the phone number at the moment");
+        setPhoneError(
+          serverMessage ?? "Could not verify the phone number at the moment",
+        );
       }
     } catch (err: any) {
       // On any error, do not set a default name; show error message
       setAccountName(null);
       setVerified(false);
-      setPhoneError(err?.response?.data?.message ?? err?.message ?? "Could not verify the phone number at the moment");
+      setPhoneError(
+        err?.response?.data?.message ??
+          err?.message ??
+          "Could not verify the phone number at the moment",
+      );
     } finally {
       setVerifying(false);
     }
@@ -158,9 +185,9 @@ export default function BuyPointsModal({
       try {
         setLoadingPackages(true);
 
-        //const vendorId = 
+        //const vendorId =
         const collectoId = localStorage.getItem("collectoId") || undefined;
-        
+
         const res = await api.get(`/vaultPackages/${collectoId}`);
         // Map API fields (pointsAmount -> points, isPopular -> recommended)
         const apiData: ApiPackage[] = res.data?.data ?? [];
@@ -245,10 +272,15 @@ export default function BuyPointsModal({
     if (!selectedId) {
       setError("Please select a package.");
       // bring package scroller into view to hint where to select
-      requestAnimationFrame(() => scrollerRef.current?.scrollTo({ left: 0, behavior: "smooth" }));
+      requestAnimationFrame(() =>
+        scrollerRef.current?.scrollTo({ left: 0, behavior: "smooth" }),
+      );
       return;
     }
-    if (paymentMode === "mobilemoney" && !/^\d{10}$/.test(String(phone || ""))) {
+    if (
+      paymentMode === "mobilemoney" &&
+      !/^\d{10}$/.test(String(phone || ""))
+    ) {
       setError("Enter a valid 10-digit phone number (e.g., 0756901234)");
       return;
     }
@@ -261,130 +293,156 @@ export default function BuyPointsModal({
   };
 
   // --- Payment Handlers ---
-const handleConfirmPayment = async () => {
-  if (!selectedPackage) return;
-  setProcessing(true);
-  setError(null);
-  setTxId(null);
-  setTxStatus("idle");
+  const handleConfirmPayment = async () => {
+    if (!selectedPackage) return;
+    setProcessing(true);
+    setError(null);
+    setTxId(null);
+    setTxStatus("idle");
 
-  try {
-    const vaultOTPToken = sessionStorage.getItem('vaultOtpToken') || undefined;
-    const collectoId = localStorage.getItem('collectoId') ?? undefined;
-    const clientId = localStorage.getItem('clientId') ?? undefined;
+    try {
+      const vaultOTPToken =
+        sessionStorage.getItem("vaultOtpToken") || undefined;
+      const collectoId = localStorage.getItem("collectoId") ?? undefined;
+      const clientId = localStorage.getItem("clientId") ?? undefined;
 
-    const formattedPhone = phone ? phone.replace(/^0/, '256') : phone;
+      const formattedPhone = phone ? phone.replace(/^0/, "256") : phone;
 
-    const res = await api.post("/requestToPay", {
-      vaultOTPToken,
-      collectoId,
-      clientId,
-      packageId: selectedPackage.id,
-      phone: formattedPhone, 
-      paymentOption: paymentMode,
-      amount: selectedPackage.price,
-      reference: `BUYPOINTS-${Date.now()}`,
-    });
+      const res = await api.post("/requestToPay", {
+        vaultOTPToken,
+        collectoId,
+        clientId,
+        packageId: selectedPackage.id,
+        phone: formattedPhone,
+        paymentOption: paymentMode,
+        amount: selectedPackage.price,
+        reference: `BUYPOINTS-${Date.now()}`,
+      });
 
-    // Accessing flat res.data
-    const data = res?.data; 
-    const apiStatus = String(data?.status || ""); 
-    
-    // Extracting transactionId from the nested data property in the response
-    const transactionId = data?.data?.transactionId || data?.transactionId || null;
+      // Accessing flat res.data
+      const data = res?.data;
+      const apiStatus = String(data?.status || "");
 
-    if (apiStatus === "200") {
-      setTxId(transactionId);
-      setTxStatus("pending");
-      setStep("confirm");
+      // Extracting transactionId from the nested data property in the response
+      const transactionId =
+        data?.data?.transactionId || data?.transactionId || null;
 
-      // Check if prompt is active
-      if (data?.data?.requestToPay === true) {
+      if (apiStatus === "200") {
+        setTxId(transactionId);
         setTxStatus("pending");
         setStep("confirm");
-        
-        // Immediately query status for the first time
-       if (transactionId) {
-          setTimeout(() => {
-            queryTxStatus(transactionId);
-          }, 500);
+
+        // Check if prompt is active
+        if (data?.data?.requestToPay === true) {
+          setTxStatus("pending");
+          setStep("confirm");
+
+          // Immediately query status for the first time
+          if (transactionId) {
+            setTimeout(() => {
+              queryTxStatus(transactionId);
+            }, 500);
+          }
+        } else if (String(data?.status_message).toLowerCase() === "success") {
+          setTxStatus("success");
+          setStep("success");
+          onSuccess?.({ addedPoints: selectedPackage.points });
         }
-      } else if (String(data?.status_message).toLowerCase() === "success") {
+      } else {
+        setTxStatus("failed");
+        setStep("failure");
+        setError(data?.status_message || "Payment initiation failed.");
+      }
+    } catch (err: any) {
+      setError(
+        err.response?.data?.message ||
+          "Payment initiation failed. Please try again.",
+      );
+      setStep("failure");
+    } finally {
+      setProcessing(false);
+    }
+  };
+  // --- Transaction Status Query ---
+  const queryTxStatus = async (txIdParam?: string | number | null) => {
+    const queryTxId = txIdParam ?? txId;
+
+    if (!queryTxId) {
+      setQueryError("No transaction ID found to track.");
+      return;
+    }
+
+    setQueryLoading(true);
+    setQueryError(null);
+
+    try {
+      // Retrieve identifiers for the request
+      const vaultOTPToken =
+        sessionStorage.getItem("vaultOtpToken") || undefined;
+      const collectoId = localStorage.getItem("collectoId") ?? undefined;
+      const clientId = localStorage.getItem("clientId") ?? undefined;
+
+      const res = await api.post("/requestToPayStatus", {
+        vaultOTPToken,
+        collectoId,
+        clientId,
+        transactionId: String(queryTxId),
+      });
+
+      const data = res?.data;
+
+      // Extract status from various possible locations
+      let status = (
+        data?.status ||
+        data?.payment?.status ||
+        data?.paymentStatus ||
+        "pending"
+      )
+        .toString()
+        .toLowerCase()
+        .trim();
+      const message =
+        data?.message || data?.status_message || data?.payment?.message || null;
+
+      if (
+        [
+          "confirmed",
+          "success",
+          "paid",
+          "completed",
+          "true",
+          "successful",
+          "successfull",
+        ].includes(status)
+      ) {
         setTxStatus("success");
         setStep("success");
-        onSuccess?.({ addedPoints: selectedPackage.points });
+
+        if (selectedPackage) {
+          onSuccess?.({ addedPoints: selectedPackage.points });
+        }
+      } else if (["pending", "processing", "in_progress"].includes(status)) {
+        setTxStatus("pending");
+        // UI remains on the "confirm" step waiting for user to finish on phone
+      } else if (status === "failed" || status === "false") {
+        setTxStatus("failed");
+        setStep("failure");
+        setError(message || "Transaction was declined or failed.");
+      } else {
+        console.warn("⚠️ BuyPoints Unknown status:", status);
+        setQueryError(
+          message || "Transaction status unknown. Please check your phone.",
+        );
       }
-    } else {
-      setTxStatus("failed");
-      setStep("failure");
-      setError(data?.status_message || "Payment initiation failed.");
+    } catch (err: any) {
+      console.error("BuyPoints Status Query Error:", err);
+      const errorMessage =
+        err?.response?.data?.message || "Unable to reach payment server.";
+      setQueryError(errorMessage);
+    } finally {
+      setQueryLoading(false);
     }
-  } catch (err: any) {
-    setError(err.response?.data?.message || "Payment initiation failed. Please try again.");
-    setStep("failure");
-  } finally {
-    setProcessing(false);
-  }
-};
-// --- Transaction Status Query ---
-const queryTxStatus = async (txIdParam?: string | number | null) => {
-  const queryTxId = txIdParam ?? txId;
-  
-  if (!queryTxId) {
-    setQueryError("No transaction ID found to track.");
-    return;
-  }
-
-  setQueryLoading(true);
-  setQueryError(null);
-
-  try {
-   
-    // Retrieve identifiers for the request
-    const vaultOTPToken = sessionStorage.getItem('vaultOtpToken') || undefined;
-    const collectoId = localStorage.getItem('collectoId') ?? undefined;
-    const clientId = localStorage.getItem('clientId') ?? undefined;
-
-    const res = await api.post("/requestToPayStatus", { 
-      vaultOTPToken,
-      collectoId,
-      clientId,
-      transactionId: String(queryTxId),
-    });
-
-    const data = res?.data;
-    
-    // Extract status from various possible locations
-    let status = (data?.status || data?.payment?.status || data?.paymentStatus || "pending").toString().toLowerCase().trim();
-    const message = data?.message || data?.status_message || data?.payment?.message || null;
-    
-    
-    if (["confirmed", "success", "paid", "completed", "true","successful","successfull"].includes(status)) {
-      setTxStatus("success");
-      setStep("success");
-      
-      if (selectedPackage) {
-        onSuccess?.({ addedPoints: selectedPackage.points });
-      }
-    } else if (["pending", "processing", "in_progress"].includes(status)) {
-      setTxStatus("pending");
-      // UI remains on the "confirm" step waiting for user to finish on phone
-    } else if (status === "failed" || status === "false") {
-      setTxStatus("failed");
-      setStep("failure");
-      setError(message || "Transaction was declined or failed.");
-    } else {
-      console.warn("⚠️ BuyPoints Unknown status:", status);
-      setQueryError(message || "Transaction status unknown. Please check your phone.");
-    }
-  } catch (err: any) {
-    console.error("BuyPoints Status Query Error:", err);
-    const errorMessage = err?.response?.data?.message || "Unable to reach payment server.";
-    setQueryError(errorMessage);
-  } finally {
-    setQueryLoading(false);
-  }
-};
+  };
   // --- UI Content ---
   let content;
 
@@ -512,7 +570,9 @@ const queryTxStatus = async (txIdParam?: string | number | null) => {
           </div>
 
           <div className="animate-in fade-in slide-in-from-top-1 duration-200">
-            <label className="text-xs font-bold text-gray-500 uppercase block mb-2">Phone Number</label>
+            <label className="text-xs font-bold text-gray-500 uppercase block mb-2">
+              Phone Number
+            </label>
             <div className="relative">
               <input
                 value={phone}
@@ -526,15 +586,21 @@ const queryTxStatus = async (txIdParam?: string | number | null) => {
                 }}
                 placeholder="07XXXXXXXX"
                 maxLength={10}
-                className={`w-full p-2 bg-gray-50 border-2 rounded-xl outline-none focus:border-[#D81B60] transition-all ${verified ? 'border-green-500' : phoneError ? 'border-red-500' : 'border-gray-200'}`}
+                className={`w-full p-2 bg-gray-50 border-2 rounded-xl outline-none focus:border-[#D81B60] transition-all ${verified ? "border-green-500" : phoneError ? "border-red-500" : "border-gray-200"}`}
               />
-              {verifying && <div className="absolute right-4 top-4"><Loader2 className="w-5 h-5 animate-spin text-[#D81B60]" /></div>}
+              {verifying && (
+                <div className="absolute right-4 top-4">
+                  <Loader2 className="w-5 h-5 animate-spin text-[#D81B60]" />
+                </div>
+              )}
             </div>
-            
+
             {accountName && (
               <div className="mt-2 flex items-center gap-2 text-green-600 bg-green-50 p-2 rounded-lg border border-green-100">
                 <CheckCircle2 className="w-4 h-4" />
-                <span className="text-xs font-bold uppercase">{accountName}</span>
+                <span className="text-xs font-bold uppercase">
+                  {accountName}
+                </span>
               </div>
             )}
             {phoneError && (
@@ -548,12 +614,12 @@ const queryTxStatus = async (txIdParam?: string | number | null) => {
 
         <div className="mt-3 flex justify-end gap-2 pt-2 border-t border-slate-100">
           {/* Cancel Button */}
-          <Button
-            variant="ghost"
-          onClick={() => !processing && handleClose()}
+          <button
+            className="bg-gray-100 text-gray-700 font-bold py-1.5 px-4 rounded-md text-sm hover:bg-gray-200 transition-colors"
+            onClick={() => !processing && handleClose()}
           >
             Cancel
-          </Button>
+          </button>
 
           {/* Continue Button */}
           <Button
@@ -571,13 +637,15 @@ const queryTxStatus = async (txIdParam?: string | number | null) => {
       <div className="text-center py-3">
         {/* Status feedback - SHOW AT TOP if exists */}
         {txStatus !== "idle" && (
-          <div className={`mb-4 p-4 rounded-lg border-2 ${
-            txStatus === "success"
-              ? "bg-green-50 border-green-300"
-              : txStatus === "failed"
-                ? "bg-red-50 border-red-300"
-                : "bg-blue-50 border-blue-300"
-          }`}>
+          <div
+            className={`mb-4 p-4 rounded-lg border-2 ${
+              txStatus === "success"
+                ? "bg-green-50 border-green-300"
+                : txStatus === "failed"
+                  ? "bg-red-50 border-red-300"
+                  : "bg-blue-50 border-blue-300"
+            }`}
+          >
             <div className="flex items-center gap-2 mb-2">
               {txStatus === "success" && (
                 <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
@@ -588,13 +656,15 @@ const queryTxStatus = async (txIdParam?: string | number | null) => {
               {txStatus === "pending" && (
                 <Loader2 className="w-5 h-5 text-blue-600 animate-spin shrink-0" />
               )}
-              <p className={`text-sm font-bold ${
-                txStatus === "success"
-                  ? "text-green-700"
-                  : txStatus === "failed"
-                    ? "text-red-700"
-                    : "text-blue-700"
-              }`}>
+              <p
+                className={`text-sm font-bold ${
+                  txStatus === "success"
+                    ? "text-green-700"
+                    : txStatus === "failed"
+                      ? "text-red-700"
+                      : "text-blue-700"
+                }`}
+              >
                 {txStatus === "success"
                   ? "✅ Payment Confirmed!"
                   : txStatus === "failed"
@@ -602,39 +672,48 @@ const queryTxStatus = async (txIdParam?: string | number | null) => {
                     : "⏳ Processing Payment..."}
               </p>
             </div>
-            
+
             {txStatus === "success" && (
-              <p className="text-xs text-green-600 font-medium">Points have been added to your account</p>
+              <p className="text-xs text-green-600 font-medium">
+                Points have been added to your account
+              </p>
             )}
             {txStatus === "failed" && (
-              <p className="text-xs text-red-600 font-medium">Your payment was declined. Please try again.</p>
+              <p className="text-xs text-red-600 font-medium">
+                Your payment was declined. Please try again.
+              </p>
             )}
             {txStatus === "pending" && (
               <div className="flex items-center gap-2 mt-2">
-                <p className="text-xs text-blue-600 font-medium flex-1">Checking status automatically...</p>
+                <p className="text-xs text-blue-600 font-medium flex-1">
+                  Checking status automatically...
+                </p>
                 <button
                   disabled={queryLoading}
                   onClick={() => queryTxStatus()}
                   className="text-xs font-semibold px-2 py-1 rounded-md bg-white border border-blue-200 hover:bg-blue-50 transition-colors"
                 >
-                  {queryLoading ? '⏳' : '🔄'} Check
+                  {queryLoading ? "⏳" : "🔄"} Check
                 </button>
               </div>
             )}
-            
+
             {queryError && (
-              <p className="mt-2 text-xs text-red-600 font-medium">{queryError}</p>
+              <p className="mt-2 text-xs text-red-600 font-medium">
+                {queryError}
+              </p>
             )}
           </div>
         )}
-        
+
         <div className="mx-auto w-14 h-14 rounded-full bg-linear-to-br from-yellow-100 via-yellow-50 to-white flex items-center justify-center mb-2 shadow-sm text-2xl text-[#ffa727]">
           ⚠️
         </div>
 
         <h4 className="text-lg font-bold text-slate-900">Confirm payment</h4>
         <p className="text-slate-600 mt-1 max-w-sm mx-auto text-sm">
-          We've sent a payment request to your phone — approve it to complete the top up.
+          We've sent a payment request to your phone — approve it to complete
+          the top up.
         </p>
 
         <div className="mt-3 mx-auto max-w-sm bg-white border border-slate-100 rounded-xl p-3 shadow-sm text-left">
@@ -642,13 +721,16 @@ const queryTxStatus = async (txIdParam?: string | number | null) => {
             <div>
               <div className="text-xs text-slate-400">Bundle</div>
               <div className="font-semibold text-slate-900">
-                {selectedPackage?.label ?? `${selectedPackage?.points?.toLocaleString()} pts`}
+                {selectedPackage?.label ??
+                  `${selectedPackage?.points?.toLocaleString()} pts`}
               </div>
             </div>
 
             <div className="text-right">
               <div className="text-xs text-slate-400">Amount</div>
-              <div className="font-bold text-[#d81b60]">UGX {selectedPackage?.price?.toLocaleString()}</div>
+              <div className="font-bold text-[#d81b60]">
+                UGX {selectedPackage?.price?.toLocaleString()}
+              </div>
             </div>
           </div>
 
@@ -658,13 +740,14 @@ const queryTxStatus = async (txIdParam?: string | number | null) => {
 
           <div className="mt-6">
             <div className="flex gap-3 items-center">
-              <Button
+              <button
                 onClick={() => setStep("select")}
-                variant="ghost"
-                className="bg-gray-50 border border-slate-200 hover:bg-gray-200 text-black px-4 py-2 rounded-md"
-              >
+                // variant="ghost"
+                className="bg-gray-100 text-gray-700 font-bold py-1.5 px-4 rounded-md text-sm hover:bg-gray-200 transition-colors"
+                  
+                >
                 Change details
-              </Button>
+              </button>
 
               <Button
                 onClick={handleConfirmPayment}
@@ -686,8 +769,6 @@ const queryTxStatus = async (txIdParam?: string | number | null) => {
               Didn't receive the request?
             </button>
           </div>
-
-      
         </div>
       </div>
     );
