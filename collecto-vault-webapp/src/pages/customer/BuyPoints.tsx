@@ -304,8 +304,7 @@ const handleConfirmPayment = async () => {
         setStep("confirm");
         
         // Immediately query status for the first time
-        console.log("🔍 BuyPoints: Querying initial status for tx:", transactionId);
-        if (transactionId) {
+       if (transactionId) {
           setTimeout(() => {
             queryTxStatus(transactionId);
           }, 500);
@@ -332,7 +331,6 @@ const queryTxStatus = async (txIdParam?: string | number | null) => {
   const queryTxId = txIdParam ?? txId;
   
   if (!queryTxId) {
-    console.warn("❌ queryTxStatus: No txId provided");
     setQueryError("No transaction ID found to track.");
     return;
   }
@@ -341,8 +339,7 @@ const queryTxStatus = async (txIdParam?: string | number | null) => {
   setQueryError(null);
 
   try {
-    console.log("📡 BuyPoints: Querying status for tx:", queryTxId, "(from param:", !!txIdParam, ")");
-    
+   
     // Retrieve identifiers for the request
     const vaultOTPToken = sessionStorage.getItem('vaultOtpToken') || undefined;
     const collectoId = localStorage.getItem('collectoId') ?? undefined;
@@ -356,16 +353,13 @@ const queryTxStatus = async (txIdParam?: string | number | null) => {
     });
 
     const data = res?.data;
-    console.log("📡 BuyPoints: Full query response:", JSON.stringify(data, null, 2));
     
     // Extract status from various possible locations
     let status = (data?.status || data?.payment?.status || data?.paymentStatus || "pending").toString().toLowerCase().trim();
     const message = data?.message || data?.status_message || data?.payment?.message || null;
     
-    console.log("📡 BuyPoints: Extracted status:", status, "| message:", message);
-
-    if (["confirmed", "success", "paid", "completed", "true"].includes(status)) {
-      console.log("✅ BuyPoints STATUS MATCH: success");
+    
+    if (["confirmed", "success", "paid", "completed", "true","successful","successfull"].includes(status)) {
       setTxStatus("success");
       setStep("success");
       
@@ -373,11 +367,9 @@ const queryTxStatus = async (txIdParam?: string | number | null) => {
         onSuccess?.({ addedPoints: selectedPackage.points });
       }
     } else if (["pending", "processing", "in_progress"].includes(status)) {
-      console.log("⏳ BuyPoints STATUS MATCH: pending");
       setTxStatus("pending");
       // UI remains on the "confirm" step waiting for user to finish on phone
     } else if (status === "failed" || status === "false") {
-      console.log("❌ BuyPoints STATUS MATCH: failed");
       setTxStatus("failed");
       setStep("failure");
       setError(message || "Transaction was declined or failed.");
@@ -466,7 +458,7 @@ const queryTxStatus = async (txIdParam?: string | number | null) => {
                         <div
                           className={`absolute top-2 right-2 text-[${PRIMARY}]`}
                         >
-                          <Heart className="w-5 h-5 fill-current text-gray-400" />
+                          <Heart className="w-5 h-5 fill-current text-[#d81b60]" />
                         </div>
                       )}
                     </Card>

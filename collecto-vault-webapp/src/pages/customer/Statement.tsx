@@ -202,7 +202,6 @@ export default function StatementWithPoints() {
 
       return mapped;
     } catch (err) {
-      console.error("Failed to load packages", err);
       setPackages([]);
       setUgxPerPoint(1);
       return [];
@@ -321,9 +320,7 @@ export default function StatementWithPoints() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /* =========================
-     Phone Verification
-  ========================= */
+
   const verifyPhoneNumber = useCallback(async (number: string) => {
     const trimmed = number.trim();
     if (trimmed.length < 10) return;
@@ -376,9 +373,6 @@ export default function StatementWithPoints() {
     }
   }, []);
 
-  /* =========================
-     Payment Handler
-  ========================= */
   const handlePayInvoice = async (invoiceId: string) => {
     try {
       setLoading(true);
@@ -489,9 +483,7 @@ export default function StatementWithPoints() {
     }
   };
 
-  /* =========================
-     Query Tx Status
-  ========================= */
+
   const queryTxStatus = async (txIdParam?: string | null) => {
     const finalTxId = txIdParam ?? paymentResult?.transactionId;
 
@@ -531,7 +523,7 @@ export default function StatementWithPoints() {
         data?.payment?.message ??
         null;
 
-      if (["confirmed", "success", "paid", "completed", "true"].includes(status)) {
+      if (["confirmed", "success", "paid", "completed", "true","successful",,"successfull"].includes(status)) {
         setLastQueriedStatus("success");
         await fetchTransactions();
         setPaymentResult((prev) =>
