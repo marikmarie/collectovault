@@ -167,9 +167,7 @@ export default function StatementWithPoints() {
     };
   }, [paymentResult?.transactionId, lastQueriedStatus]);
 
-  /* =========================
-     Fetchers
-  ========================= */
+
   const fetchActivePackages = useCallback(async () => {
     setLoadingType("packages");
     setLoading(true);
@@ -523,7 +521,7 @@ export default function StatementWithPoints() {
         data?.payment?.message ??
         null;
 
-      if (["confirmed", "success", "paid", "completed", "true","successful",,"successfull"].includes(status)) {
+      if (["confirmed", "success", "paid", "completed", "true","successful","successfull"].includes(status)) {
         setLastQueriedStatus("success");
         await fetchTransactions();
         setPaymentResult((prev) =>
@@ -552,9 +550,6 @@ export default function StatementWithPoints() {
     }
   };
 
-  /* =========================
-     Modal Init (FIXED)
-  ========================= */
   useEffect(() => {
     if (!payingInvoice) {
       setPointsToUse(0);
@@ -583,7 +578,7 @@ export default function StatementWithPoints() {
     setQueryError(null);
     setLastQueriedStatus(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [payingInvoice]); // 🚨 IMPORTANT: invoices REMOVED
+  }, [payingInvoice]); 
 
   /* =========================
      Derived Values
