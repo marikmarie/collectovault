@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 // import { useNavigate } from "react-router-dom";
 import { Camera } from "lucide-react";
 
@@ -21,6 +21,7 @@ export default function Header({
 }: Props) {
   //const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [imageError, setImageError] = useState(false);
 
 
   const handleCameraClick = () => {
@@ -119,17 +120,24 @@ export default function Header({
         <div className="flex justify-center">
           <div className="relative">
             <div
-              className="rounded-full overflow-hidden shadow-lg border-4 border-white/40"
+              className="rounded-full overflow-hidden shadow-lg border-4 border-white/40 flex items-center justify-center"
               style={{
                 width: avatarSize,
                 height: avatarSize,
               }}
             >
-              <img
-                src={avatar ?? "/images/avatar-placeholder.jpg"}
-                alt="avatar"
-                className="w-full h-full object-cover"
-              />
+              {imageError || !avatar ? (
+                <div className="w-full h-full bg-gray-300 flex items-center justify-center">
+                  <span className="text-gray-600 font-bold text-center px-4">NO IMAGE</span>
+                </div>
+              ) : (
+                <img
+                  src={avatar}
+                  alt="avatar"
+                  className="w-full h-full object-cover"
+                  onError={() => setImageError(true)}
+                />
+              )}
             </div>
 
             <button
