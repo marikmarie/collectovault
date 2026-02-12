@@ -742,7 +742,7 @@ export default function BuyPointsModal({
             <div className="flex gap-3 items-center">
               <button
                 onClick={() => setStep("select")}
-                // variant="ghost"
+                
                 className="bg-gray-100 text-gray-700 font-bold py-1.5 px-4 rounded-md text-sm hover:bg-gray-200 transition-colors"
                   
                 >
