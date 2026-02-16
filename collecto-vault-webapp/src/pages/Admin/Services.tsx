@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import TopNav from "../../components/TopNav";
 import { Search, ShoppingCart, Filter, ChevronDown } from "lucide-react";
 import Icon from "../../components/Icon";
@@ -17,6 +18,7 @@ type Service = {
 };
 
 export default function Services() {
+  const navigate = useNavigate();
   const [services, setServices] = useState<Service[]>([]);
   const [filteredServices, setFilteredServices] = useState<Service[]>([]);
   const [photosBaseUrl, setPhotosBaseUrl] = useState<string>("");
@@ -258,6 +260,11 @@ export default function Services() {
 
         setCart([]);
         setCartOpen(false);
+        
+        // Navigate to statement page with the created invoice ID
+        setTimeout(() => {
+          navigate("/statement", { state: { invoiceId } });
+        }, 500);
       } else {
         // Failure: ID is missing or status is not 200
         const errorMsg =

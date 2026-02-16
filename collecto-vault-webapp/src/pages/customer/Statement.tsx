@@ -1,5 +1,6 @@
 // StatementWithPoints.tsx
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import TopNav from "../../components/TopNav";
 import {
   ArrowDownLeft,
@@ -45,6 +46,8 @@ const clientId = localStorage.getItem("clientId") || undefined;
    Component
 ========================= */
 export default function StatementWithPoints() {
+  const location = useLocation();
+  
   // Lists
   const [invoices, setInvoices] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -312,7 +315,18 @@ export default function StatementWithPoints() {
     (async () => {
       await fetchActivePackages();
       await fetchCustomerAndRelated();
-      await fetchInvoices();
+      
+      // Check if we're navigating from invoice creation with a specific invoiceId
+      const invoiceIdFromState = (location.state as any)?.invoiceId;
+      
+      if (invoiceIdFromState) {
+        // Fetch the specific invoice first
+        await fetchInvoices(invoiceIdFromState);
+      } else {
+        // Fetch all invoices as usual
+        await fetchInvoices();
+      }
+      
       await fetchTransactions();
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
