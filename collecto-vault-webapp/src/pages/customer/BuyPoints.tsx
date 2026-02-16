@@ -751,7 +751,7 @@ export default function BuyPointsModal({
 
               <Button
                 onClick={handleConfirmPayment}
-                className="flex-1 bg-gray-200 text-slate-900 font-semibold hover:bg-gray-300 disabled:opacity-80 disabled:cursor-not-allowed border border-slate-200 shadow-sm px-4 py-2 rounded-md"
+                className="flex-1 bg-gray-200  text-slate-900 font-semibold hover:bg-gray-300 disabled:opacity-80 disabled:cursor-not-allowed border border-slate-200 shadow-sm px-4 py-2 rounded-md"
                 disabled={processing}
               >
                 {processing ? (

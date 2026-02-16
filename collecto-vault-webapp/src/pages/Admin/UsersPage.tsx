@@ -1,39 +1,31 @@
-import React, { useState } from 'react';
-import { Plus, Search,  Phone, X, Edit, Trash2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Search,  X, Edit, Trash2 } from 'lucide-react';
+import { customerService } from '../../api/customer';
 
 // --- Type Definitions ---
 interface UserData {
   id: number;
   name: string;
-  email: string;
-  phone: string;
+  clientId: string;
   currentPoints: number;
-  tier: string;
+  currentTierId: number | null;
 }
-
-// --- Mock Data ---
-const initialUsers: UserData[] = [
-    { id: 1, name: 'Samson Kwiz', email: 'kwiz@cissy.com', phone: '25670132534', currentPoints: 2500, tier: 'Gold' },
-    { id: 2, name: 'Tukas m', email: 'marie@cisy.com', phone: '256789253413', currentPoints: 450, tier: 'Standard' },
-    { id: 3, name: 'Joseph', email: 'jose@cissy.com', phone: '256772545665', currentPoints: 1200, tier: 'Silver' },
-];
 
 // --- Sub-components ---
 
 interface UserModalProps {
     initialData: UserData | null;
     onClose: () => void;
-    onSave: (userData: Omit<UserData, 'id' | 'tier'>) => void;
+    onSave: (userData: Omit<UserData, 'id' | 'currentTierId'>) => void;
 }
 
 const UserModal: React.FC<UserModalProps> = ({ initialData, onClose, onSave }) => {
     const [name, setName] = useState(initialData?.name || '');
-    const [email, setEmail] = useState(initialData?.email || '');
-    const [phone, setPhone] = useState(initialData?.phone || '');
+    const [clientId, setClientId] = useState(initialData?.clientId || '');
     const [currentPoints, setCurrentPoints] = useState(initialData?.currentPoints || 0);
 
     const handleSubmit = () => {
-        onSave({ name, email, phone, currentPoints });
+        onSave({ name, clientId, currentPoints });
     };
 
     return (
@@ -53,13 +45,9 @@ const UserModal: React.FC<UserModalProps> = ({ initialData, onClose, onSave }) =
                         <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
                         <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500" />
                     </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                        <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500" />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                        <input type="text" value={phone} onChange={e => setPhone(e.target.value)} className="w-full border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500" />
+                    <div className="col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Client ID</label>
+                        <input type="text" value={clientId} onChange={e => setClientId(e.target.value)} className="w-full border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500" />
                     </div>
                     <div className="col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-1">Current Points</label>
@@ -83,20 +71,42 @@ const UserModal: React.FC<UserModalProps> = ({ initialData, onClose, onSave }) =
 // --- Main Component ---
 
 const UsersManagement: React.FC = () => {
-    const [users, setUsers] = useState<UserData[]>(initialUsers);
+    const [users, setUsers] = useState<UserData[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<UserData | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        fetchUsers();
+    }, []);
+
+    const fetchUsers = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const collectoId = localStorage.getItem('collectoId');
+            
+            if (!collectoId) {
+                setError('CollectoId not found in localStorage');
+                return;
+            }
+
+            const response = await customerService.getAllCustomers(collectoId);
+            setUsers(response.data.data || []);
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Failed to fetch users');
+            console.error('Error fetching users:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const filteredUsers = users.filter(user => 
         user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase())
+        user.clientId.toLowerCase().includes(searchTerm.toLowerCase())
     );
-
-    const handleCreateOrEdit = (user?: UserData) => {
-        setEditingUser(user || null);
-        setIsModalOpen(true);
-    };
 
     const handleRemoveUser = (id: number) => {
         if (window.confirm('Are you sure you want to remove this user? This action is irreversible.')) {
@@ -105,19 +115,45 @@ const UsersManagement: React.FC = () => {
     };
     
     // Placeholder for save logic
-    const handleSaveUser = (userData: Omit<UserData, 'id' | 'tier'>) => {
+    const handleSaveUser = (userData: Omit<UserData, 'id' | 'currentTierId'>) => {
         if (editingUser) {
-            setUsers(prevUsers => prevUsers.map(u => u.id === editingUser.id ? {...u, ...userData} as UserData : u));
+            setUsers(prevUsers => prevUsers.map(u => u.id === editingUser.id ? {...u, ...userData} : u));
         } else {
             const newUser: UserData = {
                 id: Date.now(),
                 ...userData,
-                tier: userData.currentPoints >= 2000 ? 'Gold' : userData.currentPoints >= 500 ? 'Silver' : 'Standard',
+                currentTierId: null,
             };
             setUsers(prevUsers => [...prevUsers, newUser]);
         }
         setIsModalOpen(false);
         setEditingUser(null);
+    }
+
+    if (loading) {
+        return (
+            <div className="space-y-8 max-w-full">
+                <div className="text-center py-12">
+                    <p className="text-gray-500">Loading users...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="space-y-8 max-w-full">
+                <div className="p-6 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-red-700">{error}</p>
+                    <button 
+                        onClick={fetchUsers}
+                        className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                    >
+                        Retry
+                    </button>
+                </div>
+            </div>
+        );
     }
 
     return (
@@ -126,7 +162,10 @@ const UsersManagement: React.FC = () => {
                 <h2 className="text-2xl font-bold text-gray-900">User Management ({users.length} Total)</h2>
                 <button
                     className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 shadow-lg transition-colors"
-                    onClick={() => handleCreateOrEdit()}
+                    onClick={() => {
+                        setEditingUser(null);
+                        setIsModalOpen(true);
+                    }}
                 >
                     <Plus className="w-4 h-4" /> Add New User
                 </button>
@@ -137,7 +176,7 @@ const UsersManagement: React.FC = () => {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                     type="text"
-                    placeholder="Search by name or email..."
+                    placeholder="Search by name or client ID..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500"
@@ -153,10 +192,7 @@ const UsersManagement: React.FC = () => {
                                 User
                             </th>
                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Contact
-                            </th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Loyalty Tier
+                                Client ID
                             </th>
                             <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Points
@@ -178,33 +214,21 @@ const UsersManagement: React.FC = () => {
                                         </div>
                                         <div className="ml-4">
                                             <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                                            <div className="text-xs text-gray-500">{user.email}</div>
                                         </div>
                                     </div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    <div className="flex items-center gap-1">
-                                        <Phone className="w-3 h-3" /> {user.phone}
-                       m             </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <span 
-                                        className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                            ${user.tier === 'Gold' ? 'bg-yellow-100 text-yellow-800' : 
-                                            user.tier === 'Silver' ? 'bg-gray-100 text-gray-800' : 
-                                            'bg-red-100 text-red-800'
-                                            }`
-                                        }
-                                    >
-                                        {user.tier}
-                                    </span>
+                                    {user.clientId}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-gray-900">
                                     {user.currentPoints.toLocaleString()}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <button 
-                                        onClick={() => handleCreateOrEdit(user)}
+                                        onClick={() => {
+                                            setEditingUser(user);
+                                            setIsModalOpen(true);
+                                        }}
                                         className="text-gray-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-colors"
                                         title="Edit"
                                     >
