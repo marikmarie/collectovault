@@ -3,7 +3,11 @@ import api from "./index";
 export const customerService = {
   // Get all customers for a collecto
   getAllCustomers: (collectoId: string) =>
-    api.get(`/customers?collectoId=${collectoId}`),
+    api.get('/users/all', {
+      params: {
+        collectoId,
+      },
+    }),
 
   // Get customer data including points balance and tier
   getCustomerData: (clientId: string) => 

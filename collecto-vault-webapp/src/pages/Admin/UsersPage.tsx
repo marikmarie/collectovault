@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search,  X, Edit, Trash2 } from 'lucide-react';
+import { Search, X, Edit, Trash2 } from 'lucide-react';
 import { customerService } from '../../api/customer';
 
 // --- Type Definitions ---
@@ -25,16 +25,17 @@ const UserModal: React.FC<UserModalProps> = ({ initialData, onClose, onSave }) =
     const [currentPoints, setCurrentPoints] = useState(initialData?.currentPoints || 0);
 
     const handleSubmit = () => {
+        // Modal is edit-only; propagate changes to parent save handler
         onSave({ name, clientId, currentPoints });
     };
+
+    if (!initialData) return null;
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6">
                 <div className="flex justify-between items-center border-b pb-3 mb-4">
-                    <h3 className="text-xl font-bold text-gray-900">
-                        {initialData ? 'Edit User' : 'Create New User'}
-                    </h3>
+                    <h3 className="text-xl font-bold text-gray-900">Edit User</h3>
                     <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-100">
                         <X className="w-5 h-5 text-gray-500" />
                     </button>
@@ -60,7 +61,7 @@ const UserModal: React.FC<UserModalProps> = ({ initialData, onClose, onSave }) =
                         Cancel
                     </button>
                     <button onClick={handleSubmit} className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700">
-                        {initialData ? 'Update User' : 'Create User'}
+                        Update User
                     </button>
                 </div>
             </div>
@@ -114,18 +115,15 @@ const UsersManagement: React.FC = () => {
         }
     };
     
-    // Placeholder for save logic
+    // Save edits only. Creation of users is disabled.
     const handleSaveUser = (userData: Omit<UserData, 'id' | 'currentTierId'>) => {
-        if (editingUser) {
-            setUsers(prevUsers => prevUsers.map(u => u.id === editingUser.id ? {...u, ...userData} : u));
-        } else {
-            const newUser: UserData = {
-                id: Date.now(),
-                ...userData,
-                currentTierId: null,
-            };
-            setUsers(prevUsers => [...prevUsers, newUser]);
+        if (!editingUser) {
+            // No creation allowed — just close modal
+            setIsModalOpen(false);
+            return;
         }
+
+        setUsers(prevUsers => prevUsers.map(u => u.id === editingUser.id ? {...u, ...userData} : u));
         setIsModalOpen(false);
         setEditingUser(null);
     }
@@ -160,15 +158,6 @@ const UsersManagement: React.FC = () => {
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-full">
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-gray-900">User Management ({users.length} Total)</h2>
-                <button
-                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 shadow-lg transition-colors"
-                    onClick={() => {
-                        setEditingUser(null);
-                        setIsModalOpen(true);
-                    }}
-                >
-                    <Plus className="w-4 h-4" /> Add New User
-                </button>
             </div>
 
             {/* Search Bar */}
@@ -253,8 +242,8 @@ const UsersManagement: React.FC = () => {
                 )}
             </div>
             
-            {/* Modal Placeholder for Create/Edit */}
-            {isModalOpen && (
+            {/* Modal Placeholder (edit-only) */}
+            {isModalOpen && editingUser && (
                 <UserModal
                     initialData={editingUser}
                     onClose={() => setIsModalOpen(false)}

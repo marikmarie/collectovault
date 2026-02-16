@@ -42,11 +42,15 @@ const Dashboard: React.FC = () => {
       
       // Handle the nested data structure from API response
       const data = response.data?.data || response.data;
+      const packageRevenue = data.packageRevenue || 'UGX 0';
+      // Ensure UGX prefix is always present
+      const formattedRevenue = packageRevenue.startsWith('UGX') ? packageRevenue : `UGX ${packageRevenue}`;
+      
       setDashboardData({
         totalUsers: data.totalUsers || 0,
         totalPointsIssued: data.totalPointsIssued || 0,
         topTierMembers: data.topTierMembers || 0,
-        packageRevenue: data.packageRevenue || 'UGX 0',
+        packageRevenue: formattedRevenue,
       });
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);

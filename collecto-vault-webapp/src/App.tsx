@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 import Dashboard from './pages/customer/Dashboard'
 import Statement from './pages/customer/Statement'
 import Login from './pages/Login';
-import Services from './pages/Admin/Services';
+import Services from './pages/customer/Services';
 import Reports from './pages/Admin/Reports';
 import Layout from './pages/Admin/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
