@@ -84,7 +84,7 @@ export default function TopNav() {
             {[
               { name: "Dashboard", path: "/dashboard" },
               { name: "Statement", path: "/statement" },
-              { name: "Offerings", path: "/services" },
+              { name: "Services", path: "/services" },
             ].map(link => (
               <Link
                 key={link.name}
@@ -182,7 +182,7 @@ export default function TopNav() {
         <div className="flex justify-around h-16">
           <NavLinkMobile to="/dashboard" icon={<Home size={20} />} label="Home" active={isActive("/dashboard")} />
           <NavLinkMobile to="/statement" icon={<CreditCard size={20} />} label="Statement" active={isActive("/statement")} />
-          <NavLinkMobile to="/services" icon={<Box size={20} />} label="Offerings" active={isActive("/services")} />
+          <NavLinkMobile to="/services" icon={<Box size={20} />} label="Services" active={isActive("/services")} />
           <button onClick={() => openDrawer("help")} className="nav-btn text-gray-600 hover:text-[#d81b60]">
             <MessageCircle size={20} />
             <span>Help</span>

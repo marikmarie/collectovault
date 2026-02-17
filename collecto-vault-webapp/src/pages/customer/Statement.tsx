@@ -224,8 +224,19 @@ export default function StatementWithPoints() {
           invoiceId: invoiceId ?? null,
         });
 
-        const invoiceArray = res.data?.data?.data;
-        const validatedData = Array.isArray(invoiceArray) ? invoiceArray : [];
+        const innerData = res.data?.data?.data || res.data?.data;
+        let invoiceArray;
+        
+        if (Array.isArray(innerData)) {
+          invoiceArray = innerData;
+        } else if (innerData && typeof innerData === 'object' && innerData.details) {
+          // Single invoice object - wrap it in an array
+          invoiceArray = [innerData];
+        } else {
+          invoiceArray = [];
+        }
+        
+        const validatedData = invoiceArray;
 
         const sortedData = validatedData.sort((a: any, b: any) => {
           const dateA = new Date(a.details?.invoice_date || 0).getTime();
