@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { useTheme } from "../theme/ThemeProvider";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { clearVaultOtpToken } from "../api";
+import SetUsernameModal from "./SetUsernameModal";
 import {
   X,
   Home,
@@ -21,6 +22,7 @@ type DrawerView = "profile" | "notifications" | "help" | null;
 export default function TopNav() {
   const [drawerView, setDrawerView] = useState<DrawerView>(null);
   const [isWebDropdownOpen, setIsWebDropdownOpen] = useState(false);
+  const [showUsernameModal, setShowUsernameModal] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -31,6 +33,7 @@ export default function TopNav() {
   // ---- USER DATA (from localStorage) ----
   const userName = localStorage.getItem("userName") || "User";
   const userEmail = localStorage.getItem("userEmail") || "";
+  const storedUsername = localStorage.getItem("userName");
 
   const initials = useMemo(() => {
     return userName
@@ -199,6 +202,15 @@ export default function TopNav() {
         userName={userName}
         userEmail={userEmail}
         initials={initials}
+        onOpenUsernameModal={() => setShowUsernameModal(true)}
+      />
+
+      {/* ================= USERNAME MODAL ================= */}
+      <SetUsernameModal
+        isOpen={showUsernameModal}
+        onClose={() => setShowUsernameModal(false)}
+        onSuccess={() => setShowUsernameModal(false)}
+        existingUsername={storedUsername}
       />
     </>
   );
@@ -215,7 +227,7 @@ function NavLinkMobile({ to, icon, label, active }: any) {
   );
 }
 
-function SideDrawer({ isOpen, onClose, view, handleSignOut, userName, userEmail, initials }: any) {
+function SideDrawer({ isOpen, onClose, view, handleSignOut, userName, userEmail, initials, onOpenUsernameModal }: any) {
   if (!isOpen) return null;
 
   return (
@@ -239,8 +251,11 @@ function SideDrawer({ isOpen, onClose, view, handleSignOut, userName, userEmail,
             </div>
 
             <div className="space-y-3">
-              <button className="w-full flex items-center gap-3 px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors text-gray-700 font-medium">
-                <Mail size={18} className="text-[#d81b60]" /> Update Username
+              <button 
+                onClick={onOpenUsernameModal}
+                className="w-full flex items-center gap-3 px-4 py-3 bg-linear-to-r from-[#d81b60]/10 to-pink-400/10 hover:from-[#d81b60]/20 hover:to-pink-400/20 rounded-lg transition-colors text-gray-700 font-medium border border-[#d81b60]/20"
+              >
+                <Mail size={18} className="text-[#d81b60]" /> Set/Update Username
               </button>
               <button className="w-full flex items-center gap-3 px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors text-gray-700 font-medium">
                 <Key size={18} className="text-[#d81b60]" /> Change Password

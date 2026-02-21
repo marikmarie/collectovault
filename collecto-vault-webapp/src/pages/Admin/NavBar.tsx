@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import SetUsernameModal from "../../components/SetUsernameModal";
 import {
   Bell,
   User,
@@ -10,7 +11,8 @@ import {
   Award, 
   GitBranch, 
   Package, 
-  X
+  X,
+  Mail
 } from "lucide-react";
 
 // --- Types ---
@@ -33,6 +35,7 @@ const navLinks = [
 export default function NavBar() {
     const [drawerView, setDrawerView] = useState<AdminDrawerView>(null);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [showUsernameModal, setShowUsernameModal] = useState(false);
     const location = useLocation();
     const navigate = useNavigate();
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -138,13 +141,22 @@ export default function NavBar() {
                 onClose={() => setDrawerView(null)} 
                 view={drawerView}
                 handleSignOut={handleSignOut}
+                onOpenUsernameModal={() => setShowUsernameModal(true)}
+            />
+
+            {/* ================= USERNAME MODAL ================= */}
+            <SetUsernameModal
+                isOpen={showUsernameModal}
+                onClose={() => setShowUsernameModal(false)}
+                onSuccess={() => setShowUsernameModal(false)}
+                existingUsername={localStorage.getItem("userName")}
             />
         </>
     );
 }
 
 // Admin Drawer (Simplified for space)
-function AdminSideDrawer({ isOpen, onClose, view, handleSignOut }: { isOpen: boolean; onClose: () => void; view: AdminDrawerView; handleSignOut: () => void }) {
+function AdminSideDrawer({ isOpen, onClose, view, handleSignOut, onOpenUsernameModal }: { isOpen: boolean; onClose: () => void; view: AdminDrawerView; handleSignOut: () => void; onOpenUsernameModal: () => void }) {
     useEffect(() => {
         if (isOpen) document.body.style.overflow = 'hidden';
         else document.body.style.overflow = 'unset';
@@ -164,7 +176,13 @@ function AdminSideDrawer({ isOpen, onClose, view, handleSignOut }: { isOpen: boo
                 
                 {view === 'profile' && (
                     <div className="space-y-4">
-                        <p className="text-sm text-gray-600">Admin specific profile/security settings go here.</p>
+                        <button 
+                            onClick={onOpenUsernameModal}
+                            className="w-full flex items-center gap-3 px-4 py-3 bg-linear-to-r from-[#d81b60]/10 to-pink-400/10 hover:from-[#d81b60]/20 hover:to-pink-400/20 rounded-lg transition-colors text-gray-700 font-medium border border-[#d81b60]/20"
+                        >
+                            <Mail size={18} className="text-[#d81b60]" /> Set/Update Username
+                        </button>
+                        <p className="text-sm text-gray-600">Other admin settings go here.</p>
                          <button onClick={handleSignOut} className="w-full border border-red-200 text-red-600 bg-red-50 py-2 rounded-lg font-medium hover:bg-red-100">
                             Sign Out
                          </button>
