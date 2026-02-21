@@ -131,7 +131,7 @@ export default function SetUsernameModal({
                   setUsername(e.target.value);
                   setError('');
                 }}
-                placeholder="john_doe"
+                placeholder="tukasm"
                 className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#d81b60]/20 focus:border-[#d81b60] outline-none transition-all bg-gray-50 focus:bg-white"
                 disabled={isLoading}
                 maxLength={100}
@@ -168,7 +168,7 @@ export default function SetUsernameModal({
             <button
               type="submit"
               disabled={isLoading}
-              className="flex-1 px-4 py-3 text-white font-semibold bg-[#d81b60] hover:bg-[#b8165c] rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              className="flex-1 px-4 py-3 text-black font-semibold bg-gray-200 hover:bg-gray-400 rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {isLoading ? (
                 <>

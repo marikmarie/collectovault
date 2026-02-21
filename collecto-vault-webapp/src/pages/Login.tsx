@@ -224,7 +224,7 @@ export default function LoginPage() {
               </h2>
               <p className="text-sm text-gray-500 mt-2">
                 {loginStep === 'id_entry' 
-                  ? `Enter your ID or username to continue` 
+                  ? `Enter your Client ID or Username to continue` 
                   : 'Enter the 6-digit code sent to your device'}
               </p>
             </div>
@@ -373,7 +373,7 @@ export default function LoginPage() {
                   </button>
                   <button
                     onClick={handleClientIdSubmit}
-                    className="flex-1 py-2.5 px-4 rounded-xl text-sm font-bold text-white bg-[#d81b60] hover:bg-[#b5164d] transition-all"
+                    className="flex-1 py-2.5 px-4 rounded-xl text-sm font-bold text-black bg-gray-200 hover:bg-gray-400 transition-all"
                   >
                     Continue
                   </button>

@@ -52,7 +52,7 @@ export const authService = {
     collectoId?: string;
   }) => {
     try {
-      const resp = await api.post("/set-username", payload);
+      const resp = await api.post("/setUsername", payload);
       if (resp.data.success) {
         // Store the username in localStorage
         localStorage.setItem("userName", payload.username);
@@ -69,7 +69,7 @@ export const authService = {
    */
   getClientIdByUsername: async (username: string) => {
     try {
-      const resp = await api.post("/get-by-username", { username });
+      const resp = await api.post("/getByUsername", { username });
       if (resp.data.success) {
         return resp.data.data;
       }
@@ -79,10 +79,7 @@ export const authService = {
     }
   },
 
-  /**
-   * Login using username instead of client ID
-   * First fetches the client ID from the username, then proceeds with regular auth flow
-   */
+  
   loginByUsername: async (payload: {
     username: string;
     type: "business" | "client";
