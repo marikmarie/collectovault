@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { User, Briefcase,  ArrowRight,  RotateCw, ShieldCheck, ChevronLeft, AtSign } from 'lucide-react';
+import { User, Briefcase, ArrowRight, RotateCw, ShieldCheck, ChevronLeft, AtSign } from 'lucide-react';
 import { useNavigate } from 'react-router-dom'; 
 import { authService } from '../api/authService';
 import { useTheme } from '../theme/ThemeProvider';
 import { setVaultOtpToken, getVaultOtpToken } from '../api';
 import { customerService } from '../api/customer';
+import SetUsernameModal from '../components/SetUsernameModal';
 
-type UserType = 'client' | 'business' ;
-type LoginMode = 'client-id' | 'username';
+type UserType = 'client' | 'business';
 type PendingPayload = {
   type: UserType;
   id: string; 
@@ -18,14 +18,15 @@ export default function LoginPage() {
   const navigate = useNavigate(); 
   
   const [userType, setUserType] = useState<UserType>('client');
-  const [loginMode, setLoginMode] = useState<LoginMode>('client-id');
   const [loginStep, setLoginStep] = useState<'id_entry' | 'otp_entry'>('id_entry');
-  const [idValue, setIdValue] = useState('');
-  const [usernameValue, setUsernameValue] = useState('');
+  const [idOrUsername, setIdOrUsername] = useState('');
   const [otpValue, setOtpValue] = useState('');
   const [error, setError] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [pendingPayload, setPendingPayload] = useState<PendingPayload | null>(null);
+  const [showSetUsernameModal, setShowSetUsernameModal] = useState(false);
+  const [showClientIdDialog, setShowClientIdDialog] = useState(false);
+  const [clientIdForUsername, setClientIdForUsername] = useState('');
 
   const buildAuthPayload = (type: UserType, id: string) => {
     const basePayload = { type, id };
@@ -33,19 +34,33 @@ export default function LoginPage() {
     return { ...basePayload, cid: undefined, uid: id }; 
   };
 
-  const handleIdSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const attemptLogin = async (input: string) => {
     setError('');
     setIsProcessing(true);
 
-    if (idValue.length < 5) {
-      setError(`Please enter a valid ${userType === 'client' ? 'ID/Email' : 'User ID'}.`);
+    if (input.length < 3) {
+      setError(`Please enter a valid ID or username.`);
       setIsProcessing(false);
       return;
     }
 
     try {
-      const { id, type } = buildAuthPayload(userType, idValue);
+      let resolvedId = input;
+      let resolvedType = userType;
+
+      // Try as username first (if input looks like a username - contains letters/underscores)
+      if (/^[a-zA-Z0-9_-]+$/.test(input) && input.length < 50) {
+        try {
+          const userInfo = await authService.getClientIdByUsername(input);
+          resolvedId = userInfo.clientId;
+          resolvedType = userInfo.type || userType;
+        } catch (usernameErr) {
+          // Username not found, try as client ID
+        }
+      }
+
+      // Try as client ID
+      const { id, type } = buildAuthPayload(resolvedType, resolvedId);
       const res = await authService.startCollectoAuth({ type, id } as any);
       const inner = res?.data ?? null;
       
@@ -54,7 +69,7 @@ export default function LoginPage() {
       if (returnedToken) {
         const expiryIso = new Date(Date.now() + 30 * 60 * 1000).toISOString();
         setVaultOtpToken(returnedToken, expiryIso);
-        setPendingPayload({ type, id: idValue, vaultOTPToken: returnedToken });
+        setPendingPayload({ type, id: resolvedId, vaultOTPToken: returnedToken });
         setLoginStep('otp_entry');
         return;
       }
@@ -62,14 +77,15 @@ export default function LoginPage() {
       if (res?.auth === true && res?.status === "error") {
         const existingToken = getVaultOtpToken();
         if (existingToken) {
-          setPendingPayload({ type, id: idValue, vaultOTPToken: existingToken });
+          setPendingPayload({ type, id: resolvedId, vaultOTPToken: existingToken });
           setLoginStep('otp_entry');
         } else {
           setError("Please wait before requesting a new OTP.");
         }
         return;
       }
-      setError(inner?.message ?? res?.message ?? "Authorization failed.");
+      
+      setError(inner?.message ?? res?.message ?? "ID or username not found.");
     } catch (err: any) {
       setError(err?.message ?? "Network or service error.");
     } finally {
@@ -77,42 +93,23 @@ export default function LoginPage() {
     }
   };
 
-  const handleUsernameSubmit = async (e: React.FormEvent) => {
+  const handleIdSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setIsProcessing(true);
+    await attemptLogin(idOrUsername);
+  };
 
-    if (usernameValue.length < 3) {
-      setError('Please enter a valid username.');
-      setIsProcessing(false);
+  const handleSetUsernameClick = () => {
+    setShowClientIdDialog(true);
+    setClientIdForUsername('');
+  };
+
+  const handleClientIdSubmit = () => {
+    if (clientIdForUsername.trim().length < 3) {
+      setError('Please enter a valid client ID');
       return;
     }
-
-    try {
-      // Get client ID by username
-      const userInfo = await authService.getClientIdByUsername(usernameValue);
-      
-      // Start auth with retrieved client ID
-      const { id, type } = buildAuthPayload(userInfo.clientId === 'business' ? 'business' : 'client', userInfo.clientId);
-      const res = await authService.startCollectoAuth({ type, id } as any);
-      const inner = res?.data ?? null;
-      
-      const returnedToken = inner?.data?.vaultOTPToken ?? inner?.vaultOTPToken ?? null;
-      
-      if (returnedToken) {
-        const expiryIso = new Date(Date.now() + 30 * 60 * 1000).toISOString();
-        setVaultOtpToken(returnedToken, expiryIso);
-        setPendingPayload({ type: userInfo.clientId === 'business' ? 'business' : 'client', id: userInfo.clientId, vaultOTPToken: returnedToken });
-        setLoginStep('otp_entry');
-        return;
-      }
-
-      setError(inner?.message ?? res?.message ?? "Authorization failed.");
-    } catch (err: any) {
-      setError(err?.message || "Username not found or login failed.");
-    } finally {
-      setIsProcessing(false);
-    }
+    setShowClientIdDialog(false);
+    setShowSetUsernameModal(true);
   };
 
   const handleOtpSubmit = async (e: React.FormEvent) => {
@@ -198,37 +195,8 @@ export default function LoginPage() {
         {/* Main Card */}
         <div className="bg-white rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.05)] overflow-hidden border border-gray-100">
           
-          {/* Login Mode Switcher */}
+          {/* User Type Switcher */}
           {loginStep === 'id_entry' && (
-            <div className="flex p-1 bg-gray-100 border-b border-gray-200 gap-1">
-              <button
-                onClick={() => {
-                  setLoginMode('client-id');
-                  setUserType('client');
-                  setError('');
-                }}
-                className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg transition-all duration-300 ${
-                  loginMode === 'client-id' ? 'bg-white shadow-sm text-[#67095D]' : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <User className="w-3.5 h-3.5" /> ID Login
-              </button>
-              <button
-                onClick={() => {
-                  setLoginMode('username');
-                  setError('');
-                }}
-                className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg transition-all duration-300 ${
-                  loginMode === 'username' ? 'bg-white shadow-sm text-[#67095D]' : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <AtSign className="w-3.5 h-3.5" /> Username
-              </button>
-            </div>
-          )}
-
-          {/* User Type Switcher (only for Client ID login) */}
-          {loginStep === 'id_entry' && loginMode === 'client-id' && (
             <div className="flex p-1.5 bg-gray-50/50 border-b border-gray-100">
               <button
                 onClick={() => setUserType('client')}
@@ -256,9 +224,7 @@ export default function LoginPage() {
               </h2>
               <p className="text-sm text-gray-500 mt-2">
                 {loginStep === 'id_entry' 
-                  ? loginMode === 'username'
-                    ? 'Login with your username'
-                    : `Access your ${userType} account` 
+                  ? `Enter your ID or username to continue` 
                   : 'Enter the 6-digit code sent to your device'}
               </p>
             </div>
@@ -275,73 +241,45 @@ export default function LoginPage() {
             )}
 
             {loginStep === 'id_entry' ? (
-              <>
-                {loginMode === 'client-id' ? (
-                  <form onSubmit={handleIdSubmit} className="space-y-5">
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-bold text-gray-400 uppercase ml-1">
-                        {userType === 'client' ? 'Client ID' : 'Collecto ID'}
-                      </label>
-                      <div className="relative group">
-                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#b2a3b0] transition-colors">
-                          {userType === 'client' ? <User size={18} /> : <Briefcase size={18} />}
-                        </div>
-                        <input
-                          type="text"
-                          value={idValue}
-                          onChange={(e) => { setIdValue(e.target.value); setError(''); }}
-                          placeholder={userType === 'client' ? "324CV38" : "124112"}
-                          className="block w-full pl-11 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-[#67095D]/5 focus:border-[#67095D] focus:bg-white transition-all outline-none text-sm font-medium"
-                          required
-                          disabled={isProcessing}
-                        />
-                      </div>
+              <form onSubmit={handleIdSubmit} className="space-y-5">
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-gray-400 uppercase ml-1">
+                    ID or Username
+                  </label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#d81b60] transition-colors">
+                      <AtSign size={18} />
                     </div>
-                    
-                    <button
-                      type="submit"
+                    <input
+                      type="text"
+                      value={idOrUsername}
+                      onChange={(e) => { setIdOrUsername(e.target.value); setError(''); }}
+                      placeholder="Enter ID or username"
+                      className="block w-full pl-11 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-[#67095D]/5 focus:border-[#67095D] focus:bg-white transition-all outline-none text-sm font-medium"
+                      required
                       disabled={isProcessing}
-                      className="w-full flex items-center justify-center py-4 px-4 rounded-2xl text-sm font-bold text-gray-800 bg-[#e1d7e0] hover:bg-[#b6adb5] shadow-lg shadow-[#67095D]/20 active:scale-[0.98] transition-all disabled:opacity-50"
-                    >
-                      {isProcessing ? <RotateCw className="w-5 h-5 animate-spin" /> : (
-                        <>Continue <ArrowRight className="w-4 h-4 ml-2" /></>
-                      )}
-                    </button>
-                  </form>
-                ) : (
-                  <form onSubmit={handleUsernameSubmit} className="space-y-5">
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-bold text-gray-400 uppercase ml-1">
-                        Username
-                      </label>
-                      <div className="relative group">
-                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#d81b60] transition-colors">
-                          <AtSign size={18} />
-                        </div>
-                        <input
-                          type="text"
-                          value={usernameValue}
-                          onChange={(e) => { setUsernameValue(e.target.value); setError(''); }}
-                          placeholder="john_doe"
-                          className="block w-full pl-11 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-[#d81b60]/5 focus:border-[#d81b60] focus:bg-white transition-all outline-none text-sm font-medium"
-                          required
-                          disabled={isProcessing}
-                        />
-                      </div>
-                    </div>
-                    
-                    <button
-                      type="submit"
-                      disabled={isProcessing}
-                      className="w-full flex items-center justify-center py-4 px-4 rounded-2xl text-sm font-bold text-gray-800 bg-[#e1d7e0] hover:bg-[#b6adb5] shadow-lg shadow-[#67095D]/20 active:scale-[0.98] transition-all disabled:opacity-50"
-                    >
-                      {isProcessing ? <RotateCw className="w-5 h-5 animate-spin" /> : (
-                        <>Continue <ArrowRight className="w-4 h-4 ml-2" /></>
-                      )}
-                    </button>
-                  </form>
-                )}
-              </>
+                    />
+                  </div>
+                </div>
+                
+                <button
+                  type="submit"
+                  disabled={isProcessing}
+                  className="w-full flex items-center justify-center py-4 px-4 rounded-2xl text-sm font-bold text-gray-800 bg-[#e1d7e0] hover:bg-[#b6adb5] shadow-lg shadow-[#67095D]/20 active:scale-[0.98] transition-all disabled:opacity-50"
+                >
+                  {isProcessing ? <RotateCw className="w-5 h-5 animate-spin" /> : (
+                    <>Continue <ArrowRight className="w-4 h-4 ml-2" /></>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSetUsernameClick}
+                  className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-2xl text-sm font-semibold text-[#d81b60] bg-[#d81b60]/10 hover:bg-[#d81b60]/20 border border-[#d81b60]/20 transition-all"
+                >
+                  <User size={16} /> Create Username
+                </button>
+              </form>
             ) : (
               <form onSubmit={handleOtpSubmit} className="space-y-6">
                 <div className="flex flex-col items-center">
@@ -391,6 +329,73 @@ export default function LoginPage() {
             )}
           </div>
         </div>
+        
+        {showClientIdDialog && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6 animate-in fade-in zoom-in-95">
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Enter Client ID</h3>
+              <p className="text-sm text-gray-500 mb-4">Please enter your client ID to create a username</p>
+              
+              {error && (
+                <div className="mb-4 p-3 rounded-xl text-xs font-medium bg-rose-50 text-rose-700">
+                  {error}
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#67095D] transition-colors">
+                    <User size={16} />
+                  </div>
+                  <input
+                    type="text"
+                    value={clientIdForUsername}
+                    onChange={(e) => {
+                      setClientIdForUsername(e.target.value);
+                      setError('');
+                    }}
+                    placeholder="e.g., 324CV38"
+                    className="block w-full pl-10 pr-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-[#67095D]/5 focus:border-[#67095D] focus:bg-white transition-all outline-none text-sm font-medium"
+                    autoFocus
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setShowClientIdDialog(false);
+                      setClientIdForUsername('');
+                      setError('');
+                    }}
+                    className="flex-1 py-2.5 px-4 rounded-xl text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleClientIdSubmit}
+                    className="flex-1 py-2.5 px-4 rounded-xl text-sm font-bold text-white bg-[#d81b60] hover:bg-[#b5164d] transition-all"
+                  >
+                    Continue
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {showSetUsernameModal && (
+          <SetUsernameModal 
+            isOpen={showSetUsernameModal}
+            onClose={() => setShowSetUsernameModal(false)}
+            onSuccess={() => {
+              setShowSetUsernameModal(false);
+              setClientIdForUsername('');
+              setError('Username created successfully!');
+            }}
+            existingUsername={localStorage.getItem('userName') || undefined}
+            clientId={clientIdForUsername}
+          />
+        )}
         
         <p className="text-center mt-10 text-[11px] font-medium text-gray-500 uppercase tracking-widest">
           ••• © 2026 CollectoVault ••• 

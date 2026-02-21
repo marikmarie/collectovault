@@ -7,6 +7,7 @@ interface SetUsernameModalProps {
   onClose: () => void;
   onSuccess: (username: string) => void;
   existingUsername?: string | null;
+  clientId?: string;
 }
 
 export default function SetUsernameModal({
@@ -14,6 +15,7 @@ export default function SetUsernameModal({
   onClose,
   onSuccess,
   existingUsername,
+  clientId: passedClientId,
 }: SetUsernameModalProps) {
   const [username, setUsername] = useState(existingUsername || '');
   const [isLoading, setIsLoading] = useState(false);
@@ -48,11 +50,19 @@ export default function SetUsernameModal({
     setIsLoading(true);
 
     try {
-      const clientId = localStorage.getItem('clientId');
+      const clientId = passedClientId || localStorage.getItem('clientId');
       const collectoId = localStorage.getItem('collectoId');
 
       if (!clientId) {
         setError('Client ID not found. Please login again.');
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        await authService.checkUsernameAvailability(username.trim());
+      } catch (availabilityErr: any) {
+        setError('Username already exists. Please try another one.');
         setIsLoading(false);
         return;
       }
@@ -64,17 +74,17 @@ export default function SetUsernameModal({
       });
 
       if (result.success) {
-        setSuccess('Username set successfully!');
+        setSuccess('Username created successfully!');
         localStorage.setItem('userName', username.trim());
         setTimeout(() => {
           onSuccess(username.trim());
           onClose();
         }, 1500);
       } else {
-        setError(result.message || 'Failed to set username');
+        setError(result.message || 'Failed to create username');
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to set username. Please try again.');
+      setError(err.message || 'Failed to create username. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -92,9 +102,7 @@ export default function SetUsernameModal({
             <div className="w-10 h-10 bg-linear-to-br from-[#d81b60] to-pink-400 rounded-full flex items-center justify-center text-white">
               <AtSign size={20} />
             </div>
-            <h2 className="text-xl font-bold text-gray-900">
-              {existingUsername ? 'Update Username' : 'Set Username'}
-            </h2>
+            <h2 className="text-xl font-bold text-gray-900">Create Username</h2>
           </div>
           <button
             onClick={onClose}
@@ -106,9 +114,7 @@ export default function SetUsernameModal({
         </div>
 
         <p className="text-sm text-gray-600 mb-6">
-          {existingUsername
-            ? 'Update your username to something new'
-            : 'Create a unique username to make it easier to login next time'}
+          Create a unique username to make it easier to login next time
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -167,12 +173,12 @@ export default function SetUsernameModal({
               {isLoading ? (
                 <>
                   <RotateCw size={18} className="animate-spin" />
-                  Saving...
+                  Creating...
                 </>
               ) : (
                 <>
                   <Check size={18} />
-                  {existingUsername ? 'Update' : 'Set'} Username
+                  Create Username
                 </>
               )}
             </button>
