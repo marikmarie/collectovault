@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Briefcase, ArrowRight, RotateCw, ShieldCheck, ChevronLeft, AtSign } from 'lucide-react';
+import { User, ArrowRight, RotateCw, ShieldCheck, ChevronLeft, AtSign } from 'lucide-react';
 import { useNavigate } from 'react-router-dom'; 
 import { authService } from '../api/authService';
 import { useTheme } from '../theme/ThemeProvider';
@@ -7,9 +7,7 @@ import { setVaultOtpToken, getVaultOtpToken } from '../api';
 import { customerService } from '../api/customer';
 import SetUsernameModal from '../components/SetUsernameModal';
 
-type UserType = 'client' | 'business';
 type PendingPayload = {
-  type: UserType;
   id: string; 
   vaultOTPToken?: string | null;
 };
@@ -17,7 +15,6 @@ type PendingPayload = {
 export default function LoginPage() {
   const navigate = useNavigate(); 
   
-  const [userType, setUserType] = useState<UserType>('client');
   const [loginStep, setLoginStep] = useState<'id_entry' | 'otp_entry'>('id_entry');
   const [idOrUsername, setIdOrUsername] = useState('');
   const [otpValue, setOtpValue] = useState('');
@@ -28,10 +25,8 @@ export default function LoginPage() {
   const [showClientIdDialog, setShowClientIdDialog] = useState(false);
   const [clientIdForUsername, setClientIdForUsername] = useState('');
 
-  const buildAuthPayload = (type: UserType, id: string) => {
-    const basePayload = { type, id };
-    if (type === 'client') return { ...basePayload, cid: id, uid: undefined }; 
-    return { ...basePayload, cid: undefined, uid: id }; 
+  const buildAuthPayload = (id: string) => {
+    return { type: 'client', id, cid: id, uid: undefined } as const;
   };
 
   const attemptLogin = async (input: string) => {
@@ -46,21 +41,19 @@ export default function LoginPage() {
 
     try {
       let resolvedId = input;
-      let resolvedType = userType;
 
       // Try as username first (if input looks like a username - contains letters/underscores)
       if (/^[a-zA-Z0-9_-]+$/.test(input) && input.length < 50) {
         try {
           const userInfo = await authService.getClientIdByUsername(input);
           resolvedId = userInfo.clientId;
-          resolvedType = userInfo.type || userType;
         } catch (usernameErr) {
           // Username not found, try as client ID
         }
       }
 
       // Try as client ID
-      const { id, type } = buildAuthPayload(resolvedType, resolvedId);
+      const { id, type } = buildAuthPayload(resolvedId);
       const res = await authService.startCollectoAuth({ type, id } as any);
       const inner = res?.data ?? null;
       
@@ -69,15 +62,15 @@ export default function LoginPage() {
       if (returnedToken) {
         const expiryIso = new Date(Date.now() + 30 * 60 * 1000).toISOString();
         setVaultOtpToken(returnedToken, expiryIso);
-        setPendingPayload({ type, id: resolvedId, vaultOTPToken: returnedToken });
+        setPendingPayload({ id: resolvedId, vaultOTPToken: returnedToken });
         setLoginStep('otp_entry');
         return;
       }
 
-      if (res?.auth === true && res?.status === "error") {
+        if (res?.auth === true && res?.status === "error") {
         const existingToken = getVaultOtpToken();
         if (existingToken) {
-          setPendingPayload({ type, id: resolvedId, vaultOTPToken: existingToken });
+          setPendingPayload({ id: resolvedId, vaultOTPToken: existingToken });
           setLoginStep('otp_entry');
         } else {
           setError("Please wait before requesting a new OTP.");
@@ -126,7 +119,7 @@ export default function LoginPage() {
     try {
       const verifyPayload = {
         id: pendingPayload!.id,
-        type: pendingPayload!.type,
+        type: 'client',
         vaultOTP: otpValue,
         vaultOTPToken: pendingPayload!.vaultOTPToken!,
       };
@@ -138,9 +131,8 @@ export default function LoginPage() {
         const name = res?.data?.data?.name;
         if (name) localStorage.setItem('userName', String(name).trim());
 
-        // If this is a client login, create/upsert the customer on the Collecto backend
+        // Create/upsert the customer on the Collecto backend
         try {
-          if (pendingPayload!.type === 'client') {
             const collectoId = localStorage.getItem('collectoId') || '';
             const payload = {
               collecto_id: collectoId,
@@ -149,13 +141,12 @@ export default function LoginPage() {
             };
             // fire-and-forget but await to surface errors if desired
             await customerService.createCustomer(payload);
-          }
         } catch (err) {
           // don't block login on customer creation failure, but log it
           console.warn('Failed to create customer record:', err);
         }
 
-        navigate(pendingPayload!.type === 'client' ? '/dashboard' : '/adminDashboard');
+        navigate('/dashboard');
       } else {
         setError("Invalid verification code.");
       }
@@ -167,10 +158,10 @@ export default function LoginPage() {
   };
 
   const handleResendOtp = async () => {
-    if (!pendingPayload || isProcessing) return;
+      if (!pendingPayload || isProcessing) return;
     setIsProcessing(true);
     try {
-      const payload = buildAuthPayload(pendingPayload.type, pendingPayload.id);
+      const payload = buildAuthPayload(pendingPayload.id);
       await authService.startCollectoAuth({ type: payload.type, cid: payload.cid, uid: payload.uid } as any); 
       setError("A new code has been sent.");
     } catch (e) {
@@ -195,27 +186,7 @@ export default function LoginPage() {
         {/* Main Card */}
         <div className="bg-white rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.05)] overflow-hidden border border-gray-100">
           
-          {/* User Type Switcher */}
-          {loginStep === 'id_entry' && (
-            <div className="flex p-1.5 bg-gray-50/50 border-b border-gray-100">
-              <button
-                onClick={() => setUserType('client')}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-xl transition-all duration-300 ${
-                  userType === 'client' ? 'bg-white shadow-sm text-[#67095D]' : 'text-gray-400 hover:text-gray-600'
-                }`}
-              >
-                <User className="w-3.5 h-3.5" /> CLIENT
-              </button>
-              <button
-                onClick={() => setUserType('business')}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-xl transition-all duration-300 ${
-                  userType === 'business' ? 'bg-white shadow-sm text-[#67095D]' : 'text-gray-400 hover:text-gray-600'
-                }`}
-              >
-                <Briefcase className="w-3.5 h-3.5" /> BUSINESS
-              </button>
-            </div>
-          )}
+          {/* (Client-only) */}
 
           <div className="p-8">
             <div className="mb-8 text-center">
