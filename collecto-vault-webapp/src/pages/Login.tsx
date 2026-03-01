@@ -119,7 +119,7 @@ export default function LoginPage() {
     try {
       const verifyPayload = {
         id: pendingPayload!.id,
-        type: 'client',
+        type: 'client' as const,
         vaultOTP: otpValue,
         vaultOTPToken: pendingPayload!.vaultOTPToken!,
       };
@@ -215,7 +215,7 @@ export default function LoginPage() {
               <form onSubmit={handleIdSubmit} className="space-y-5">
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-bold text-gray-400 uppercase ml-1">
-                    ID or Username
+                    Client ID or Username
                   </label>
                   <div className="relative group">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#d81b60] transition-colors">
@@ -225,7 +225,7 @@ export default function LoginPage() {
                       type="text"
                       value={idOrUsername}
                       onChange={(e) => { setIdOrUsername(e.target.value); setError(''); }}
-                      placeholder="Enter ID or username"
+                      placeholder="Enter Client ID or username"
                       className="block w-full pl-11 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-[#67095D]/5 focus:border-[#67095D] focus:bg-white transition-all outline-none text-sm font-medium"
                       required
                       disabled={isProcessing}
