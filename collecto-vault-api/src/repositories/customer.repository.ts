@@ -6,6 +6,7 @@ interface CustomerRow extends RowDataPacket {
   id: number;
   collecto_id: string;
   client_id: string;
+  username: string | null;
   name: string;
   current_points: number;
   earned_points: number;
@@ -23,6 +24,7 @@ export class CustomerRepository {
       row.id,
       row.collecto_id,
       row.client_id,
+      row.username ?? null,
       row.name,
       row.current_points,
       row.earned_points,
@@ -35,21 +37,25 @@ export class CustomerRepository {
     );
   }
 
+async findAll(collectoId?: string): Promise<Customer[]> {
+  let query = "SELECT * FROM vault_customers WHERE is_active = TRUE";
+  const params: any[] = [];
 
-  async findAll(collectoId?: string): Promise<Customer[]> {
-    let query = "SELECT * FROM vault_customers WHERE is_active = TRUE";
-    const params: any[] = [];
+  if (collectoId && collectoId.trim() !== "") {
+    query += " AND collecto_id = ?";
+    params.push(collectoId.trim());
+  }
 
-    if (collectoId) {
-      query += " AND collecto_id = ?";
-      params.push(collectoId);
-    }
+  query += " ORDER BY created_at DESC";
 
-    query += " ORDER BY created_at DESC";
-
+  try {
     const [rows] = await pool.query<CustomerRow[]>(query, params);
     return rows.map((row) => this.mapRowToCustomer(row));
+  } catch (error) {
+    console.error("Database error in findAll:", error);
+    throw error;
   }
+}
 
   async findById(id: number): Promise<Customer | null> {
     const [rows] = await pool.query<CustomerRow[]>(
@@ -82,6 +88,24 @@ export class CustomerRepository {
     );
 
     return rows.map((row) => this.mapRowToCustomer(row));
+  }
+
+  async findByUsername(username: string): Promise<Customer | null> {
+    const [rows] = await pool.query<CustomerRow[]>(
+      "SELECT * FROM vault_customers WHERE username = ? AND is_active = TRUE",
+      [username]
+    );
+
+    return rows.length > 0 ? this.mapRowToCustomer(rows[0]) : null;
+  }
+
+  async checkUsernameExists(username: string): Promise<boolean> {
+    const [rows] = await pool.query<CustomerRow[]>(
+      "SELECT id FROM vault_customers WHERE username = ? AND is_active = TRUE LIMIT 1",
+      [username]
+    );
+
+    return rows.length > 0;
   }
 
   async create(
@@ -193,7 +217,10 @@ export class CustomerRepository {
     const setClause: string[] = [];
     const values: any[] = [];
 
-
+    if (updates.username !== undefined) {
+      setClause.push("username = ?");
+      values.push(updates.username);
+    }
     if (updates.name !== undefined) {
       setClause.push("name = ?");
       values.push(updates.name);

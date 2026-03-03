@@ -3,8 +3,6 @@ import { TierRepository } from "../repositories/tier.repository";
 import { EarningRuleRepository } from "../repositories/earning-rule.repository";
 import { Customer } from "../models/Customer.model";
 import { TransactionRepository } from "../repositories/transaction.repository"; 
-import { Tier } from "../models/Tier.model";
-import axios from "axios";
 
 export interface CreateCustomerDTO {
   collectoId: string;
@@ -14,6 +12,7 @@ export interface CreateCustomerDTO {
 
 export interface UpdateCustomerDTO {
   name?: string;
+  username?: string;
 }
 
 export interface InvoicePaymentData {
@@ -50,6 +49,42 @@ export class CustomerService {
       throw new Error(`Customer with clientId ${clientId} not found`);
     }
     return customer;
+  }
+
+  async getCustomerByUsername(username: string): Promise<Customer> {
+    const customer = await this.customerRepository.findByUsername(username);
+    if (!customer) {
+      throw new Error(`Customer with username ${username} not found`);
+    }
+    return customer;
+  }
+
+  async setUsername(clientId: string, username: string, collectoId?: string): Promise<Customer> {
+    // Validate username format
+    if (!username || username.trim().length === 0) {
+      throw new Error("Username cannot be empty");
+    }
+
+    if (username.length < 3 || username.length > 100) {
+      throw new Error("Username must be between 3 and 100 characters");
+    }
+
+    // Check if username already exists
+    const existingWithUsername = await this.customerRepository.findByUsername(username);
+    if (existingWithUsername) {
+      throw new Error("Username already taken");
+    }
+
+    // Find customer by clientId
+    const customer = await this.customerRepository.findByClientId(clientId, collectoId);
+    if (!customer) {
+      throw new Error(`Customer with clientId ${clientId} not found. Please login first.`);
+    }
+
+    // Update customer with username
+    return this.customerRepository.update(customer.id, {
+      username: username.trim(),
+    }) as Promise<Customer>;
   }
 
   async getOrCreateCustomer(
@@ -170,7 +205,6 @@ export class CustomerService {
   async getAllClientDetails(collectoId: string): Promise<any> {
     try {
       // Fetch all customers for the given collectoId
-      console.log("Fetching client details for collectoId:", collectoId);
       const customers = await this.customerRepository.findByCollectoId(collectoId);
       const totalUsers = customers.length;
       const totalPointsIssued = customers.reduce((sum, c) => sum + c.earnedPoints, 0);
@@ -195,6 +229,40 @@ export class CustomerService {
       console.error("Error fetching admin dashboard stats:", error);
       throw error;
     }
+  }
+
+  /**
+   * Get tier information by tier ID
+   */
+  async getTierInfo(tierId: number | null) {
+    if (!tierId) {
+      return null;
+    }
+    const tier = await this.tierRepository.findById(tierId);
+    if (!tier) {
+      return null;
+    }
+    return {
+      id: tier.id,
+      name: tier.name,
+      pointsRequired: tier.pointsRequired,
+      earningMultiplier: tier.earningMultiplier,
+      isActive: tier.isActive,
+    };
+  }
+
+  /**
+   * Get all active tiers
+   */
+  async getAllTiers() {
+    const allTiers = await this.tierRepository.findAll(false);
+    return allTiers.map((tier) => ({
+      id: tier.id,
+      name: tier.name,
+      pointsRequired: tier.pointsRequired,
+      earningMultiplier: tier.earningMultiplier,
+      isActive: tier.isActive,
+    }));
   }
   
 }
