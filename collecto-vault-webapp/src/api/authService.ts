@@ -1,4 +1,4 @@
-// src/api/authService.ts  (append / update)
+// src/api/authService.ts  
 import api, { setVaultOtpToken } from "./index";
 
 export const authService = {
@@ -58,10 +58,6 @@ export const authService = {
     }
   },
 
-  /**
-   * Get client ID by username (for login with username)
-   * @param username - The username to look up
-   */
   getClientIdByUsername: async (username: string) => {
     try {
       const resp = await api.post("/getByUsername", { username });
@@ -97,9 +93,7 @@ export const authService = {
     }
   },
 
-  /**
-   * Check if username is available
-   */
+
   checkUsernameAvailability: async (username: string) => {
     try {
       await authService.getClientIdByUsername(username);
