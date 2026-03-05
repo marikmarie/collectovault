@@ -40,12 +40,7 @@ export const authService = {
     return data;
   },
 
-  /**
-   * Set username for a customer after first login
-   * @param clientId - The client ID (obtained during first auth)
-   * @param username - The desired username
-   * @param collectoId - Optional, the collecto ID
-   */
+  
   setUsername: async (payload: {
     clientId: string;
     username: string;
