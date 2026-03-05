@@ -127,7 +127,7 @@ export default function BuyPointsModal({
         setVerified(true);
         setPhoneError(null);
         if (name) setAccountName(String(name).trim());
-        else setAccountName(null); // do not use default name
+        else setAccountName(null); 
       } else {
         // Not verified: show server message if provided and do not set a default name
         setAccountName(null);
