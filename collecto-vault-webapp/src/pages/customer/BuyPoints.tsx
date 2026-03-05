@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import Modal from "../../components/Modal";
 import Card from "../../components/Card";
 import Button from "../../components/Button";
-import api from "../../api"; // Your axios instance
+import api from "../../api";
 import {
   Zap,
   Heart,
@@ -104,9 +104,7 @@ export default function BuyPointsModal({
         phoneNumber: trimmed,
       });
 
-      // Response shapes:
-      // { status, status_message, data: { verifyPhoneNumber: true, message, data: { name, phone } } }
-      // or older: { data: { name } }
+     
       const payload = res?.data ?? {};
       const nested = payload?.data ?? {};
       const deeper = nested?.data ?? {};
