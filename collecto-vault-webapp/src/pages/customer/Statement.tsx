@@ -839,8 +839,7 @@ export default function StatementWithPoints() {
         </div>
       </main>
 
-      {/* Payment Modal — single Payment flow */}
-      {payingInvoice && (
+       {payingInvoice && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl p-6 border border-gray-100 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
@@ -973,7 +972,7 @@ export default function StatementWithPoints() {
               </div>
             </div>
 
-            {/* FlexPay controls */}
+            
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
                 <div>
