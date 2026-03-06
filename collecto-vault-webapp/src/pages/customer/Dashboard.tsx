@@ -60,7 +60,7 @@ export default function Dashboard() {
         setPointsBalance(cData.customer.currentPoints || 0);
         setTier(cData.currentTier?.name || "N/A");
         
-        // Calculate Progress
+        
         if (cData.currentTier && cData.tiers) {
           const idx = cData.tiers.findIndex((t: any) => t.id === cData.currentTier.id);
           if (idx !== -1 && idx < cData.tiers.length - 1) {
@@ -74,7 +74,7 @@ export default function Dashboard() {
         }
       }
 
-      // 2. Fetch Transactions
+      
       const txRes = await transactionService.getTransactions(clientId);
       setTransactions(txRes.data?.transactions || []);
 
