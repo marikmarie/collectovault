@@ -25,7 +25,7 @@ export default function InvoiceDetailModal({ invoice, onClose }: Props) {
         className="bg-white w-full max-w-2xl rounded-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header Section */}
+        
         <div className="p-6 pb-2 flex justify-between items-start">
           <h2 className="text-3xl font-bold text-gray-800 tracking-tight">
             {details.id || "N/A"}
