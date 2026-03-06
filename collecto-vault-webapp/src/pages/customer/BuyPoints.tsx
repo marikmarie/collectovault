@@ -389,7 +389,6 @@ export default function BuyPointsModal({
 
       const data = res?.data;
 
-      // Extract status from various possible locations
       let status = (
         data?.status ||
         data?.payment?.status ||
