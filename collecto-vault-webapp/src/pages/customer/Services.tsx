@@ -241,11 +241,8 @@ export default function Services() {
       const apiRoot = response.data;
       const invoiceId = apiRoot?.data?.invoiceId;
 
-      // LOGGING FOR DEBUGGING
-      console.log("Full API Root:", apiRoot);
-      console.log("Extracted Invoice ID:", invoiceId);
+      
       if (invoiceId && apiRoot?.status?.toString() === "200") {
-        // Success: We have a valid ID and a 200 status
         showToast(`Order placed: ${invoiceId}`, "success");
 
         try {
