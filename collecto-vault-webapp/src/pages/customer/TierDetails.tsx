@@ -102,7 +102,7 @@ export default function TierDetails({ open, onClose, tier, expiry, pointsToNextT
           </button>
           
           <Link 
-            to="/servicelist" // Navigate to the Services page for earning
+            to="/servicelist" 
             onClick={onClose}
             className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-full bg-[#ffa727] text-white hover:bg-[#f2d931] transition-colors shadow-md shadow-[#ffa727]/30"
           >
