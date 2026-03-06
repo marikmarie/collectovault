@@ -263,7 +263,6 @@ export default function Services() {
           navigate("/statement", { state: { invoiceId } });
         }, 500);
       } else {
-        // Failure: ID is missing or status is not 200
         const errorMsg =
           apiRoot?.data?.message ||
           "Invoice ID was not returned by the server.";
@@ -290,8 +289,7 @@ export default function Services() {
     <div className="min-h-screen bg-gray- 50 pb-20">
       <TopNav />
 
-      {/* Toast (global) */}
-      {toast && !cartOpen && (
+     {toast && !cartOpen && (
         <div
           className={`fixed top-4 right-4 z-50 max-w-sm w-auto px-4 py-2 rounded shadow-lg text-sm ${toast.type === "success" ? "bg-green-600 text-white" : toast.type === "error" ? "bg-red-600 text-white" : "bg-blue-600 text-white"}`}
           role="status"
