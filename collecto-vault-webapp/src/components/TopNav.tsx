@@ -205,7 +205,7 @@ export default function TopNav() {
         onOpenUsernameModal={() => setShowUsernameModal(true)}
       />
 
-      {/* ================= USERNAME MODAL ================= */}
+      
       <SetUsernameModal
         isOpen={showUsernameModal}
         onClose={() => setShowUsernameModal(false)}
