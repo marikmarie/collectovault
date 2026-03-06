@@ -24,7 +24,7 @@ export default function App() {
       if (!hasVaultOtpToken()) {
         navigate('/login');
       }
-    }, 30_000); // check every 30s
+    }, 30_000); 
     return () => clearInterval(interval);
   }, [navigate]);
 
