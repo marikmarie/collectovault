@@ -63,8 +63,7 @@ export default function InvoiceDetailModal({ invoice, onClose }: Props) {
 
         </div>
 
-        {/* Content Area */}
-        <div className="p-6 overflow-y-auto">
+       <div className="p-6 overflow-y-auto">
           {tab === "details" ? (
             <table className="w-full border-collapse">
               <tbody className="text-gray-700">
