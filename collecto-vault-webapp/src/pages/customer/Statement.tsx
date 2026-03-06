@@ -1021,7 +1021,7 @@ export default function StatementWithPoints() {
                   </div>
                 </div>
 
-                {/* Staff ID and Amount inputs */}
+                
                 <div className="flex items-start gap-3 mt-4">
                   <div className="flex-1" style={{ flexBasis: "40%" }}>
                     <label className="text-xs font-bold text-gray-500 uppercase block mb-1">
