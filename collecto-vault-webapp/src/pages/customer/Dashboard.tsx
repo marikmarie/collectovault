@@ -103,7 +103,7 @@ export default function Dashboard() {
     fetchOffers();
   }, [clientId]);
 
-  // --- HANDLERS ---
+
 
   const handleSpendFromDetails = () => {
     setSelectedRedeemOffer(null);
