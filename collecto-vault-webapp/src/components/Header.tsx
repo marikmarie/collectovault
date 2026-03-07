@@ -54,57 +54,7 @@ export default function Header({
       {/* base gradient - Expanded to full width/height */}
       <div className="themed-header__bg" />
 
-      {/* --- Decorative SVG layer --- */}
-      <div className="absolute inset-0 pointer-events-none">
-        <svg
-          className="w-full h-full"
-          preserveAspectRatio="none"
-          xmlns="http://www.w3.org/2000/svg"
-          aria-hidden
-        >
-          <defs>
-            <pattern
-              id="diagStripes"
-              patternUnits="userSpaceOnUse"
-              width="40"
-              height="40"
-              patternTransform="rotate(25)"
-            >
-              <rect width="40" height="40" fill="transparent" />
-              <path d="M0 0 L0 6" stroke="rgba(255,255,255,0.04)" strokeWidth="2" />
-              <path d="M10 0 L10 6" stroke="rgba(255,255,255,0.04)" strokeWidth="2" />
-            </pattern>
-
-            <linearGradient id="softGrad" x1="0" x2="1" y1="0" y2="1">
-              <stop offset="0%" stopColor="#ff6b6b" stopOpacity="0.08" />
-              <stop offset="55%" stopColor="#ffb86b" stopOpacity="0.06" />
-              <stop offset="100%" stopColor="#7c4dff" stopOpacity="0.04" />
-            </linearGradient>
-
-            <filter id="softBlur" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="18" result="blur" />
-              <feComposite in="SourceGraphic" in2="blur" operator="over" />
-            </filter>
-          </defs>
-
-          <rect width="100%" height="100%" fill="url(#diagStripes)" />
-
-          <g filter="url(#softBlur)">
-            <path
-              d="M -10 40 C 120 10, 240 10, 400 60 C 560 110, 720 160, 1000 120 L 1000 0 L -10 0 Z"
-              fill="url(#softGrad)"
-              transform="translate(0,40) scale(1.15)"
-              opacity="0.28"
-            />
-          </g>
-
-          <radialGradient id="vignette" cx="50%" cy="10%" r="80%">
-            <stop offset="60%" stopColor="rgba(0,0,0,0)" />
-            <stop offset="100%" stopColor="rgba(0,0,0,0.18)" />
-          </radialGradient>
-          <rect width="100%" height="100%" fill="url(#vignette)" opacity="0.25" />
-        </svg>
-      </div>
+      {/* Decorative SVG layer removed */}
 
       {/* Main Content Container - keep flush under TopNav (no top padding) */}
       <div className="relative w-full px-4 pb-0 pt-0">

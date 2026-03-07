@@ -6,7 +6,7 @@ import ServicesList from "../../components/ServicesList";
 import BuyPoints from "../customer/BuyPoints";
 import SpendPointsModal from "./SpendPoints";
 import TierDetailsModal from "./TierDetails";
-import Slider from "../../components/Slider";
+//import Slider from "../../components/Slider";
 import {  RefreshCw, ArrowUpRight, ArrowDownLeft, Clock } from "lucide-react";
 import { customerService } from "../../api/customer";
 import { transactionService } from "../../api/collecto";
@@ -41,8 +41,8 @@ export default function Dashboard() {
   // Data States
   const [loading, setLoading] = useState(false);
   const [transactions, setTransactions] = useState<any[]>([]);
-  const [redeemableOffers, setRedeemableOffers] = useState<RedeemableOffer[]>([]);
-  const [offersLoading, setOffersLoading] = useState(false);
+  const [, setRedeemableOffers] = useState<RedeemableOffer[]>([]);
+  const [, setOffersLoading] = useState(false);
 
   const clientId = localStorage.getItem("clientId") || "";
   const userName = localStorage.getItem("userName") || "User";
@@ -155,38 +155,6 @@ export default function Dashboard() {
           {activeTab === "points" && (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
               
-              {/* Offers Slider */}
-              <section>
-                <h3 className="text-lg font-bold text-gray-800 mb-4 px-1">Exclusive Offers</h3>
-                {offersLoading ? (
-                  <div className="h-32 flex items-center justify-center text-gray-400 text-sm">Loading offers...</div>
-                ) : (
-                  <Slider
-                    height="h-40"
-                    slides={redeemableOffers.map((offer) => ({
-                      key: offer.id,
-                      node: (
-                        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm h-full flex flex-col justify-between mr-2">
-                          <div>
-                            <h4 className="font-bold text-gray-900 text-sm line-clamp-1">{offer.title}</h4>
-                            <p className="text-xs text-gray-500 mt-1 line-clamp-2">{offer.desc}</p>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-black text-[#cb0d6c]">{offer.pointsCost} pts</span>
-                            <button 
-                              onClick={() => setSelectedRedeemOffer(offer)}
-                              className="text-[10px] bg-gray-900 text-white px-3 py-1.5 rounded-full font-bold"
-                            >
-                              Redeem
-                            </button>
-                          </div>
-                        </div>
-                      )
-                    }))}
-                  />
-                )}
-              </section>
-
               {/* Transactions Ledger */}
               <section>
                 <div className="flex items-center justify-between mb-4 px-1">
