@@ -6,25 +6,11 @@ import ServicesList from "../../components/ServicesList";
 import BuyPoints from "../customer/BuyPoints";
 import SpendPointsModal from "./SpendPoints";
 import TierDetailsModal from "./TierDetails";
-//import Slider from "../../components/Slider";
-import {  RefreshCw, ArrowUpRight, ArrowDownLeft, Clock } from "lucide-react";
+import {  RefreshCw, ArrowUpRight, ArrowDownLeft } from "lucide-react";
 import { customerService } from "../../api/customer";
 import { transactionService } from "../../api/collecto";
 
 type TabType = "points" | "tier";
-
-interface RedeemableOffer {
-  id: string;
-  title: string;
-  desc?: string;
-  pointsCost: number;
-}
-
-const DUMMY_OFFERS: RedeemableOffer[] = [
-  { id: "offer_1", title: "10% Discount on Next Purchase", desc: "Get 10% off your next purchase over 15%", pointsCost: 500 },
-  { id: "offer_2", title: "Free concert ticket", desc: "Redeem for a free ticket to a local concert event", pointsCost: 250 },
-  { id: "offer_3", title: "Exclusive Member Offer", desc: "Special discount available only to tier members", pointsCost: 1000 },
-];
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabType>("tier");
@@ -36,13 +22,10 @@ export default function Dashboard() {
   const [buyPointsOpen, setBuyPointsOpen] = useState(false);
   const [spendPointsOpen, setSpendPointsOpen] = useState(false);
   const [tierDetailsOpen, setTierDetailsOpen] = useState(false);
-  const [selectedRedeemOffer, setSelectedRedeemOffer] = useState<RedeemableOffer | null>(null);
   
   // Data States
   const [loading, setLoading] = useState(false);
   const [transactions, setTransactions] = useState<any[]>([]);
-  const [, setRedeemableOffers] = useState<RedeemableOffer[]>([]);
-  const [, setOffersLoading] = useState(false);
 
   const clientId = localStorage.getItem("clientId") || "";
   const userName = localStorage.getItem("userName") || "User";
@@ -85,30 +68,13 @@ export default function Dashboard() {
     }
   };
 
-  const fetchOffers = async () => {
-    setOffersLoading(true);
-    try {
-      const res = await customerService.getRedeemableOffers();
-      const offers = res.data?.offers ?? res.data ?? [];
-      setRedeemableOffers(Array.isArray(offers) && offers.length > 0 ? offers : DUMMY_OFFERS);
-    } catch (err) {
-      setRedeemableOffers(DUMMY_OFFERS);
-    } finally {
-      setOffersLoading(false);
-    }
-  };
-
   useEffect(() => {
     fetchData();
-    fetchOffers();
   }, [clientId]);
 
 
 
-  const handleSpendFromDetails = () => {
-    setSelectedRedeemOffer(null);
-    setSpendPointsOpen(true);
-  };
+  
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans pb-20 lg:pb-0">
@@ -196,7 +162,7 @@ export default function Dashboard() {
                             
                             <div className="flex items-center gap-3 mt-2">
                               <span className="text-[10px] text-gray-400 flex items-center gap-1">
-                                <Clock size={10} /> {new Date(tx.createdAt).toLocaleDateString()}
+                                📅 {new Date(tx.createdAt).toLocaleDateString()}
                               </span>
                               <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${isConfirmed ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"}`}>
                                 {tx.paymentStatus}
@@ -260,32 +226,6 @@ export default function Dashboard() {
         expiry="" 
         pointsToNextTier={1500} 
       />
-
-      {/* Redeem Detail Overlay */}
-      {selectedRedeemOffer && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-6" onClick={() => setSelectedRedeemOffer(null)}>
-          <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
-            <h4 className="text-xl font-black text-gray-900 mb-2">{selectedRedeemOffer.title}</h4>
-            <p className="text-gray-500 text-sm mb-6">{selectedRedeemOffer.desc}</p>
-            
-            <div className="bg-red-50 p-4 rounded-2xl mb-8 border border-red-100">
-              <span className="text-xs font-bold text-red-400 uppercase tracking-widest">Redemption Cost</span>
-              <p className="text-2xl font-black text-red-600">{selectedRedeemOffer.pointsCost.toLocaleString()} Points</p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <button onClick={() => setSelectedRedeemOffer(null)} className="py-3 rounded-xl font-bold text-gray-500 border border-gray-200">Close</button>
-              <button 
-                onClick={handleSpendFromDetails}
-                disabled={pointsBalance < selectedRedeemOffer.pointsCost}
-                className={`py-3 rounded-xl font-bold text-white shadow-lg ${pointsBalance >= selectedRedeemOffer.pointsCost ? "bg-[#cb0d6c] shadow-[#cb0d6c]/30" : "bg-gray-300 cursor-not-allowed"}`}
-              >
-                Claim Offer
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
