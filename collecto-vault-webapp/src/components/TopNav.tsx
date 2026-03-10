@@ -216,7 +216,8 @@ export default function TopNav() {
   );
 }
 
-// ---------------- SUB COMPONENTS ----------------
+
+
 
 function NavLinkMobile({ to, icon, label, active }: any) {
   return (
