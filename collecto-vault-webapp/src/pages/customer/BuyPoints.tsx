@@ -22,14 +22,6 @@ type Package = {
   recommended?: boolean;
 };
 
-// Interface to match your Backend Controller response
-interface ApiPackage {
-  id: number;
-  name: string;
-  pointsAmount: number;
-  price: number;
-  isPopular: boolean;
-}
 
 type Props = {
   open: boolean;
@@ -183,19 +175,25 @@ export default function BuyPointsModal({
       try {
         setLoadingPackages(true);
 
-        //const vendorId =
-        const collectoId = localStorage.getItem("collectoId") || undefined;
+        const collectoId = localStorage.getItem("collectoId") || "";
+        const clientId = localStorage.getItem("clientId") || "";
 
-        const res = await api.get(`/vaultPackages/${collectoId}`);
-        // Map API fields (pointsAmount -> points, isPopular -> recommended)
-        const apiData: ApiPackage[] = res.data?.data ?? [];
-        const mapped = apiData.map((pkg) => ({
-          id: pkg.id,
-          points: pkg.pointsAmount,
-          price: pkg.price,
-          recommended: pkg.isPopular,
-          label: pkg.name,
+        const res = await api.post("/loyaltySettings", {
+          collectoId,
+          clientId,
+        });
+
+        const loyaltySettings = res?.data?.data?.loyaltySettings ?? {};
+        const tiers = loyaltySettings.purchase_tiers ?? [];
+
+        const mapped: Package[] = (tiers || []).map((tier: any, index: number) => ({
+          id: tier.id ?? `${tier.name}-${tier.points}-${tier.cost}-${index}`,
+          points: tier.points ?? 0,
+          price: tier.cost ?? 0,
+          recommended: false,
+          label: tier.name || `Package ${index + 1}`,
         }));
+
         setPackages(mapped);
       } catch (err) {
         console.error("Failed to load packages", err);
@@ -310,10 +308,10 @@ export default function BuyPointsModal({
         vaultOTPToken,
         collectoId,
         clientId,
-        packageId: selectedPackage.id,
         phone: formattedPhone,
         paymentOption: paymentMode,
         amount: selectedPackage.price,
+        points: { points_used: selectedPackage.points },
         reference: `BUYPOINTS-${Date.now()}`,
       });
 

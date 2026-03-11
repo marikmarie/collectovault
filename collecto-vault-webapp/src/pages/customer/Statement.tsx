@@ -175,30 +175,34 @@ export default function StatementWithPoints() {
     setLoadingType("packages");
     setLoading(true);
     try {
-      const res = await api.get("/vaultPackages");
-      const apiData: any[] = res.data?.data ?? [];
-      const mapped = apiData.map((pkg: any) => ({
-        id: pkg.id,
-        points: pkg.pointsAmount,
-        price: pkg.price,
-        recommended: pkg.isPopular,
-        label: pkg.name,
+      const collectoId = localStorage.getItem("collectoId") || "";
+      const clientId = localStorage.getItem("clientId") || "";
+
+      const res = await api.post("/loyaltySettings", {
+        collectoId,
+        clientId,
+      });
+
+      const loyaltySettings = res?.data?.data?.loyaltySettings ?? {};
+      const tiers = loyaltySettings.purchase_tiers ?? [];
+
+      const mapped = (tiers || []).map((tier: any, index: number) => ({
+        id: tier.id ?? `${tier.name}-${tier.points}-${tier.cost}-${index}`,
+        points: tier.points ?? 0,
+        price: tier.cost ?? 0,
+        recommended: false,
+        label: tier.name || `Package ${index + 1}`,
       }));
+
       setPackages(mapped);
 
-      const totalPoints = mapped.reduce(
-        (s: number, p: any) => s + (p.points || 0),
-        0,
-      );
-      const totalPrice = mapped.reduce(
-        (s: number, p: any) => s + (p.price || 0),
-        0,
-      );
-
-      if (totalPoints > 0) {
-        setUgxPerPoint(totalPrice / totalPoints);
+      const pointValue = loyaltySettings.point_value;
+      if (typeof pointValue === "number" && pointValue > 0) {
+        setUgxPerPoint(pointValue);
       } else {
-        setUgxPerPoint(1);
+        const totalPoints = mapped.reduce((s: number, p: any) => s + (p.points || 0), 0);
+        const totalPrice = mapped.reduce((s: number, p: any) => s + (p.price || 0), 0);
+        setUgxPerPoint(totalPoints > 0 ? totalPrice / totalPoints : 1);
       }
 
       return mapped;
@@ -289,29 +293,17 @@ export default function StatementWithPoints() {
     if (!clientId) return;
     setLoading(true);
     try {
-      const customerRes = await customerService.getCustomerData(clientId);
-      const cData = customerRes.data;
+      const customerRes = await customerService.getCustomerData(collectoId || "", clientId || "");
+      const loyaltySettings = customerRes.data?.data?.loyaltySettings;
 
-      if (cData?.customer) {
-        setPointsBalance(cData.customer.currentPoints || 0);
-        setTier(cData.currentTier?.name || "N/A");
+      const points =
+        loyaltySettings?.points ??
+        ((loyaltySettings?.loyalty_points?.earned ?? 0) +
+          (loyaltySettings?.loyalty_points?.bought ?? 0));
 
-        if (cData.currentTier && cData.tiers) {
-          const idx = cData.tiers.findIndex(
-            (t: any) => t.id === cData.currentTier.id,
-          );
-          if (idx !== -1 && idx < cData.tiers.length - 1) {
-            const next = cData.tiers[idx + 1];
-            const diff = next.pointsRequired - cData.currentTier.pointsRequired;
-            const earned =
-              cData.customer.currentPoints -
-              cData.currentTier.pointsRequired;
-            setTierProgress(Math.min(100, Math.max(0, (earned / diff) * 100)));
-          } else {
-            setTierProgress(100);
-          }
-        }
-      }
+      setPointsBalance(points || 0);
+      setTier('N/A');
+      setTierProgress(0);
 
       const txRes = await transactionService.getTransactions(clientId);
       setTransactions(txRes.data?.transactions || []);

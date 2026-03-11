@@ -9,10 +9,10 @@ export default function TierProgress({
   const pct = Math.max(0, Math.min(100, progress));
   
   const currentTierIndex = tiers.findIndex(t => t.toLowerCase() === currentTier.toLowerCase());
+  const safeTierIndex = currentTierIndex < 0 ? 0 : currentTierIndex;
   const segmentCount = tiers.length - 1; 
 
-  
-  const baseOffset = (currentTierIndex / segmentCount) * 100;
+  const baseOffset = (safeTierIndex / segmentCount) * 100;
   
   // activeSegmentWidth: The distance between two dots
   const activeSegmentWidth = 100 / segmentCount;
@@ -22,7 +22,7 @@ export default function TierProgress({
   const totalProgressWidth = baseOffset + ((pct / 100) * activeSegmentWidth);
 
   // Determine if the user has reached the final tier
-  const isMaxTier = currentTierIndex === tiers.length - 1;
+  const isMaxTier = safeTierIndex === tiers.length - 1;
 
   return (
     <div className="px-4 w-full">
@@ -61,7 +61,7 @@ export default function TierProgress({
               
               // Only highlight dots the user has actually EARNED (reached)
               // The dot for the "next" tier remains gray until progress is 100%
-              const isEarned = i <= currentTierIndex;
+              const isEarned = i <= safeTierIndex;
 
               return (
                 <div 
@@ -108,7 +108,7 @@ export default function TierProgress({
               {Math.round(pct)}% Complete
             </div>
             <div className="text-[11px] text-gray-400">
-               to {tiers[currentTierIndex + 1]} Tier
+               to {tiers[safeTierIndex + 1]} Tier
             </div>
           </div>
         )}

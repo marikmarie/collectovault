@@ -28,6 +28,7 @@ export default function Dashboard() {
   const [transactions, setTransactions] = useState<any[]>([]);
 
   const clientId = localStorage.getItem("clientId") || "";
+  const collectoId = localStorage.getItem("collectoId") || "";
   const userName = localStorage.getItem("userName") || "User";
 
   // --- API FETCHERS ---
@@ -36,26 +37,18 @@ export default function Dashboard() {
     if (!clientId) return;
     setLoading(true);
     try {
-      // 1. Fetch Customer Profile (Points/Tier)
-      const customerRes = await customerService.getCustomerData(clientId);
-      const cData = customerRes.data;
-      if (cData?.customer) {
-        setPointsBalance(cData.customer.currentPoints || 0);
-        setTier(cData.currentTier?.name || "N/A");
-        
-        
-        if (cData.currentTier && cData.tiers) {
-          const idx = cData.tiers.findIndex((t: any) => t.id === cData.currentTier.id);
-          if (idx !== -1 && idx < cData.tiers.length - 1) {
-            const next = cData.tiers[idx + 1];
-            const diff = next.pointsRequired - cData.currentTier.pointsRequired;
-            const earned = cData.customer.currentPoints - cData.currentTier.pointsRequired;
-            setTierProgress(Math.min(100, Math.max(0, (earned / diff) * 100)));
-          } else {
-            setTierProgress(100);
-          }
-        }
-      }
+      // 1. Fetch Customer Profile (Points)
+      const customerRes = await customerService.getCustomerData(collectoId, clientId);
+      const loyaltySettings = customerRes.data?.data?.loyaltySettings;
+
+      const points =
+        loyaltySettings?.points ??
+        ((loyaltySettings?.loyalty_points?.earned ?? 0) +
+          (loyaltySettings?.loyalty_points?.bought ?? 0));
+
+      setPointsBalance(points || 0);
+      setTier('N/A');
+      setTierProgress(0);
 
       
       const txRes = await transactionService.getTransactions(clientId);

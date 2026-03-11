@@ -9,9 +9,12 @@ export const customerService = {
       },
     }),
 
-  // Get customer data including points balance and tier
-  getCustomerData: (clientId: string) => 
-    api.get(`/customers/info/${clientId}`),
+ getCustomerData: (collectoId: string, clientId: string) =>
+    api.post(`/loyaltySettings`, {
+      collectoId,
+      clientId,
+    }),
+
 
   // Get customer's current points balance and tier info
   getPointsAndTier: (vendorId?: string) =>

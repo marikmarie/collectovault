@@ -6,8 +6,6 @@ import Dashboard from './pages/customer/Dashboard'
 import Statement from './pages/customer/Statement'
 import Login from './pages/Login';
 import Services from './pages/customer/Services';
-import Reports from './pages/Admin/Reports';
-import Layout from './pages/Admin/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
@@ -34,8 +32,6 @@ export default function App() {
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/statement" element={<ProtectedRoute><Statement /></ProtectedRoute>} />
       <Route path="/services" element={<ProtectedRoute><Services /></ProtectedRoute>} />
-      <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
-      <Route path="/adminDashboard" element={<ProtectedRoute><Layout /></ProtectedRoute>} />
       {/* <Route path="/admin/*" element={<Layout />} /> */}
 
       <Route path="/login" element={<Login />} />
