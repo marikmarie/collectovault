@@ -23,7 +23,6 @@ export default function Header({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imageError, setImageError] = useState(false);
 
-
   const handleCameraClick = () => {
     fileInputRef.current?.click();
   };
@@ -66,7 +65,6 @@ export default function Header({
           className="hidden"
         />
 
-        {/* Avatar with camera upload - Removed negative margin to prevent top clipping */}
         <div className="flex justify-center">
           <div className="relative">
             <div
@@ -78,7 +76,9 @@ export default function Header({
             >
               {imageError || !avatar ? (
                 <div className="w-full h-full bg-gray-300 flex items-center justify-center">
-                  <span className="text-gray-600 font-bold text-center px-4">NO IMAGE</span>
+                  <span className="text-gray-600 font-bold text-center px-4">
+                    NO IMAGE
+                  </span>
                 </div>
               ) : (
                 <img
@@ -102,10 +102,10 @@ export default function Header({
 
         {/* Text content */}
         <div className="text-center mt-3 pb-2 relative z-10">
-          <h1 className="text-white text-xl md:text-2xl font-semibold">{name}</h1>
+          <h1 className="text-white text-xl md:text-2xl font-semibold">
+            {name}
+          </h1>
           {phone && <p className="text-white/90 text-sm mt-1">{phone}</p>}
-
-          
         </div>
       </div>
     </header>
