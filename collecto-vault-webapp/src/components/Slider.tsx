@@ -7,7 +7,7 @@ export type SliderProps = {
   slides: Slide[];
   initialIndex?: number;
   height?: string;              
-  itemWidth?: string; // Tailwind width class for each slide (e.g., 'w-56' or 'w-full')
+  itemWidth?: string; 
   onChange?: (index: number) => void;
   className?: string;
 };
@@ -30,7 +30,7 @@ export default function Slider({
     const child = el.children[index] as HTMLElement | undefined;
     if (child) child.scrollIntoView({ behavior: "smooth", inline: "start" });
     onChange?.(index);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  
   }, [index]);
 
 
