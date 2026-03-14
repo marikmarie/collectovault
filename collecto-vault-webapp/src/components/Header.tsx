@@ -105,12 +105,7 @@ export default function Header({
           <h1 className="text-white text-xl md:text-2xl font-semibold">{name}</h1>
           {phone && <p className="text-white/90 text-sm mt-1">{phone}</p>}
 
-          {/* <button
-            onClick={() => navigate("/statement")}
-            className="mt-3 text-xs text-white bg-white/20 px-4 py-1.5 rounded-full hover:bg-white/30 active:scale-95 transition-all border border-white/10"
-          >
-            My Statement
-          </button> */}
+          
         </div>
       </div>
     </header>
