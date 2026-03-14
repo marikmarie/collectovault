@@ -38,7 +38,7 @@ export default function TopNav() {
   const initials = useMemo(() => {
     return userName
       .split(" ")
-      .map(n => n[0])
+      .map((n) => n[0])
       .slice(0, 2)
       .join("")
       .toUpperCase();
@@ -47,7 +47,10 @@ export default function TopNav() {
   // Close dropdown if clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsWebDropdownOpen(false);
       }
     }
@@ -78,8 +81,15 @@ export default function TopNav() {
       <header className="hidden lg:block w-full bg-linear-to-r from-white via-white to-gray-50 sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           {/* Logo */}
-          <div onClick={() => navigate("/dashboard")} className="cursor-pointer hover:opacity-80 transition-opacity">
-            <img src={theme.logoUrl ?? "logo.png"} alt="Logo" className="h-20 w-auto" />
+          <div
+            onClick={() => navigate("/dashboard")}
+            className="cursor-pointer hover:opacity-80 transition-opacity"
+          >
+            <img
+              src={theme.logoUrl ?? "logo.png"}
+              alt="Logo"
+              className="h-20 w-auto"
+            />
           </div>
 
           {/* Nav */}
@@ -88,7 +98,7 @@ export default function TopNav() {
               { name: "Dashboard", path: "/dashboard" },
               { name: "Statement", path: "/statement" },
               { name: "Services", path: "/services" },
-            ].map(link => (
+            ].map((link) => (
               <Link
                 key={link.name}
                 to={link.path}
@@ -101,8 +111,8 @@ export default function TopNav() {
                 {link.name}
               </Link>
             ))}
-            <button 
-              onClick={() => openDrawer("help")} 
+            <button
+              onClick={() => openDrawer("help")}
               className="relative py-2 text-gray-700 hover:text-[#d81b60] transition-colors"
             >
               Help
@@ -111,8 +121,8 @@ export default function TopNav() {
 
           {/* Right */}
           <div className="flex items-center gap-6">
-            <button 
-              onClick={() => openDrawer("notifications")} 
+            <button
+              onClick={() => openDrawer("notifications")}
               className="relative p-2 text-gray-700 hover:text-[#d81b60] transition-colors rounded-lg hover:bg-gray-100"
             >
               <Bell size={20} />
@@ -128,28 +138,46 @@ export default function TopNav() {
                 <div className="w-8 h-8 rounded-full bg-linear-to-br from-[#d81b60] to-pink-400 flex items-center justify-center text-white text-xs font-bold shadow-sm">
                   {initials}
                 </div>
-                <span className="text-sm font-medium text-gray-700">{userName.split(' ')[0]}</span>
+                <span className="text-sm font-medium text-gray-700">
+                  {userName.split(" ")[0]}
+                </span>
               </button>
 
               {isWebDropdownOpen && (
                 <div className="absolute right-0 top-12 w-60 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 animate-in fade-in duration-150">
                   <div className="px-5 py-4 border-b border-gray-100 bg-linear-to-r from-gray-50 to-white rounded-t-2xl">
-                    <p className="text-sm font-semibold text-gray-900">{userName}</p>
+                    <p className="text-sm font-semibold text-gray-900">
+                      {userName}
+                    </p>
                     <p className="text-xs text-gray-500 mt-0.5">{userEmail}</p>
                   </div>
 
-                  <button onClick={() => openDrawer("profile")} className="w-full text-left px-5 py-2.5 flex items-center gap-3 text-gray-700 hover:bg-gray-50 transition-colors text-sm">
-                    <User size={16} className="text-gray-400" /> Profile & Settings
+                  <button
+                    onClick={() => openDrawer("profile")}
+                    className="w-full text-left px-5 py-2.5 flex items-center gap-3 text-gray-700 hover:bg-gray-50 transition-colors text-sm"
+                  >
+                    <User size={16} className="text-gray-400" /> Profile &
+                    Settings
                   </button>
-                  <button onClick={() => openDrawer("notifications")} className="w-full text-left px-5 py-2.5 flex items-center gap-3 text-gray-700 hover:bg-gray-50 transition-colors text-sm">
+                  <button
+                    onClick={() => openDrawer("notifications")}
+                    className="w-full text-left px-5 py-2.5 flex items-center gap-3 text-gray-700 hover:bg-gray-50 transition-colors text-sm"
+                  >
                     <Bell size={16} className="text-gray-400" /> Notifications
                   </button>
-                  <button onClick={() => openDrawer("help")} className="w-full text-left px-5 py-2.5 flex items-center gap-3 text-gray-700 hover:bg-gray-50 transition-colors text-sm">
-                    <MessageCircle size={16} className="text-gray-400" /> Help & Support
+                  <button
+                    onClick={() => openDrawer("help")}
+                    className="w-full text-left px-5 py-2.5 flex items-center gap-3 text-gray-700 hover:bg-gray-50 transition-colors text-sm"
+                  >
+                    <MessageCircle size={16} className="text-gray-400" /> Help &
+                    Support
                   </button>
 
                   <div className="border-t border-gray-100 mt-1">
-                    <button onClick={handleSignOut} className="w-full text-left px-5 py-2.5 flex items-center gap-3 text-red-600 hover:bg-red-50 transition-colors text-sm font-medium">
+                    <button
+                      onClick={handleSignOut}
+                      className="w-full text-left px-5 py-2.5 flex items-center gap-3 text-red-600 hover:bg-red-50 transition-colors text-sm font-medium"
+                    >
                       <LogOut size={16} /> Sign out
                     </button>
                   </div>
@@ -160,11 +188,10 @@ export default function TopNav() {
         </div>
       </header>
 
-      {/* ================= MOBILE HEADER ================= */}
       <header className="lg:hidden h-16 px-4 flex items-center justify-between bg-linear-to-r from-white via-white to-gray-50 sticky top-0 z-40 shadow-sm">
         <img src={theme.logoUrl ?? "/logo.png"} className="h-10" />
         <div className="flex gap-4 items-center">
-          <button 
+          <button
             onClick={() => openDrawer("notifications")}
             className="relative p-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
           >
@@ -183,10 +210,28 @@ export default function TopNav() {
       {/* ================= MOBILE BOTTOM NAV ================= */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white shadow-lg z-30 border-t border-gray-100">
         <div className="flex justify-around h-16">
-          <NavLinkMobile to="/dashboard" icon={<Home size={20} />} label="Home" active={isActive("/dashboard")} />
-          <NavLinkMobile to="/statement" icon={<CreditCard size={20} />} label="Statement" active={isActive("/statement")} />
-          <NavLinkMobile to="/services" icon={<Box size={20} />} label="Services" active={isActive("/services")} />
-          <button onClick={() => openDrawer("help")} className="nav-btn text-gray-600 hover:text-[#d81b60]">
+          <NavLinkMobile
+            to="/dashboard"
+            icon={<Home size={20} />}
+            label="Home"
+            active={isActive("/dashboard")}
+          />
+          <NavLinkMobile
+            to="/statement"
+            icon={<CreditCard size={20} />}
+            label="Statement"
+            active={isActive("/statement")}
+          />
+          <NavLinkMobile
+            to="/services"
+            icon={<Box size={20} />}
+            label="Services"
+            active={isActive("/services")}
+          />
+          <button
+            onClick={() => openDrawer("help")}
+            className="nav-btn text-gray-600 hover:text-[#d81b60]"
+          >
             <MessageCircle size={20} />
             <span>Help</span>
           </button>
@@ -205,7 +250,6 @@ export default function TopNav() {
         onOpenUsernameModal={() => setShowUsernameModal(true)}
       />
 
-      
       <SetUsernameModal
         isOpen={showUsernameModal}
         onClose={() => setShowUsernameModal(false)}
@@ -216,9 +260,6 @@ export default function TopNav() {
   );
 }
 
-
-
-
 function NavLinkMobile({ to, icon, label, active }: any) {
   return (
     <Link to={to} className={`nav-btn ${active ? "text-[#d81b60]" : ""}`}>
@@ -228,17 +269,34 @@ function NavLinkMobile({ to, icon, label, active }: any) {
   );
 }
 
-function SideDrawer({ isOpen, onClose, view, handleSignOut, userName, userEmail, initials, onOpenUsernameModal }: any) {
+function SideDrawer({
+  isOpen,
+  onClose,
+  view,
+  handleSignOut,
+  userName,
+  userEmail,
+  initials,
+  onOpenUsernameModal,
+}: any) {
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
-      <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={onClose} />
+      <div
+        className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+        onClick={onClose}
+      />
 
       <div className="w-full max-w-md bg-white h-full p-6 overflow-y-auto animate-in slide-in-from-right duration-300">
         <div className="flex justify-between items-center mb-6">
           <h2 className="font-bold text-lg capitalize text-gray-900">{view}</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-500"><X size={20} /></button>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-500"
+          >
+            <X size={20} />
+          </button>
         </div>
 
         {view === "profile" && (
@@ -247,16 +305,19 @@ function SideDrawer({ isOpen, onClose, view, handleSignOut, userName, userEmail,
               <div className="w-20 h-20 rounded-full bg-linear-to-br from-[#d81b60] to-pink-400 flex items-center justify-center text-xl font-bold text-white shadow-lg">
                 {initials}
               </div>
-              <h3 className="font-semibold mt-4 text-lg text-gray-900">{userName}</h3>
+              <h3 className="font-semibold mt-4 text-lg text-gray-900">
+                {userName}
+              </h3>
               <p className="text-sm text-gray-500 mt-1">{userEmail}</p>
             </div>
 
             <div className="space-y-3">
-              <button 
+              <button
                 onClick={onOpenUsernameModal}
                 className="w-full flex items-center gap-3 px-4 py-3 bg-linear-to-r from-[#d81b60]/10 to-pink-400/10 hover:from-[#d81b60]/20 hover:to-pink-400/20 rounded-lg transition-colors text-gray-700 font-medium border border-[#d81b60]/20"
               >
-                <Mail size={18} className="text-[#d81b60]" /> Set/Update Username
+                <Mail size={18} className="text-[#d81b60]" /> Set/Update
+                Username
               </button>
               <button className="w-full flex items-center gap-3 px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors text-gray-700 font-medium">
                 <Key size={18} className="text-[#d81b60]" /> Change Password
@@ -264,7 +325,10 @@ function SideDrawer({ isOpen, onClose, view, handleSignOut, userName, userEmail,
             </div>
 
             <div className="border-t pt-4">
-              <button onClick={handleSignOut} className="w-full flex items-center gap-3 px-4 py-3 bg-red-50 hover:bg-red-100 rounded-lg transition-colors text-red-600 font-medium">
+              <button
+                onClick={handleSignOut}
+                className="w-full flex items-center gap-3 px-4 py-3 bg-red-50 hover:bg-red-100 rounded-lg transition-colors text-red-600 font-medium"
+              >
                 <LogOut size={18} /> Sign Out
               </button>
             </div>
@@ -274,8 +338,12 @@ function SideDrawer({ isOpen, onClose, view, handleSignOut, userName, userEmail,
         {view === "help" && (
           <div className="space-y-4">
             <div className="bg-linear-to-br from-blue-50 to-blue-100 p-6 rounded-xl border border-blue-200">
-              <h3 className="font-semibold text-gray-900 mb-2">24/7 Support Available</h3>
-              <p className="text-sm text-gray-700">Have questions? Our support team is here to help you anytime.</p>
+              <h3 className="font-semibold text-gray-900 mb-2">
+                24/7 Support Available
+              </h3>
+              <p className="text-sm text-gray-700">
+                Have questions? Our support team is here to help you anytime.
+              </p>
             </div>
             <button className="w-full flex items-center gap-3 px-4 py-3 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors text-blue-600 font-medium">
               <Mail size={18} /> Contact Support
