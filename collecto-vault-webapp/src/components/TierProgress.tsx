@@ -5,9 +5,9 @@ export default function TierProgress({
   progress,
   tiers = ["Bronze", "Silver", "Gold", "Platinum"],
 }: Props) {
-  // progress is 0-100 from the API
+ 
   const pct = Math.max(0, Math.min(100, progress));
-  
+
   const currentTierIndex = tiers.findIndex(t => t.toLowerCase() === currentTier.toLowerCase());
   const safeTierIndex = currentTierIndex < 0 ? 0 : currentTierIndex;
   const segmentCount = tiers.length - 1; 
