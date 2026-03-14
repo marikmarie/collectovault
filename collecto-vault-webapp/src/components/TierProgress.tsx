@@ -5,90 +5,98 @@ export default function TierProgress({
   progress,
   tiers = ["Bronze", "Silver", "Gold", "Platinum"],
 }: Props) {
- 
   const pct = Math.max(0, Math.min(100, progress));
 
-  const currentTierIndex = tiers.findIndex(t => t.toLowerCase() === currentTier.toLowerCase());
+  const currentTierIndex = tiers.findIndex(
+    (t) => t.toLowerCase() === currentTier.toLowerCase(),
+  );
   const safeTierIndex = currentTierIndex < 0 ? 0 : currentTierIndex;
-  const segmentCount = tiers.length - 1; 
+  const segmentCount = tiers.length - 1;
 
   const baseOffset = (safeTierIndex / segmentCount) * 100;
-  
+
   // activeSegmentWidth: The distance between two dots
   const activeSegmentWidth = 100 / segmentCount;
-  
-  const totalProgressWidth = baseOffset + ((pct / 100) * activeSegmentWidth);
+
+  const totalProgressWidth = baseOffset + (pct / 100) * activeSegmentWidth;
 
   const isMaxTier = safeTierIndex === tiers.length - 1;
 
   return (
     <div className="px-4 w-full">
       <div className="card-like p-5 bg-white rounded-2xl shadow-sm border border-gray-50 overflow-hidden">
-        
         {/* Tier Status Header */}
         <div className="flex justify-between items-start">
           <div>
-            <div className="text-[10px] uppercase tracking-wider font-bold text-gray-400">Current Status</div>
-            <div className="text-xl font-black text-gray-900">{currentTier}</div>
+            <div className="text-[10px] uppercase tracking-wider font-bold text-gray-400">
+              Current Status
+            </div>
+            <div className="text-xl font-black text-gray-900">
+              {currentTier}
+            </div>
           </div>
           <div className="text-right">
-             <div className="text-[10px] uppercase tracking-wider font-bold text-gray-400">Date</div>
-             <div className="text-xs font-medium text-gray-800">{new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric'})}</div>
+            <div className="text-[10px] uppercase tracking-wider font-bold text-gray-400">
+              Date
+            </div>
+            <div className="text-xs font-medium text-gray-800">
+              {new Date().toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })}
+            </div>
           </div>
         </div>
 
         {/* --- Tier Progress Bar Section --- */}
         <div className="mt-8 relative px-1">
-          
           {/* 1. Base Gray Line */}
           <div className="relative w-full h-1 bg-gray-100 rounded-full">
-            
-            {/* 2. Red Progress Line */}
             <div
               className="absolute top-0 left-0 h-1 rounded-full transition-all duration-1000 ease-out"
               style={{
-                width: `${isMaxTier ? 100 : totalProgressWidth}%`, 
-                backgroundColor: "#D81B60", 
+                width: `${isMaxTier ? 100 : totalProgressWidth}%`,
+                backgroundColor: "#D81B60",
               }}
             />
 
             {/* 3. Tier Dots/Milestones */}
             {tiers.map((t, i) => {
               const leftPosition = (i / segmentCount) * 100;
-              
-              // Only highlight dots the user has actually EARNED (reached)
-              // The dot for the "next" tier remains gray until progress is 100%
+
+             
               const isEarned = i <= safeTierIndex;
 
               return (
-                <div 
-                  key={t} 
+                <div
+                  key={t}
                   className="absolute -top-1 -translate-x-1/2"
                   style={{ left: `${leftPosition}%` }}
                 >
-                  <div 
+                  <div
                     className={`w-3 h-3 rounded-full border-2 transition-all duration-500 ${
-                      isEarned 
-                        ? 'bg-[#D81B60] border-[#D81B60]' 
-                        : 'bg-white border-gray-200'
+                      isEarned
+                        ? "bg-[#D81B60] border-[#D81B60]"
+                        : "bg-white border-gray-200"
                     }`}
                   />
                 </div>
               );
             })}
           </div>
-          
+
           {/* 4. Tier Labels */}
           <div className="flex justify-between w-full mt-4">
-            {tiers.map((t, ) => {
+            {tiers.map((t) => {
               const isActive = t.toLowerCase() === currentTier.toLowerCase();
 
               return (
-                <div 
-                  key={t} 
+                <div
+                  key={t}
                   className={`text-[10px] font-bold uppercase tracking-tighter transition-colors duration-300 w-0 flex justify-center overflow-visible`}
                   style={{
-                    color: isActive ? '#D81B60' : '#9ca3af',
+                    color: isActive ? "#D81B60" : "#9ca3af",
                   }}
                 >
                   <span className="whitespace-nowrap">{t}</span>
@@ -105,7 +113,7 @@ export default function TierProgress({
               {Math.round(pct)}% Complete
             </div>
             <div className="text-[11px] text-gray-400">
-               to {tiers[safeTierIndex + 1]} Tier
+              to {tiers[safeTierIndex + 1]} Tier
             </div>
           </div>
         )}
