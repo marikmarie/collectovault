@@ -30,10 +30,6 @@ export default function ServicesList() {
     setSelectedService(null);
   };
 
-  //   useEffect(() => {
-  //   setPage(0);
-  // }, [filteredServices]);
-
 
   useEffect(() => {
     const fetchServices = async () => {
