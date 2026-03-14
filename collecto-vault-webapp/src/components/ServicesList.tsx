@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import EarnPoints from "./EarnPoints";
 import { customerService } from "../api/customer";
 
-// Updated Service type to match your real API response
 interface Service {
   id: string;
   name: string;
