@@ -17,11 +17,8 @@ export default function TierProgress({
   // activeSegmentWidth: The distance between two dots
   const activeSegmentWidth = 100 / segmentCount;
   
-  // totalProgressWidth: The red line only fills UP TO the current tier 
-  // + the percentage of the next segment.
   const totalProgressWidth = baseOffset + ((pct / 100) * activeSegmentWidth);
 
-  // Determine if the user has reached the final tier
   const isMaxTier = safeTierIndex === tiers.length - 1;
 
   return (
