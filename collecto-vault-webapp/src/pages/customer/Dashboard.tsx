@@ -10,10 +10,7 @@ import {  RefreshCw, ArrowUpRight, ArrowDownLeft } from "lucide-react";
 import { customerService } from "../../api/customer";
 import { transactionService } from "../../api/collecto";
 
-type TabType = "points" | "tier";
-
 export default function Dashboard() {
-  const [activeTab, setActiveTab] = useState<TabType>("tier");
   const [pointsBalance, setPointsBalance] = useState<number>(0);
   const [tier, setTier] = useState<string>("N/A");
   const [tierProgress, setTierProgress] = useState<number>(0);
@@ -117,7 +114,7 @@ export default function Dashboard() {
 
       <main className="w-full mt-0">
         {/* --- WALLET SUMMARY --- */}
-        <div className="mx-4 my-4 rounded-2xl bg-gradient-to-r from-[#d81b60] via-[#8f0a43] to-[#f06292] text-white p-4 shadow-lg">
+        <div className="mx-4 my-4 rounded-2xl bg-linear-to-r from-[#d81b60] via-[#8f0a43] to-[#f06292] text-white p-4 shadow-lg">
           <div className="flex items-center justify-between mb-3">
             <div>
               <div className="text-xs uppercase font-semibold opacity-90">Cash Balance</div>
@@ -150,24 +147,6 @@ export default function Dashboard() {
               <div className="font-bold text-lg">{(earnedPoints + boughtPoints).toLocaleString()} pts</div>
             </div>
           </div>
-        </div>
-
-        {/* --- TABS --- */}
-        <div className="bg-white shadow-sm flex sticky top-16 z-20">
-          <button 
-            onClick={() => setActiveTab("points")} 
-            className={`flex-1 py-5 flex flex-col items-center transition-all ${activeTab === "points" ? "border-b-4 border-[#cb0d6c]" : "opacity-50"}`}
-          >
-            <span className="text-2xl font-bold text-gray-900">{pointsBalance.toLocaleString()}</span>
-            <span className="text-[10px] uppercase tracking-wider font-bold text-gray-500">Available Points</span>
-          </button>
-          <button 
-            onClick={() => setActiveTab("tier")} 
-            className={`flex-1 py-5 flex flex-col items-center transition-all ${activeTab === "tier" ? "border-b-4 border-[#cb0d6c]" : "opacity-50"}`}
-          >
-            <span className="text-2xl font-bold text-gray-900">{tier}</span>
-            <span className="text-[10px] uppercase tracking-wider font-bold text-gray-500">Current Tier</span>
-          </button>
         </div>
 
         <div className="p-4">
