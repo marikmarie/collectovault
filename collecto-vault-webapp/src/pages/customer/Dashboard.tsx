@@ -25,9 +25,6 @@ export default function Dashboard() {
   const [transferCashOpen, setTransferCashOpen] = useState(false);
   const [buyPointsOpen, setBuyPointsOpen] = useState(false);
   const [spendPointsOpen, setSpendPointsOpen] = useState(false);
-  // no tier details
-  const [tierDetailsOpen, setTierDetailsOpen] = useState(false);
-
   // Data States
   const [loading, setLoading] = useState(false);
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -52,19 +49,6 @@ export default function Dashboard() {
         loyaltySettings?.points ??
         (earned + bought);
 
-      const tierName =
-        loyaltySettings?.tier ||
-        loyaltySettings?.tierName ||
-        loyaltySettings?.membershipTier ||
-        'N/A';
-
-      const tierProgressValue =
-        typeof loyaltySettings?.tier_progress === 'number'
-          ? loyaltySettings?.tier_progress
-          : typeof loyaltySettings?.tierProgress === 'number'
-          ? loyaltySettings?.tierProgress
-          : 0;
-
       const pointValue =
         loyaltySettings?.point_value ?? loyaltySettings?.pointValue ?? null;
       const perPoint =
@@ -78,8 +62,6 @@ export default function Dashboard() {
       setEarnedPoints(earned);
       setBoughtPoints(bought);
       setPointsBalance(points || 0);
-      setTier(tierName);
-      setTierProgress(tierProgressValue);
       setUgxPerPoint(perPoint);
       setWalletAmount(perPoint > 0 ? Math.round(points * perPoint) : null);
 
@@ -249,29 +231,12 @@ export default function Dashboard() {
               </section>
             </div>
 
-          {/* --- CONTENT: TIER --- */}
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <TierProgress currentTier={tier} progress={tierProgress} />
-              
-              <div className="bg-linear-to-br from-gray-300 to-gray-200 p-6 rounded-3xl text-gray-900 shadow-xl relative overflow-hidden">
-                <div className="relative z-10">
-                  <h3 className="text-xl font-bold mb-2">Tier Benefits</h3>
-                  <p className="text-gray-900 text-sm mb-6">Enjoy exclusive rewards and priority services as a {tier} member.</p>
-                  <button 
-                    onClick={() => setTierDetailsOpen(true)}
-                    className="w-full py-3 bg-white text-gray-900 rounded-xl font-bold text-sm hover:bg-gray-100 transition-colors"
-                  >
-                    View All Benefits
-                  </button>
-                </div>
-                <div className="absolute -right-4 -bottom-4 w-32 h-32 bg-[#cb0d6c] rounded-full blur-3xl opacity-20"></div>
-              </div>
-
-              <section>
-                <h3 className="text-lg font-bold text-gray-800 mb-4">How to earn points</h3>
-                <ServicesList />
-              </section>
-            </div>
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <section>
+              <h3 className="text-lg font-bold text-gray-800 mb-4">How to earn points</h3>
+              <ServicesList />
+            </section>
+          </div>
         </div>
       </main>
 
@@ -300,13 +265,7 @@ export default function Dashboard() {
         currentPoints={pointsBalance} 
       />
 
-      <TierDetailsModal 
-        open={tierDetailsOpen} 
-        onClose={() => setTierDetailsOpen(false)} 
-        tier={tier} 
-        expiry="" 
-        pointsToNextTier={1500} 
-      />
+
     </div>
   );
 }
