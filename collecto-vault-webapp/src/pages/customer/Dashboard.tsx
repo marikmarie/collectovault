@@ -271,7 +271,6 @@ export default function Dashboard() {
                 <ServicesList />
               </section>
             </div>
-          )}
         </div>
       </main>
 
