@@ -1,18 +1,14 @@
 import { useState, useEffect } from "react";
 import Header from "../../components/Header";
 import TopNav from "../../components/TopNav";
-import ServicesList from "../../components/ServicesList";
 import AddCashModal from "../../components/AddCashModal";
 import TransferCashModal from "../../components/TransferCashModal";
 import BuyPoints from "../customer/BuyPoints";
-import SpendPointsModal from "./SpendPoints";
 import {  RefreshCw, ArrowUpRight, ArrowDownLeft } from "lucide-react";
 import { customerService } from "../../api/customer";
 import { transactionService } from "../../api/collecto";
 
 export default function Dashboard() {
-  const [pointsBalance, setPointsBalance] = useState<number>(0);
-
   const [earnedPoints, setEarnedPoints] = useState<number>(0);
   const [boughtPoints, setBoughtPoints] = useState<number>(0);
   const [, setUgxPerPoint] = useState<number>(0);
@@ -24,7 +20,6 @@ export default function Dashboard() {
   const [addCashOpen, setAddCashOpen] = useState(false);
   const [transferCashOpen, setTransferCashOpen] = useState(false);
   const [buyPointsOpen, setBuyPointsOpen] = useState(false);
-  const [spendPointsOpen, setSpendPointsOpen] = useState(false);
   // Data States
   const [loading, setLoading] = useState(false);
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -61,7 +56,6 @@ export default function Dashboard() {
       );
       setEarnedPoints(earned);
       setBoughtPoints(bought);
-      setPointsBalance(points || 0);
       setUgxPerPoint(perPoint);
       setWalletAmount(perPoint > 0 ? Math.round(points * perPoint) : null);
 
