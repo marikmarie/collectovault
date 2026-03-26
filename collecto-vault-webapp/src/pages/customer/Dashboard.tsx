@@ -1,21 +1,17 @@
 import { useState, useEffect } from "react";
 import Header from "../../components/Header";
-import TierProgress from "../../components/TierProgress";
 import TopNav from "../../components/TopNav";
 import ServicesList from "../../components/ServicesList";
 import AddCashModal from "../../components/AddCashModal";
 import TransferCashModal from "../../components/TransferCashModal";
 import BuyPoints from "../customer/BuyPoints";
 import SpendPointsModal from "./SpendPoints";
-import TierDetailsModal from "./TierDetails";
 import {  RefreshCw, ArrowUpRight, ArrowDownLeft } from "lucide-react";
 import { customerService } from "../../api/customer";
 import { transactionService } from "../../api/collecto";
 
 export default function Dashboard() {
   const [pointsBalance, setPointsBalance] = useState<number>(0);
-  const [tier, setTier] = useState<string>("N/A");
-  const [tierProgress, setTierProgress] = useState<number>(0);
 
   const [earnedPoints, setEarnedPoints] = useState<number>(0);
   const [boughtPoints, setBoughtPoints] = useState<number>(0);
@@ -29,6 +25,7 @@ export default function Dashboard() {
   const [transferCashOpen, setTransferCashOpen] = useState(false);
   const [buyPointsOpen, setBuyPointsOpen] = useState(false);
   const [spendPointsOpen, setSpendPointsOpen] = useState(false);
+  // no tier details
   const [tierDetailsOpen, setTierDetailsOpen] = useState(false);
 
   // Data States
