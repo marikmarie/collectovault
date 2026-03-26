@@ -170,18 +170,15 @@ export default function Dashboard() {
             >
               Buy Points
             </button>
-            {activeTab === "points" && (
-              <button
-                onClick={() => setSpendPointsOpen(true)}
-                className="px-4 py-2 rounded-full border border-gray-200 bg-white text-sm font-bold shadow-xs hover:bg-gray-50 transition-all"
-              >
-                Spend Points
-              </button>
-            )}
+            <button
+              onClick={() => setSpendPointsOpen(true)}
+              className="px-4 py-2 rounded-full border border-gray-200 bg-white text-sm font-bold shadow-xs hover:bg-gray-50 transition-all"
+            >
+              Spend Points
+            </button>
           </div>
 
-          {/* --- CONTENT: POINTS TAB --- */}
-          {activeTab === "points" && (
+          {/* --- CONTENT: POINTS --- */}
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
               
               {/* Transactions Ledger */}
@@ -250,10 +247,8 @@ export default function Dashboard() {
                 </div>
               </section>
             </div>
-          )}
 
-          {/* --- CONTENT: TIER TAB --- */}
-          {activeTab === "tier" && (
+          {/* --- CONTENT: TIER --- */}
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <TierProgress currentTier={tier} progress={tierProgress} />
               
