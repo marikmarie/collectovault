@@ -15,7 +15,7 @@ export default function Dashboard() {
 
   const [earnedPoints, setEarnedPoints] = useState<number>(0);
   const [boughtPoints, setBoughtPoints] = useState<number>(0);
-  const [ugxPerPoint, setUgxPerPoint] = useState<number>(0);
+  const [, setUgxPerPoint] = useState<number>(0);
   const [walletAmount, setWalletAmount] = useState<number | null>(null);
   const [loyaltyName, setLoyaltyName] = useState<string>("");
   const [showWalletAmount, setShowWalletAmount] = useState(true);
@@ -104,9 +104,9 @@ export default function Dashboard() {
               <div className="text-3xl font-black">
                 {showWalletAmount ? (walletAmount !== null ? `UGX ${walletAmount.toLocaleString()}` : '—') : '••••••'}
               </div>
-              <div className="text-[11px] mt-1 opacity-80">
+              {/* <div className="text-[11px] mt-1 opacity-80">
                 {ugxPerPoint > 0 ? `1 point = UGX ${ugxPerPoint.toFixed(2)}` : 'Point value not available'}
-              </div>
+              </div> */}
             </div>
             <button
               className="text-sm px-3 py-1 bg-white/20 rounded-full"
