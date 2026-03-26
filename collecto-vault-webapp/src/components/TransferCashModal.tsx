@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { X, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { X, CheckCircle2, AlertCircle } from "lucide-react";
 import { invoiceService } from "../api/collecto";
 
 type Props = {
