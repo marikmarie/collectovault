@@ -29,8 +29,8 @@ export default function TransferCashModal({ open, onClose, onSuccess }: Props) {
     }
   }, [open]);
 
-  const verifyPhone = async () => {
-    const trimmed = (phone || "").trim();
+  const verifyPhone = async (phoneValue?: string) => {
+    const trimmed = ((phoneValue ?? phone) || "").trim();
     if (!/^0?7\d{8}$/.test(trimmed)) {
       setError("Please enter a valid 10-digit mobile number starting with 07");
       return;
@@ -164,28 +164,29 @@ export default function TransferCashModal({ open, onClose, onSuccess }: Props) {
 
           <div>
             <label className="text-xs font-semibold uppercase text-gray-500">Recipient phone</label>
-            <div className="flex gap-2 mt-1">
+            <div className="mt-1">
               <input
                 value={phone}
                 onChange={(e) => {
-                  setPhone(e.target.value);
+                  const nextPhone = e.target.value;
+                  setPhone(nextPhone);
                   setVerified(false);
                   setAccountName("");
                   setError("");
+
+                  const trimmedPhone = nextPhone.trim();
+                  if (/^0?7\d{8}$/.test(trimmedPhone)) {
+                    void verifyPhone(trimmedPhone);
+                  }
                 }}
                 type="tel"
                 placeholder="07XXXXXXXX"
-                className="flex-1 px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-pink-200"
+                className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-pink-200"
                 disabled={loading || verifying}
               />
-              <button
-                onClick={verifyPhone}
-                className="px-3 py-2 rounded-lg border bg-[#d81b60] text-white hover:bg-[#c01754]"
-                disabled={loading || verifying}
-              >
-                {verifying ? <Loader2 className="animate-spin" size={16} /> : "Verify"}
-              </button>
             </div>
+
+            <p className="mt-1 text-xs text-gray-400">Auto-verifies when a valid 10-digit mobile number is entered.</p>
 
             {verified && accountName && (
               <div className="mt-2 text-sm text-green-700 flex items-center gap-1">

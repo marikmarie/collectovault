@@ -147,12 +147,6 @@ export default function Dashboard() {
             >
               Buy Points
             </button>
-            <button
-              onClick={() => setSpendPointsOpen(true)}
-              className="px-4 py-2 rounded-full border border-gray-200 bg-white text-sm font-bold shadow-xs hover:bg-gray-50 transition-all"
-            >
-              Spend Points
-            </button>
           </div>
 
           {/* --- CONTENT: POINTS --- */}
@@ -225,12 +219,6 @@ export default function Dashboard() {
               </section>
             </div>
 
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <section>
-              <h3 className="text-lg font-bold text-gray-800 mb-4">How to earn points</h3>
-              <ServicesList />
-            </section>
-          </div>
         </div>
       </main>
 
@@ -252,13 +240,6 @@ export default function Dashboard() {
         onClose={() => setBuyPointsOpen(false)} 
         onSuccess={fetchData} 
       />
-      
-      <SpendPointsModal 
-        open={spendPointsOpen} 
-        onClose={() => setSpendPointsOpen(false)} 
-        currentPoints={pointsBalance} 
-      />
-
 
     </div>
   );
