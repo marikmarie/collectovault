@@ -17,12 +17,19 @@ export default function Dashboard() {
   const [pointsBalance, setPointsBalance] = useState<number>(0);
   const [tier, setTier] = useState<string>("N/A");
   const [tierProgress, setTierProgress] = useState<number>(0);
-  
+
+  const [earnedPoints, setEarnedPoints] = useState<number>(0);
+  const [boughtPoints, setBoughtPoints] = useState<number>(0);
+  const [ugxPerPoint, setUgxPerPoint] = useState<number>(0);
+  const [walletAmount, setWalletAmount] = useState<number | null>(null);
+  const [loyaltyName, setLoyaltyName] = useState<string>("");
+  const [showWalletAmount, setShowWalletAmount] = useState(true);
+
   // UI States
   const [buyPointsOpen, setBuyPointsOpen] = useState(false);
   const [spendPointsOpen, setSpendPointsOpen] = useState(false);
   const [tierDetailsOpen, setTierDetailsOpen] = useState(false);
-  
+
   // Data States
   const [loading, setLoading] = useState(false);
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -39,20 +46,48 @@ export default function Dashboard() {
     try {
       // 1. Fetch Customer Profile (Points)
       const customerRes = await customerService.getCustomerData(collectoId, clientId);
-      const loyaltySettings = customerRes.data?.data?.loyaltySettings;
+      const loyaltySettings = customerRes.data?.data?.loyaltySettings ?? {};
 
+      const earned = loyaltySettings?.loyalty_points?.earned ?? 0;
+      const bought = loyaltySettings?.loyalty_points?.bought ?? 0;
       const points =
         loyaltySettings?.points ??
-        ((loyaltySettings?.loyalty_points?.earned ?? 0) +
-          (loyaltySettings?.loyalty_points?.bought ?? 0));
+        (earned + bought);
 
+      const tierName =
+        loyaltySettings?.tier ||
+        loyaltySettings?.tierName ||
+        loyaltySettings?.membershipTier ||
+        'N/A';
+
+      const tierProgressValue =
+        typeof loyaltySettings?.tier_progress === 'number'
+          ? loyaltySettings?.tier_progress
+          : typeof loyaltySettings?.tierProgress === 'number'
+          ? loyaltySettings?.tierProgress
+          : 0;
+
+      const pointValue =
+        loyaltySettings?.point_value ?? loyaltySettings?.pointValue ?? null;
+      const perPoint =
+        typeof pointValue === 'number' && points > 0 ? pointValue / points : 0;
+
+      setLoyaltyName(
+        typeof loyaltySettings?.name === 'string' && loyaltySettings.name.trim()
+          ? loyaltySettings.name.trim()
+          : ''
+      );
+      setEarnedPoints(earned);
+      setBoughtPoints(bought);
       setPointsBalance(points || 0);
-      setTier('N/A');
-      setTierProgress(0);
+      setTier(tierName);
+      setTierProgress(tierProgressValue);
+      setUgxPerPoint(perPoint);
+      setWalletAmount(perPoint > 0 ? Math.round(points * perPoint) : null);
 
-      
-      const txRes = await transactionService.getTransactions(clientId);
-      setTransactions(txRes.data?.transactions || []);
+      const txRes = await transactionService.getTransactions(clientId, 10, 0);
+      const txList = txRes.data?.transactions ?? txRes.data?.data?.data ?? [];
+      setTransactions(Array.isArray(txList) ? txList : []);
 
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
@@ -73,7 +108,7 @@ export default function Dashboard() {
     <div className="min-h-screen bg-slate-50 font-sans pb-20 lg:pb-0">
       <TopNav />
       <Header
-        name={userName}
+        name={loyaltyName || userName}
         phone=""
         avatar="/photo.png"
         useVideo={false}
@@ -81,6 +116,42 @@ export default function Dashboard() {
       />
 
       <main className="w-full mt-0">
+        {/* --- WALLET SUMMARY --- */}
+        <div className="mx-4 my-4 rounded-2xl bg-gradient-to-r from-[#d81b60] via-[#8f0a43] to-[#f06292] text-white p-4 shadow-lg">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <div className="text-xs uppercase font-semibold opacity-90">Cash Balance</div>
+              <div className="text-3xl font-black">
+                {showWalletAmount ? (walletAmount !== null ? `UGX ${walletAmount.toLocaleString()}` : '—') : '••••••'}
+              </div>
+              <div className="text-[11px] mt-1 opacity-80">
+                {ugxPerPoint > 0 ? `1 point = UGX ${ugxPerPoint.toFixed(2)}` : 'Point value not available'}
+              </div>
+            </div>
+            <button
+              className="text-sm px-3 py-1 bg-white/20 rounded-full"
+              onClick={() => setShowWalletAmount((value) => !value)}
+            >
+              {showWalletAmount ? 'Hide' : 'Show'}
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-white/90">
+            <div className="rounded-xl bg-white/10 p-3">
+              <div className="font-semibold">Earned Points</div>
+              <div className="font-bold text-lg">{earnedPoints.toLocaleString()} pts</div>
+            </div>
+            <div className="rounded-xl bg-white/10 p-3">
+              <div className="font-semibold">Bought Points</div>
+              <div className="font-bold text-lg">{boughtPoints.toLocaleString()} pts</div>
+            </div>
+            <div className="rounded-xl bg-white/10 p-3">
+              <div className="font-semibold">Total Points</div>
+              <div className="font-bold text-lg">{(earnedPoints + boughtPoints).toLocaleString()} pts</div>
+            </div>
+          </div>
+        </div>
+
         {/* --- TABS --- */}
         <div className="bg-white shadow-sm flex sticky top-16 z-20">
           <button 
@@ -101,12 +172,32 @@ export default function Dashboard() {
 
         <div className="p-4">
           {/* --- ACTIONS --- */}
-          <div className="flex justify-end gap-3 mb-6">
+          <div className="flex flex-wrap justify-end gap-2 mb-6">
+            <button
+              onClick={() => alert('Add Cash feature is coming soon')}
+              className="px-4 py-2 rounded-full border border-gray-200 bg-white text-sm font-bold shadow-xs hover:bg-gray-50 transition-all"
+            >
+              Add Cash
+            </button>
+            <button
+              onClick={() => alert('Transfer Cash feature is coming soon')}
+              className="px-4 py-2 rounded-full border border-gray-200 bg-white text-sm font-bold shadow-xs hover:bg-gray-50 transition-all"
+            >
+              Transfer Cash
+            </button>
+            <button
+              onClick={() => setBuyPointsOpen(true)}
+              className="px-4 py-2 rounded-full bg-[#f0edee] text-gray-800 text-sm font-bold shadow-md hover:opacity-90 transition-all"
+            >
+              Buy Points
+            </button>
             {activeTab === "points" && (
-              <>
-                <button onClick={() => setSpendPointsOpen(true)} className="px-6 py-2 rounded-full border border-gray-200 bg-white text-sm font-bold shadow-xs hover:bg-gray-50 transition-all">Spend</button>
-                <button onClick={() => setBuyPointsOpen(true)} className="px-6 py-2 rounded-full bg-[#f0edee] text-gray-800 text-sm font-bold shadow-md hover:opacity-90 transition-all">Buy Points</button>
-              </>
+              <button
+                onClick={() => setSpendPointsOpen(true)}
+                className="px-4 py-2 rounded-full border border-gray-200 bg-white text-sm font-bold shadow-xs hover:bg-gray-50 transition-all"
+              >
+                Spend Points
+              </button>
             )}
           </div>
 
@@ -129,7 +220,7 @@ export default function Dashboard() {
                       No transactions found yet.
                     </div>
                   ) : (
-                    transactions.map((tx) => {
+                    transactions.slice(0, 3).map((tx) => {
                       const isConfirmed = ["success", "confirmed"].includes(tx.paymentStatus?.toLowerCase());
                       const isInvoice = tx.reference === "INVOICE_PURCHASE";
                       
@@ -165,6 +256,17 @@ export default function Dashboard() {
                         </div>
                       );
                     })
+                  )}
+
+                  {transactions.length > 3 && (
+                    <div className="mt-4">
+                      <button
+                        onClick={() => alert('Navigate to full statement page')}
+                        className="w-full py-2 rounded-xl border border-gray-200 text-sm font-semibold text-[#cb0d6c] bg-white hover:bg-gray-50"
+                      >
+                        View All Transactions
+                      </button>
+                    </div>
                   )}
                 </div>
               </section>
