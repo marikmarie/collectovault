@@ -3,6 +3,8 @@ import Header from "../../components/Header";
 import TierProgress from "../../components/TierProgress";
 import TopNav from "../../components/TopNav";
 import ServicesList from "../../components/ServicesList";
+import AddCashModal from "../../components/AddCashModal";
+import TransferCashModal from "../../components/TransferCashModal";
 import BuyPoints from "../customer/BuyPoints";
 import SpendPointsModal from "./SpendPoints";
 import TierDetailsModal from "./TierDetails";
@@ -23,6 +25,8 @@ export default function Dashboard() {
   const [showWalletAmount, setShowWalletAmount] = useState(true);
 
   // UI States
+  const [addCashOpen, setAddCashOpen] = useState(false);
+  const [transferCashOpen, setTransferCashOpen] = useState(false);
   const [buyPointsOpen, setBuyPointsOpen] = useState(false);
   const [spendPointsOpen, setSpendPointsOpen] = useState(false);
   const [tierDetailsOpen, setTierDetailsOpen] = useState(false);
@@ -153,13 +157,13 @@ export default function Dashboard() {
           {/* --- ACTIONS --- */}
           <div className="flex flex-wrap justify-end gap-2 mb-6">
             <button
-              onClick={() => alert('Add Cash feature is coming soon')}
+              onClick={() => setAddCashOpen(true)}
               className="px-4 py-2 rounded-full border border-gray-200 bg-white text-sm font-bold shadow-xs hover:bg-gray-50 transition-all"
             >
               Add Cash
             </button>
             <button
-              onClick={() => alert('Transfer Cash feature is coming soon')}
+              onClick={() => setTransferCashOpen(true)}
               className="px-4 py-2 rounded-full border border-gray-200 bg-white text-sm font-bold shadow-xs hover:bg-gray-50 transition-all"
             >
               Transfer Cash
@@ -275,6 +279,18 @@ export default function Dashboard() {
       </main>
 
       {/* --- MODALS --- */}
+      <AddCashModal
+        open={addCashOpen}
+        onClose={() => setAddCashOpen(false)}
+        onSuccess={fetchData}
+      />
+
+      <TransferCashModal
+        open={transferCashOpen}
+        onClose={() => setTransferCashOpen(false)}
+        onSuccess={fetchData}
+      />
+
       <BuyPoints 
         open={buyPointsOpen} 
         onClose={() => setBuyPointsOpen(false)} 
