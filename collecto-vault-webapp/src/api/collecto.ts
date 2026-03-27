@@ -49,6 +49,18 @@ export const invoiceService = {
     meta?: Record<string, any>;
   }) => api.post("/requestToPay", payload),
 
+  clientAddCash: (payload: {
+    vaultOTPToken?: string;
+    collectoId?: string;
+    clientId?: string;
+    phone?: string;
+    amount?: number;
+    paymentOption?: string;
+    reference?: string;
+    meta?: Record<string, any>;
+  }) => api.post("/requestToPay", payload),
+
+
   verifyPhone: (payload: {
     vaultOTPToken?: string;
     collectoId?: string;

@@ -108,7 +108,9 @@ export default function AddCashModal({ open, onClose, onSuccess }: Props) {
         reference: `ADDCASH-${Date.now()}`,
       };
 
-      const response = await invoiceService.requestPayment(requestPayload);
+      //New Add to cash new endpoint clientAddCash
+     // const response = await invoiceService.requestPayment(requestPayload);
+      const response = await invoiceService.clientAddCash(requestPayload);
       const status = String(response?.data?.status ?? "").toLowerCase();
 
       if (status === "200" || status === "success") {
@@ -146,7 +148,7 @@ export default function AddCashModal({ open, onClose, onSuccess }: Props) {
         </div>
 
         <div className="p-4 space-y-3">
-          <div className="text-sm text-gray-600">Add cash using your mobile money number (MTN/ Airtel). Verify the number and then request payment.</div>
+          <div className="text-sm text-gray-600">Add cash using your mobile money number (MTN/ Airtel). </div>
 
           <div>
             <label className="text-xs font-semibold uppercase text-gray-500">Amount (UGX)</label>
@@ -154,8 +156,8 @@ export default function AddCashModal({ open, onClose, onSuccess }: Props) {
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               type="number"
-              min={1}
-              placeholder="10000"
+              min={5000}
+              placeholder="500000"
               className="w-full mt-1 px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-pink-200"
               disabled={loading}
             />

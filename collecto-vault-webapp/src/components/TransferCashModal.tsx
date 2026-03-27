@@ -81,6 +81,7 @@ export default function TransferCashModal({ open, onClose, onSuccess }: Props) {
     }
   };
 
+
   const submit = async () => {
     if (!verified) {
       setError("Please verify recipient phone before transferring cash.");
@@ -88,8 +89,8 @@ export default function TransferCashModal({ open, onClose, onSuccess }: Props) {
     }
 
     const parsed = Number(amount);
-    if (!parsed || parsed <= 0) {
-      setError("Please enter a valid amount above 0.");
+    if (!parsed || parsed <= 5000) {
+      setError("Please enter a valid amount above 5000.");
       return;
     }
 
