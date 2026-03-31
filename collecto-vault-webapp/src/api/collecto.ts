@@ -49,6 +49,8 @@ export const invoiceService = {
     meta?: Record<string, any>;
   }) => api.post("/requestToPay", payload),
 
+
+
   clientAddCash: (payload: {
     vaultOTPToken?: string;
     collectoId?: string;
@@ -57,7 +59,11 @@ export const invoiceService = {
     amount?: number;
     paymentOption?: string;
     reference?: string;
-    meta?: Record<string, any>;
+    clientAddCash?: {
+      charge: number;
+      charge_client: number;
+    };
+
   }) => api.post("/requestToPay", payload),
 
 

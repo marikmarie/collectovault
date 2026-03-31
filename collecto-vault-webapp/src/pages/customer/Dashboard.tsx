@@ -14,6 +14,7 @@ export default function Dashboard() {
   const [, setUgxPerPoint] = useState<number>(0);
   const [walletAmount, setWalletAmount] = useState<number | null>(null);
   const [loyaltyName, setLoyaltyName] = useState<string>("");
+  const [loyaltySettings, setLoyaltySettings] = useState<any>(null);
   const [showWalletAmount, setShowWalletAmount] = useState(true);
 
   // UI States
@@ -37,6 +38,8 @@ export default function Dashboard() {
       // 1. Fetch Customer Profile (Points)
       const customerRes = await customerService.getCustomerData(collectoId, clientId);
       const loyaltySettings = customerRes.data?.data?.loyaltySettings ?? {};
+
+      setLoyaltySettings(loyaltySettings);
 
       const earned = loyaltySettings?.loyalty_points?.earned ?? 0;
       const bought = loyaltySettings?.loyalty_points?.bought ?? 0;
@@ -227,6 +230,7 @@ export default function Dashboard() {
         open={addCashOpen}
         onClose={() => setAddCashOpen(false)}
         onSuccess={fetchData}
+        clientAddCash={loyaltySettings?.client_add_cash}
       />
 
       <TransferCashModal

@@ -1,14 +1,19 @@
 import { useEffect, useState } from "react";
 import { X, CheckCircle2, AlertCircle } from "lucide-react";
 import { invoiceService } from "../api/collecto";
+import { customerService } from "../api/customer";
 
 type Props = {
   open: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  clientAddCash?: {
+    charge: number;
+    charge_client: number;
+  };
 };
 
-export default function AddCashModal({ open, onClose, onSuccess }: Props) {
+export default function AddCashModal({ open, onClose, onSuccess, clientAddCash }: Props) {
   const [amount, setAmount] = useState<string>("");
   const [phone, setPhone] = useState<string>("");
   const [verified, setVerified] = useState<boolean>(false);
@@ -16,6 +21,9 @@ export default function AddCashModal({ open, onClose, onSuccess }: Props) {
   const [accountName, setAccountName] = useState<string>("");
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
+  const [fetchedClientAddCash, setFetchedClientAddCash] = useState<any>(null);
+  const [chargeAmount, setChargeAmount] = useState<number>(0);
+  const [totalAmount, setTotalAmount] = useState<number>(0);
 
   useEffect(() => {
     if (!open) {
@@ -26,8 +34,38 @@ export default function AddCashModal({ open, onClose, onSuccess }: Props) {
       setAccountName("");
       setError("");
       setLoading(false);
+
+      // Fetch clientAddCash if not provided
+      if (!clientAddCash) {
+        fetchClientAddCash();
+      }
     }
-  }, [open]);
+  }, [open, clientAddCash]);
+
+  useEffect(() => {
+    const numAmount = Number(amount) || 0;
+    const effectiveClientAddCash = clientAddCash || fetchedClientAddCash;
+    if (effectiveClientAddCash && effectiveClientAddCash.charge_client === 1) {
+      const charge = (numAmount * effectiveClientAddCash.charge) / 100;
+      setChargeAmount(charge);
+      setTotalAmount(numAmount + charge);
+    } else {
+      setChargeAmount(0);
+      setTotalAmount(numAmount);
+    }
+  }, [amount, clientAddCash, fetchedClientAddCash]);
+
+  const fetchClientAddCash = async () => {
+    try {
+      const collectoId = localStorage.getItem("collectoId") || "";
+      const clientId = localStorage.getItem("clientId") || "";
+      const customerRes = await customerService.getCustomerData(collectoId, clientId);
+      const loyaltySettings = customerRes.data?.data?.loyaltySettings ?? {};
+      setFetchedClientAddCash(loyaltySettings?.client_add_cash);
+    } catch (err) {
+      console.error('Failed to fetch clientAddCash:', err);
+    }
+  };
 
   const verifyPhone = async (phoneValue?: string) => {
     const trimmed = ((phoneValue ?? phone) || "").trim();
@@ -100,6 +138,13 @@ export default function AddCashModal({ open, onClose, onSuccess }: Props) {
     try {
       const collectoId = localStorage.getItem("collectoId") || "";
       const clientId = localStorage.getItem("clientId") || "";
+
+      let effectiveClientAddCash = clientAddCash || fetchedClientAddCash;
+      if (effectiveClientAddCash) {
+        effectiveClientAddCash = { ...effectiveClientAddCash };
+        effectiveClientAddCash.charge = effectiveClientAddCash.charge_client === 1 ? effectiveClientAddCash.charge : 0;
+      }
+
       const requestPayload = {
         vaultOTPToken: sessionStorage.getItem("vaultOtpToken") || undefined,
         collectoId,
@@ -108,11 +153,13 @@ export default function AddCashModal({ open, onClose, onSuccess }: Props) {
         phone: trimmedPhone(phone),
         amount: parsed,
         reference: `ADDCASH-${Date.now()}`,
-        clientAddCash: {
-          charge: 1.5,
+        clientAddCash: effectiveClientAddCash || {
+          charge: 0,
           charge_client: 0,
         },
       };
+
+      console.log("Add Cash Request Payload:", requestPayload);
 
       //New Add to cash new endpoint clientAddCash
       // const response = await invoiceService.requestPayment(requestPayload);
@@ -178,6 +225,16 @@ export default function AddCashModal({ open, onClose, onSuccess }: Props) {
               className="w-full mt-1 px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-pink-200"
               disabled={loading}
             />
+            {chargeAmount > 0 && (
+              <div className="mt-2 p-3 bg-gray-50 rounded-lg border">
+                <div className="text-xs text-gray-600">
+                  Service Charge: UGX {chargeAmount.toLocaleString()}
+                </div>
+                <div className="text-sm font-bold text-pink-600">
+                  Total to Pay: UGX {totalAmount.toLocaleString()}
+                </div>
+              </div>
+            )}
           </div>
 
           <div>
