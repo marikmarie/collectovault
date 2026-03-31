@@ -13,6 +13,7 @@ type Props = {
   };
 };
 
+
 export default function AddCashModal({ open, onClose, onSuccess, clientAddCash }: Props) {
   const [amount, setAmount] = useState<string>("");
   const [phone, setPhone] = useState<string>("");
