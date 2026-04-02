@@ -286,13 +286,22 @@ export default function AddCashModal({ open, onClose, onSuccess, clientAddCash }
             </div>
           )}
 
-          <button
-            onClick={submit}
-            className="w-full py-2 rounded-lg bg-[#d81b60] text-white font-bold hover:bg-[#b30f4d] disabled:opacity-50"
-            disabled={loading || !verified}
-          >
-            {loading ? "Processing..." : "Request Add Cash"}
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={submit}
+              className="flex-[0.7] py-2 rounded-lg bg-[#d81b60] text-white font-bold hover:bg-[#b30f4d] disabled:opacity-50"
+              disabled={loading || !verified}
+            >
+              {loading ? "Processing..." : "Request Payment"}
+            </button>
+            <button
+              onClick={onClose}
+              className="flex-[0.3] py-2 rounded-lg bg-white border border-[#d81b60] text-[#d81b60] font-bold hover:bg-gray-50 disabled:opacity-50"
+              disabled={loading}
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -69,6 +69,11 @@ export default function BuyPointsModal({
   const [queryLoading, setQueryLoading] = useState(false);
   const [queryError, setQueryError] = useState<string | null>(null);
 
+  // Charge calculation states
+  const [fetchedClientAddCash, setFetchedClientAddCash] = useState<any>(null);
+  const [chargeAmount, setChargeAmount] = useState(0);
+  const [totalAmount, setTotalAmount] = useState(0);
+
   // Auto-poll interval reference
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -160,12 +165,27 @@ export default function BuyPointsModal({
     setQueryLoading(false);
     setQueryError(null);
     setProcessing(false);
+    setChargeAmount(0);
+    setTotalAmount(0);
   };
 
   const handleClose = () => {
     resetState();
     onClose();
   };
+
+  // Calculate charge when package selected or clientAddCash fetched
+  useEffect(() => {
+    const numAmount = selectedPackage?.price || 0;
+    if (fetchedClientAddCash && fetchedClientAddCash.charge_client === 1) {
+      const charge = (numAmount * fetchedClientAddCash.charge) / 100;
+      setChargeAmount(charge);
+      setTotalAmount(numAmount + charge);
+    } else {
+      setChargeAmount(0);
+      setTotalAmount(numAmount);
+    }
+  }, [selectedPackage, fetchedClientAddCash]);
 
   /* ---- Load Real Data from API ---- */
   useEffect(() => {
@@ -195,6 +215,7 @@ export default function BuyPointsModal({
         }));
 
         setPackages(mapped);
+        setFetchedClientAddCash(loyaltySettings?.client_add_cash);
       } catch (err) {
         console.error("Failed to load packages", err);
         setError("Could not load packages. Please try again later.");
@@ -273,6 +294,11 @@ export default function BuyPointsModal({
       );
       return;
     }
+    const packagePrice = selectedPackage?.price || 0;
+    if (packagePrice <= 500) {
+      setError("The selected package price must be greater than 500 UGX.");
+      return;
+    }
     if (
       paymentMode === "mobilemoney" &&
       !/^\d{10}$/.test(String(phone || ""))
@@ -304,6 +330,12 @@ export default function BuyPointsModal({
 
       const formattedPhone = phone ? phone.replace(/^0/, "256") : phone;
 
+      let effectiveClientAddCash = fetchedClientAddCash;
+      if (effectiveClientAddCash) {
+        effectiveClientAddCash = { ...effectiveClientAddCash };
+        effectiveClientAddCash.charge = effectiveClientAddCash.charge_client === 1 ? effectiveClientAddCash.charge : 0;
+      }
+
       const res = await api.post("/requestToPay", {
         vaultOTPToken,
         collectoId,
@@ -312,6 +344,15 @@ export default function BuyPointsModal({
         paymentOption: paymentMode,
         amount: selectedPackage.price,
         points: { points_used: selectedPackage.points },
+        purchaseTier: {
+          cost: selectedPackage.price,
+          name: selectedPackage.label,
+          points: selectedPackage.points,
+        },
+        clientAddCash: effectiveClientAddCash || {
+          charge: 0,
+          charge_client: 0,
+        },
         reference: `BUYPOINTS-${Date.now()}`,
       });
 
@@ -728,6 +769,23 @@ export default function BuyPointsModal({
               </div>
             </div>
           </div>
+
+          {chargeAmount > 0 && (
+            <div className="mt-3 pt-3 border-t border-slate-200">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-slate-600">Service Charge:</span>
+                <span className="font-medium text-slate-900">
+                  UGX {chargeAmount.toLocaleString()}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm mt-1">
+                <span className="text-slate-600 font-semibold">Total to Pay:</span>
+                <span className="font-bold text-[#d81b60]">
+                  UGX {totalAmount.toLocaleString()}
+                </span>
+              </div>
+            </div>
+          )}
 
           <div className="mt-3 text-sm text-slate-500">
             Mobile: <span className="text-slate-900 font-medium">{phone}</span>
