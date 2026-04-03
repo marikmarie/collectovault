@@ -11,6 +11,7 @@ type Props = {
 export default function TransferCashModal({ open, onClose, onSuccess }: Props) {
   const [amount, setAmount] = useState<string>("");
   const [phone, setPhone] = useState<string>("");
+  const [staffId, setStaffId] = useState<string>("");
   const [verified, setVerified] = useState<boolean>(false);
   const [verifying, setVerifying] = useState<boolean>(false);
   const [accountName, setAccountName] = useState<string>("");
@@ -21,6 +22,7 @@ export default function TransferCashModal({ open, onClose, onSuccess }: Props) {
     if (!open) {
       setAmount("");
       setPhone("");
+      setStaffId("");
       setVerified(false);
       setVerifying(false);
       setAccountName("");
@@ -94,6 +96,11 @@ export default function TransferCashModal({ open, onClose, onSuccess }: Props) {
       return;
     }
 
+    if (!staffId.trim()) {
+      setError("Please enter your staff ID.");
+      return;
+    }
+
     setError("");
     setLoading(true);
     try {
@@ -104,6 +111,7 @@ export default function TransferCashModal({ open, onClose, onSuccess }: Props) {
         vaultOTPToken: sessionStorage.getItem("vaultOtpToken") || undefined,
         collectoId,
         clientId,
+        staffId: staffId.trim(),
         paymentOption: "mobilemoney",
         phone: normalizePhone(phone),
         amount: parsed,
@@ -188,6 +196,18 @@ export default function TransferCashModal({ open, onClose, onSuccess }: Props) {
             </div>
 
             <p className="mt-1 text-xs text-gray-400">Auto-verifies when a valid 10-digit mobile number is entered.</p>
+
+            <div className="mt-3">
+              <label className="text-xs font-semibold uppercase text-gray-500">Staff ID</label>
+              <input
+                value={staffId}
+                onChange={(e) => setStaffId(e.target.value)}
+                type="text"
+                placeholder="Enter staff ID"
+                className="w-full mt-1 px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-pink-200"
+                disabled={loading}
+              />
+            </div>
 
             {verified && accountName && (
               <div className="mt-2 text-sm text-green-700 flex items-center gap-1">
