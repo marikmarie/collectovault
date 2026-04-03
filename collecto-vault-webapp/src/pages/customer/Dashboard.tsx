@@ -142,7 +142,7 @@ export default function Dashboard() {
               onClick={() => setTransferCashOpen(true)}
               className="px-4 py-2 rounded-full border border-gray-200 bg-white text-sm font-bold shadow-xs hover:bg-gray-50 transition-all"
             >
-              Transfer Cash
+              Use Cash
             </button>
             <button
               onClick={() => setBuyPointsOpen(true)}
