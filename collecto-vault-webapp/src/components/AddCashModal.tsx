@@ -273,11 +273,13 @@ export default function AddCashModal({ open, onClose, onSuccess, clientAddCash }
                 <CheckCircle2 size={16} /> {accountName}
               </div>
             )}
-            {!verified && !verifying && (
-              <p className="mt-1 text-xs text-gray-400">
-                Enter recipient number to verify.
-              </p>
-            )}
+            {!verified && !verifying 
+            // && (
+            //   <p className="mt-1 text-xs text-gray-400">
+            //     Enter recipient number to verify.
+            //   </p>
+            // )
+            }
           </div>
 
           {error && (
