@@ -659,9 +659,10 @@ export default function BuyPointsModal({
 
           {/* Continue Button */}
           <Button
+            variant="primary"
             onClick={handleProceed}
             disabled={loadingPackages || processing}
-            className="bg-gray-200 text-slate-900 font-semibold py-1.5 px-3 rounded-md hover:bg-gray-300 disabled:opacity-80 disabled:cursor-not-allowed transition-colors border border-slate-200 shadow-sm"
+            className="py-1.5 px-3"
           >
             {loadingPackages ? "Processing..." : "Continue"}
           </Button>
