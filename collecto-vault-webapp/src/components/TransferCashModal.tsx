@@ -151,7 +151,7 @@ export default function TransferCashModal({ open, onClose, onSuccess }: Props) {
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
         <div className="flex justify-between items-center p-4 border-b border-gray-100">
-          <h2 className="text-lg font-bold">Transfer Cash</h2>
+          <h2 className="text-lg font-bold">Use Cash</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-800"><X /></button>
         </div>
 
@@ -214,7 +214,9 @@ export default function TransferCashModal({ open, onClose, onSuccess }: Props) {
                 <CheckCircle2 size={16} /> {accountName}
               </div>
             )}
-            {!verified && !verifying && <p className="mt-1 text-xs text-gray-400">Enter recipient number to verify.</p>}
+            {!verified && !verifying 
+            // && <p className="mt-1 text-xs text-gray-400">Enter recipient number to verify.</p>
+            }
           </div>
 
           {error && (
@@ -229,7 +231,7 @@ export default function TransferCashModal({ open, onClose, onSuccess }: Props) {
               className="flex-[0.7] py-2 rounded-lg bg-[#d81b60] text-white font-bold hover:bg-[#b30f4d] disabled:opacity-50"
               disabled={loading || !verified}
             >
-              {loading ? "Processing..." : "Send Transfer"}
+              {loading ? "Processing..." : "Use Cash"}
             </button>
             <button
               onClick={onClose}
