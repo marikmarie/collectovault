@@ -274,11 +274,7 @@ export default function AddCashModal({ open, onClose, onSuccess, clientAddCash }
               </div>
             )}
             {!verified && !verifying 
-            // && (
-            //   <p className="mt-1 text-xs text-gray-400">
-            //     Enter recipient number to verify.
-            //   </p>
-            // )
+            
             }
           </div>
 

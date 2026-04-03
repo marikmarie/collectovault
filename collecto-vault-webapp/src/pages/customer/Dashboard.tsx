@@ -87,9 +87,7 @@ export default function Dashboard() {
       <Header
         name={loyaltyName || userName}
         phone=""
-        avatar="/photo.png"
-        useVideo={false}
-        onAvatarFileChange={() => {}}
+       
       />
 
       <main className="w-full mt-0">

@@ -663,7 +663,7 @@ export default function BuyPointsModal({
             onClick={handleProceed}
             disabled={loadingPackages || processing}
             
-            //className="py-1.5 px-3"
+            className="py-1.5 px-3"
           >
             {loadingPackages ? "Processing..." : "Continue"}
           </Button>

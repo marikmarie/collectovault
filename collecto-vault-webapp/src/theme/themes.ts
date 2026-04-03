@@ -22,7 +22,7 @@ export const defaultTheme: Theme = {
   headerGradient:
     "linear-gradient(to right top, #18010e, #2b0a1f, #3f0b31, #530a46, #67095d)",
   colors: {
-    primary: "#7c4dff",
+    primary: "#d81b60",
     primaryText: "#ffffff",
     secondary: "#ffb86b",
     background: "#0b1020",
