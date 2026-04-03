@@ -72,7 +72,9 @@ export default function TransferCashModal({ open, onClose, onSuccess }: Props) {
       } else {
         setVerified(false);
         setAccountName("");
-        setError(nested?.message ?? payload?.message ?? "Phone verification failed");
+        setError(
+          nested?.message ?? payload?.message ?? "Phone verification failed",
+        );
       }
     } catch (err: any) {
       setVerified(false);
@@ -82,7 +84,6 @@ export default function TransferCashModal({ open, onClose, onSuccess }: Props) {
       setVerifying(false);
     }
   };
-
 
   const submit = async () => {
     if (!verified) {
@@ -152,14 +153,23 @@ export default function TransferCashModal({ open, onClose, onSuccess }: Props) {
       <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
         <div className="flex justify-between items-center p-4 border-b border-gray-100">
           <h2 className="text-lg font-bold">Use Cash</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-800"><X /></button>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-800"
+          >
+            <X />
+          </button>
         </div>
 
         <div className="p-4 space-y-3">
-          <div className="text-sm text-gray-600">Transfer cash to another wallet number using mobile money.</div>
+          <div className="text-sm text-gray-600">
+            Transfer cash to another wallet number using mobile money.
+          </div>
 
           <div>
-            <label className="text-xs font-semibold uppercase text-gray-500">Amount (UGX)</label>
+            <label className="text-xs font-semibold uppercase text-gray-500">
+              Amount (UGX)
+            </label>
             <input
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
@@ -172,7 +182,9 @@ export default function TransferCashModal({ open, onClose, onSuccess }: Props) {
           </div>
 
           <div>
-            <label className="text-xs font-semibold uppercase text-gray-500">Recipient phone</label>
+            <label className="text-xs font-semibold uppercase text-gray-500">
+              Phone Number
+            </label>
             <div className="mt-1">
               <input
                 value={phone}
@@ -195,10 +207,23 @@ export default function TransferCashModal({ open, onClose, onSuccess }: Props) {
               />
             </div>
 
-            <p className="mt-1 text-xs text-gray-400">Auto-verifies when a valid 10-digit mobile number is entered.</p>
+            <p className="mt-1 text-xs text-gray-400">
+              Auto-verifies when a valid 10-digit mobile number is entered.
+            </p>
 
+            {verified && accountName && (
+              <div className="mt-2 text-sm text-green-700 flex items-center gap-1">
+                <CheckCircle2 size={16} /> {accountName}
+              </div>
+            )}
+            {
+              !verified && !verifying
+              // && <p className="mt-1 text-xs text-gray-400">Enter recipient number to verify.</p>
+            }
             <div className="mt-3">
-              <label className="text-xs font-semibold uppercase text-gray-500">Staff ID</label>
+              <label className="text-xs font-semibold uppercase text-gray-500">
+                Staff ID
+              </label>
               <input
                 value={staffId}
                 onChange={(e) => setStaffId(e.target.value)}
@@ -208,15 +233,6 @@ export default function TransferCashModal({ open, onClose, onSuccess }: Props) {
                 disabled={loading}
               />
             </div>
-
-            {verified && accountName && (
-              <div className="mt-2 text-sm text-green-700 flex items-center gap-1">
-                <CheckCircle2 size={16} /> {accountName}
-              </div>
-            )}
-            {!verified && !verifying 
-            // && <p className="mt-1 text-xs text-gray-400">Enter recipient number to verify.</p>
-            }
           </div>
 
           {error && (
