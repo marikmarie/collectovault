@@ -4,7 +4,7 @@ import TopNav from "../../components/TopNav";
 import AddCashModal from "../../components/AddCashModal";
 import TransferCashModal from "../../components/TransferCashModal";
 import BuyPoints from "../customer/BuyPoints";
-import {  RefreshCw, ArrowUpRight, ArrowDownLeft } from "lucide-react";
+import {  RefreshCw, ArrowUpRight, ArrowDownLeft, Eye, EyeOff } from "lucide-react";
 import { customerService } from "../../api/customer";
 import { transactionService } from "../../api/collecto";
 
@@ -104,10 +104,11 @@ export default function Dashboard() {
               </div> */}
             </div>
             <button
-              className="text-sm px-3 py-1 bg-white/20 rounded-full"
+              className="text-sm p-2 bg-white/20 flex items-center justify-center rounded-full transition-colors hover:bg-white/30"
               onClick={() => setShowWalletAmount((value) => !value)}
+              aria-label={showWalletAmount ? 'Hide balance' : 'Show balance'}
             >
-              {showWalletAmount ? 'Hide' : 'Show'}
+              {showWalletAmount ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
 

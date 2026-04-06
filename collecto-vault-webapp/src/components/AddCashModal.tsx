@@ -162,8 +162,7 @@ export default function AddCashModal({ open, onClose, onSuccess, clientAddCash }
 
       console.log("Add Cash Request Payload:", requestPayload);
 
-      //New Add to cash new endpoint clientAddCash
-      // const response = await invoiceService.requestPayment(requestPayload);
+     // const response = await invoiceService.requestPayment(requestPayload);
       const response = await invoiceService.clientAddCash(requestPayload);
       const status = String(response?.data?.status ?? "").toLowerCase();
 

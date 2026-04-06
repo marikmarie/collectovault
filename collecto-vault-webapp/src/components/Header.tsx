@@ -26,8 +26,8 @@ export default function Header({ name, phone }: Props) {
   return (
     <header className="w-full px-4 pt-6 pb-3">
       <div className="text-center">
-        <p className="text-white/70 text-sm tracking-wide">{greeting},</p>
-        <h1 className="text-white text-2xl md:text-3xl font-semibold mt-0.5">
+        <p className="text-gray-800 text-sm tracking-wide">{greeting},</p>
+        <h1 className="text-gray-900 text-2xl md:text-3xl font-semibold mt-0.5">
           {name}
         </h1>
         {phone && <p className="text-white/80 text-sm mt-1">{phone}</p>}
