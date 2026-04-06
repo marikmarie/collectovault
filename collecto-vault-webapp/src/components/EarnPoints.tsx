@@ -18,7 +18,6 @@ interface EarnPointsProps {
 export default function EarnPoints({ open, onClose, service }: EarnPointsProps) {
   if (!open) return null;
 
-  // Placeholder logic for the "Earn" button link
   const earnLink = `/services/earn/${service.id}`;
 
   return (
