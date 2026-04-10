@@ -285,9 +285,9 @@ export default function LoginPage() {
                 </div>
               </form>
             ) : null
+            }
           </div>
         </div>
-        
         {/* SetUsernameModal - shown after successful login if username doesn't exist */}
         {loginStep === 'username_setup' && (
           <SetUsernameModal 
