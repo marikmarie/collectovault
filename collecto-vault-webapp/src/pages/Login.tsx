@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, ArrowRight, RotateCw, ShieldCheck, ChevronLeft, AtSign } from 'lucide-react';
+import { ArrowRight, RotateCw, ShieldCheck, ChevronLeft, AtSign } from 'lucide-react';
 import { useNavigate } from 'react-router-dom'; 
 import { authService } from '../api/authService';
 import { useTheme } from '../theme/ThemeProvider';
@@ -15,15 +15,12 @@ type PendingPayload = {
 export default function LoginPage() {
   const navigate = useNavigate(); 
   
-  const [loginStep, setLoginStep] = useState<'id_entry' | 'otp_entry'>('id_entry');
+  const [loginStep, setLoginStep] = useState<'id_entry' | 'otp_entry' | 'username_setup'>('id_entry');
   const [idOrUsername, setIdOrUsername] = useState('');
   const [otpValue, setOtpValue] = useState('');
   const [error, setError] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [pendingPayload, setPendingPayload] = useState<PendingPayload | null>(null);
-  const [showSetUsernameModal, setShowSetUsernameModal] = useState(false);
-  const [showClientIdDialog, setShowClientIdDialog] = useState(false);
-  const [clientIdForUsername, setClientIdForUsername] = useState('');
 
   const buildAuthPayload = (id: string) => {
     return { type: 'client', id, cid: id, uid: undefined } as const;
@@ -91,20 +88,6 @@ export default function LoginPage() {
     await attemptLogin(idOrUsername);
   };
 
-  const handleSetUsernameClick = () => {
-    setShowClientIdDialog(true);
-    setClientIdForUsername('');
-  };
-
-  const handleClientIdSubmit = () => {
-    if (clientIdForUsername.trim().length < 3) {
-      setError('Please enter a valid client ID');
-      return;
-    }
-    setShowClientIdDialog(false);
-    setShowSetUsernameModal(true);
-  };
-
   const handleOtpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -146,7 +129,13 @@ export default function LoginPage() {
           console.warn('Failed to create customer record:', err);
         }
 
-        navigate('/dashboard');
+        // Check if user has a username, if not, show SetUsernameModal
+        const storedUsername = localStorage.getItem('userName');
+        if (!storedUsername) {
+          setLoginStep('username_setup');
+        } else {
+          navigate('/dashboard');
+        }
       } else {
         setError("Invalid verification code.");
       }
@@ -155,6 +144,10 @@ export default function LoginPage() {
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const handleSetUsernameSuccess = () => {
+    navigate('/dashboard');
   };
 
   const handleResendOtp = async () => {
@@ -191,12 +184,14 @@ export default function LoginPage() {
           <div className="p-8">
             <div className="mb-8 text-center">
               <h2 className="text-2xl font-bold text-gray-900 tracking-tight">
-                {loginStep === 'id_entry' ? 'Sign In' : 'Verify Identity'}
+                {loginStep === 'id_entry' ? 'Sign In' : loginStep === 'otp_entry' ? 'Verify Identity' : 'Create Your Username'}
               </h2>
               <p className="text-sm text-gray-500 mt-2">
                 {loginStep === 'id_entry' 
                   ? `Enter your Client ID or Username to continue` 
-                  : 'Enter the 6-digit code sent to your device'}
+                  : loginStep === 'otp_entry'
+                  ? 'Enter the 6-digit code sent to your device'
+                  : 'Set up a unique username for your CollectoVault account'}
               </p>
             </div>
 
@@ -242,16 +237,8 @@ export default function LoginPage() {
                     <>Continue <ArrowRight className="w-4 h-4 ml-2" /></>
                   )}
                 </button>
-
-                <button
-                  type="button"
-                  onClick={handleSetUsernameClick}
-                  className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-2xl text-sm font-semibold text-[#d81b60] bg-[#d81b60]/10 hover:bg-[#d81b60]/20 border border-[#d81b60]/20 transition-all"
-                >
-                  <User size={16} /> Create Username
-                </button>
               </form>
-            ) : (
+            ) : loginStep === 'otp_entry' ? (
               <form onSubmit={handleOtpSubmit} className="space-y-6">
                 <div className="flex flex-col items-center">
                   <input
@@ -297,74 +284,21 @@ export default function LoginPage() {
                     </button>
                 </div>
               </form>
-            )}
+            ) : null
           </div>
         </div>
         
-        {showClientIdDialog && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6 animate-in fade-in zoom-in-95">
-              <h3 className="text-lg font-bold text-gray-900 mb-2">Enter Client ID</h3>
-              <p className="text-sm text-gray-500 mb-4">Please enter your client ID to create a username</p>
-              
-              {error && (
-                <div className="mb-4 p-3 rounded-xl text-xs font-medium bg-rose-50 text-rose-700">
-                  {error}
-                </div>
-              )}
-
-              <div className="space-y-4">
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#67095D] transition-colors">
-                    <User size={16} />
-                  </div>
-                  <input
-                    type="text"
-                    value={clientIdForUsername}
-                    onChange={(e) => {
-                      setClientIdForUsername(e.target.value);
-                      setError('');
-                    }}
-                    placeholder="e.g., 324CV38"
-                    className="block w-full pl-10 pr-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-[#67095D]/5 focus:border-[#67095D] focus:bg-white transition-all outline-none text-sm font-medium"
-                    autoFocus
-                  />
-                </div>
-
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => {
-                      setShowClientIdDialog(false);
-                      setClientIdForUsername('');
-                      setError('');
-                    }}
-                    className="flex-1 py-2.5 px-4 rounded-xl text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition-all"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleClientIdSubmit}
-                    className="flex-1 py-2.5 px-4 rounded-xl text-sm font-bold text-black bg-gray-200 hover:bg-gray-400 transition-all"
-                  >
-                    Continue
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {showSetUsernameModal && (
+        {/* SetUsernameModal - shown after successful login if username doesn't exist */}
+        {loginStep === 'username_setup' && (
           <SetUsernameModal 
-            isOpen={showSetUsernameModal}
-            onClose={() => setShowSetUsernameModal(false)}
-            onSuccess={() => {
-              setShowSetUsernameModal(false);
-              setClientIdForUsername('');
-              setError('Username created successfully!');
+            isOpen={true}
+            onClose={() => {
+              // Don't allow closing without setting username
+              setError('Please create a username to continue');
             }}
-            existingUsername={localStorage.getItem('userName') || undefined}
-            clientId={clientIdForUsername}
+            onSuccess={handleSetUsernameSuccess}
+            existingUsername={null}
+            clientId={pendingPayload?.id}
           />
         )}
         
