@@ -4,7 +4,7 @@ import TopNav from "../../components/TopNav";
 import AddCashModal from "../../components/AddCashModal";
 import TransferCashModal from "../../components/TransferCashModal";
 import BuyPoints from "../customer/BuyPoints";
-import {  RefreshCw, ArrowUpRight, ArrowDownLeft, Eye, EyeOff, CreditCard, PlusCircle, Send, ShoppingCart } from "lucide-react";
+import {   Eye, EyeOff, CreditCard, PlusCircle, Send, ShoppingCart } from "lucide-react";
 import { customerService } from "../../api/customer";
 import { transactionService } from "../../api/collecto";
 
@@ -22,8 +22,8 @@ export default function Dashboard() {
   const [transferCashOpen, setTransferCashOpen] = useState(false);
   const [buyPointsOpen, setBuyPointsOpen] = useState(false);
   // Data States
-  const [loading, setLoading] = useState(false);
-  const [transactions, setTransactions] = useState<any[]>([]);
+  const [, setLoading] = useState(false);
+  const [, setTransactions] = useState<any[]>([]);
 
   const clientId = localStorage.getItem("clientId") || "";
   const collectoId = localStorage.getItem("collectoId") || "";
