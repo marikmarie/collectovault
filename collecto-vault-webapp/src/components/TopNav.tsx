@@ -78,22 +78,15 @@ export default function TopNav() {
   return (
     <>
       {/* ================= DESKTOP HEADER ================= */}
-      <header className="hidden lg:block w-full bg-linear-to-r from-white via-white to-gray-50 sticky top-0 z-40 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          {/* Logo */}
-          <div
-            onClick={() => navigate("/dashboard")}
-            className="cursor-pointer hover:opacity-80 transition-opacity"
-          >
-            <img
-              src={theme.logoUrl ?? "logo.png"}
-              alt="Logo"
-              className="h-20 w-auto"
-            />
-          </div>
+    <header className="hidden lg:block w-full bg-white sticky top-0 z-40 border-b border-gray-100">
+  <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+    <div onClick={() => navigate('/dashboard')} className="flex items-center gap-2 cursor-pointer">
+      <img src={theme.logoUrl ?? '/logo.png'} alt="Logo" className="h-8 w-auto" />
+    </div>
+    <nav className="flex items-center gap-8 text-sm font-medium">
 
           {/* Nav */}
-          <nav className="flex items-center gap-12 text-sm font-medium">
+          {/* <nav className="flex items-center gap-12 text-sm font-medium"> */}
             {[
               { name: "Dashboard", path: "/dashboard" },
               { name: "Statement", path: "/statement" },
@@ -120,7 +113,8 @@ export default function TopNav() {
           </nav>
 
           {/* Right */}
-          <div className="flex items-center gap-6">
+          {/* <div className="flex items-center gap-6"> */}
+             <div className="flex items-center gap-3">
             <button
               onClick={() => openDrawer("notifications")}
               className="relative p-2 text-gray-700 hover:text-[#d81b60] transition-colors rounded-lg hover:bg-gray-100"

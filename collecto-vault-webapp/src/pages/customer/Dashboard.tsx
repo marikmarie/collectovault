@@ -4,7 +4,7 @@ import TopNav from "../../components/TopNav";
 import AddCashModal from "../../components/AddCashModal";
 import TransferCashModal from "../../components/TransferCashModal";
 import BuyPoints from "../customer/BuyPoints";
-import {  RefreshCw, ArrowUpRight, ArrowDownLeft, Eye, EyeOff } from "lucide-react";
+import {  RefreshCw, ArrowUpRight, ArrowDownLeft, Eye, EyeOff, CreditCard, PlusCircle, Send, ShoppingCart } from "lucide-react";
 import { customerService } from "../../api/customer";
 import { transactionService } from "../../api/collecto";
 
@@ -92,136 +92,64 @@ export default function Dashboard() {
 
       <main className="w-full mt-0">
         {/* --- WALLET SUMMARY --- */}
-        <div className="mx-4 my-4 rounded-2xl bg-linear-to-r from-[#d81b60] via-[#8f0a43] to-[#f06292] text-white p-4 shadow-lg">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <div className="text-xs uppercase font-semibold opacity-90">Cash Balance</div>
-              <div className="text-3xl font-black">
-                {showWalletAmount ? (walletAmount !== null ? `UGX ${walletAmount.toLocaleString()}` : '—') : '••••••'}
-              </div>
-              {/* <div className="text-[11px] mt-1 opacity-80">
-                {ugxPerPoint > 0 ? `1 point = UGX ${ugxPerPoint.toFixed(2)}` : 'Point value not available'}
-              </div> */}
-            </div>
-            <button
-              className="text-sm p-2 bg-white/20 flex items-center justify-center rounded-full transition-colors hover:bg-white/30"
-              onClick={() => setShowWalletAmount((value) => !value)}
-              aria-label={showWalletAmount ? 'Hide balance' : 'Show balance'}
-            >
-              {showWalletAmount ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
-          </div>
+        {/* <div className="mx-4 my-4 rounded-2xl bg-linear-to-r from-[#d81b60] via-[#8f0a43] to-[#f06292] text-white p-4 shadow-lg"> */}
+        {/* Wallet Card */}
+<div className="mx-0 my-4 rounded-2xl bg-[#d81b60] text-white p-5 shadow-md">
+  <div className="flex items-start justify-between mb-4">
+    <div>
+      <div className="flex items-center gap-1.5 mb-1.5">
+        <CreditCard size={13} className="opacity-70" />
+        <span className="text-[11px] uppercase tracking-widest opacity-80 font-medium">
+          Cash Balance
+        </span>
+      </div>
+      <div className="text-4xl font-black tracking-tight">
+        {showWalletAmount
+          ? walletAmount !== null ? `UGX ${walletAmount.toLocaleString()}` : '—'
+          : '••••••'}
+      </div>
+    </div>
+    <button
+      onClick={() => setShowWalletAmount(v => !v)}
+      className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors"
+    >
+      {showWalletAmount ? <EyeOff size={17} /> : <Eye size={17} />}
+    </button>
+  </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-white/90">
-            <div className="rounded-xl bg-white/10 p-3">
-              <div className="font-semibold">Earned Points</div>
-              <div className="font-bold text-lg">{earnedPoints.toLocaleString()} pts</div>
-            </div>
-            <div className="rounded-xl bg-white/10 p-3">
-              <div className="font-semibold">Bought Points</div>
-              <div className="font-bold text-lg">{boughtPoints.toLocaleString()} pts</div>
-            </div>
-            <div className="rounded-xl bg-white/10 p-3">
-              <div className="font-semibold">Total Points</div>
-              <div className="font-bold text-lg">{(earnedPoints + boughtPoints).toLocaleString()} pts</div>
-            </div>
-          </div>
-        </div>
+  <div className="flex gap-3 pt-4 border-t border-white/20">
+    {[
+      { label: 'Earned Pts', value: earnedPoints },
+      { label: 'Bought Pts', value: boughtPoints },
+      { label: 'Total Pts',  value: earnedPoints + boughtPoints },
+    ].map(({ label, value }) => (
+      <div key={label} className="flex-1 bg-white/12 rounded-xl px-3 py-2.5">
+        <div className="text-[9px] uppercase tracking-wide opacity-70 mb-1">{label}</div>
+        <div className="text-sm font-bold">{value.toLocaleString()} pts</div>
+      </div>
+    ))}
+  </div>
+</div>
 
-        <div className="p-4">
-          {/* --- ACTIONS --- */}
-          <div className="flex flex-wrap justify-end gap-2 mb-6">
-            <button
-              onClick={() => setAddCashOpen(true)}
-              className="px-4 py-2 rounded-full border border-gray-200 bg-white text-sm font-bold shadow-xs hover:bg-gray-50 transition-all"
-            >
-              Add Cash
-            </button>
-            <button
-              onClick={() => setTransferCashOpen(true)}
-              className="px-4 py-2 rounded-full border border-gray-200 bg-white text-sm font-bold shadow-xs hover:bg-gray-50 transition-all"
-            >
-              Use Cash
-            </button>
-            <button
-              onClick={() => setBuyPointsOpen(true)}
-              className="px-4 py-2 rounded-full bg-[#f0edee] text-gray-800 text-sm font-bold shadow-md hover:opacity-90 transition-all"
-            >
-              Buy Points
-            </button>
-          </div>
-
-          {/* --- CONTENT: POINTS --- */}
-            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              
-              {/* Transactions Ledger */}
-              <section>
-                <div className="flex items-center justify-between mb-4 px-1">
-                  <h3 className="text-lg font-bold text-gray-800">Recent Activity</h3>
-                  <button onClick={fetchData} className="p-2 text-gray-400 hover:text-[#cb0d6c] transition-colors">
-                    <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
-                  </button>
-                </div>
-
-                <div className="space-y-3">
-                  {transactions.length === 0 ? (
-                    <div className="bg-white p-10 rounded-2xl text-center text-gray-400 border border-dashed border-gray-200">
-                      No transactions found yet.
-                    </div>
-                  ) : (
-                    transactions.slice(0, 3).map((tx) => {
-                      const isConfirmed = ["success", "confirmed"].includes(tx.paymentStatus?.toLowerCase());
-                      const isInvoice = tx.reference === "INVOICE_PURCHASE";
-                      
-                      return (
-                        <div key={tx.id} className="bg-white p-4 rounded-2xl border border-gray-50 shadow-xs flex items-center gap-4">
-                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${isInvoice ? "bg-blue-50 text-blue-600" : "bg-green-50 text-green-600"}`}>
-                            {isInvoice ? <ArrowUpRight size={24} /> : <ArrowDownLeft size={24} />}
-                          </div>
-                          
-                          <div className="flex-1">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <h4 className="font-bold text-gray-900 text-sm">
-                                  {isInvoice ? "Earned from Service" : "Points Purchase"}
-                                </h4>
-                                <p className="text-[10px] text-gray-400 font-mono mt-0.5">{tx.transactionId}</p>
-                              </div>
-                              <div className="text-right">
-                                <span className="font-black text-[#cb0d6c] text-sm">+{tx.points.toLocaleString()} pts</span>
-                                <p className="text-[10px] text-gray-400">{tx.amount.toLocaleString()} UGX</p>
-                              </div>
-                            </div>
-                            
-                            <div className="flex items-center gap-3 mt-2">
-                              <span className="text-[10px] text-gray-400 flex items-center gap-1">
-                                📅 {new Date(tx.createdAt).toLocaleDateString()}
-                              </span>
-                              <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${isConfirmed ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"}`}>
-                                {tx.paymentStatus}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-
-                  {transactions.length > 3 && (
-                    <div className="mt-4">
-                      <button
-                        onClick={() => alert('Navigate to full statement page')}
-                        className="w-full py-2 rounded-xl border border-gray-200 text-sm font-semibold text-[#cb0d6c] bg-white hover:bg-gray-50"
-                      >
-                        View All Transactions
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </section>
-            </div>
-
-        </div>
+{/* Action Buttons */}
+<div className="flex gap-3 mb-5">
+  {[
+    { label: 'Add Cash',   icon: <PlusCircle size={18} color="#d81b60" />, action: () => setAddCashOpen(true) },
+    { label: 'Use Cash',   icon: <Send       size={18} color="#d81b60" />, action: () => setTransferCashOpen(true) },
+    { label: 'Buy Points', icon: <ShoppingCart size={18} color="#d81b60" />, action: () => setBuyPointsOpen(true) },
+  ].map(({ label, icon, action }) => (
+    <button
+      key={label}
+      onClick={action}
+      className="flex-1 flex flex-col items-center gap-2 bg-white border border-gray-100 rounded-xl py-3 shadow-xs hover:bg-gray-50 transition-colors"
+    >
+      <div className="w-9 h-9 rounded-full bg-[#fce4ec] flex items-center justify-center">
+        {icon}
+      </div>
+      <span className="text-xs font-semibold text-gray-700">{label}</span>
+    </button>
+  ))}
+</div>
       </main>
 
       {/* --- MODALS --- */}
