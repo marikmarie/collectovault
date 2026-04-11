@@ -123,12 +123,20 @@ export default function TopNav() {
               <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-[#d81b60] rounded-full shadow-lg" />
             </button>
 
+{/* 
+ <div
+        onClick={() => setIsWebDropdownOpen(!isWebDropdownOpen)}
+        className="w-8 h-8 rounded-full bg-[#fce4ec] border border-[#d81b60] flex items-center justify-center text-[#d81b60] text-xs font-bold cursor-pointer"
+      ></div> */}
             {/* Profile Dropdown */}
             <div ref={dropdownRef} className="relative">
               <button
-                onClick={() => setIsWebDropdownOpen(!isWebDropdownOpen)}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-full hover:bg-gray-100 transition-all duration-200"
-              >
+                // onClick={() => setIsWebDropdownOpen(!isWebDropdownOpen)}
+                // className="flex items-center gap-2.5 px-3 py-2 rounded-full hover:bg-gray-100 transition-all duration-200"
+        onClick={() => setIsWebDropdownOpen(!isWebDropdownOpen)}
+        className="w-8 h-8 rounded-full bg-[#fce4ec] border border-[#d81b60] flex items-center justify-center text-[#d81b60] text-xs font-bold cursor-pointer"
+    
+       >
                 <div className="w-8 h-8 rounded-full bg-linear-to-br from-[#d81b60] to-pink-400 flex items-center justify-center text-white text-xs font-bold shadow-sm">
                   {initials}
                 </div>
