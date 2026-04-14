@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { useFeedback } from '../context/FeedbackContext';
 import RatingModal from '../components/RatingModal';
 import FeedbackModal from '../components/FeedbackModal';
@@ -14,20 +13,10 @@ interface FeedbackModalsProps {
  * Renders all feedback-related modals. Place this once in your app root.
  * Use useFeedback() hook to control them from anywhere.
  * 
- * Example:
- * ```tsx
- * // In your App.tsx
- * <FeedbackProvider>
- *   <FeedbackModals customerId={customerId} />
- *   {/* Your app content */}
- * </FeedbackProvider>
- * 
- * // In any component
- * const { openRatingModal } = useFeedback();
- * <button onClick={() => openRatingModal(transactionId)}>
- *   Rate Order
- * </button>
- * ```
+ * Usage:
+ * 1. Wrap your app with FeedbackProvider
+ * 2. Add FeedbackModals component to your app root
+ * 3. Use useFeedback() hook to trigger modals from any component
  */
 export default function FeedbackModals({ customerId }: FeedbackModalsProps) {
   const {

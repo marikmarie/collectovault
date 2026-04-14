@@ -3,6 +3,7 @@ import { useTheme } from "../theme/ThemeProvider";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { clearVaultOtpToken } from "../api";
 import SetUsernameModal from "./SetUsernameModal";
+import { useTriggerFeedback, useChatModal } from "../hooks/useFeedback";
 import {
   X,
   Home,
@@ -27,12 +28,16 @@ export default function TopNav() {
   const navigate = useNavigate();
   const location = useLocation();
   const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Feedback hooks
+  const triggerFeedback = useTriggerFeedback();
+  const openChat = useChatModal();
 
   const { theme } = useTheme();
 
   // ---- USER DATA (from localStorage) ----
-  const userName = localStorage.getItem("userName") || "User";
-  const userEmail = localStorage.getItem("userEmail") || "";
+  const userName = localStorage.getItem("userName") || localStorage.getItem("name") || "User Account";
+  const userEmail = localStorage.getItem("userEmail") || localStorage.getItem("email") || "No email set";
   const storedUsername = localStorage.getItem("userName");
 
   const initials = useMemo(() => {
@@ -250,6 +255,8 @@ export default function TopNav() {
         userEmail={userEmail}
         initials={initials}
         onOpenUsernameModal={() => setShowUsernameModal(true)}
+        triggerFeedback={triggerFeedback}
+        openChat={openChat}
       />
 
       <SetUsernameModal
@@ -280,6 +287,8 @@ function SideDrawer({
   userEmail,
   initials,
   onOpenUsernameModal,
+  triggerFeedback,
+  openChat,
 }: any) {
   if (!isOpen) return null;
 
@@ -347,11 +356,23 @@ function SideDrawer({
                 Have questions? Our support team is here to help you anytime.
               </p>
             </div>
-            <button className="w-full flex items-center gap-3 px-4 py-3 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors text-blue-600 font-medium">
-              <Mail size={18} /> Contact Support
+            <button 
+              onClick={() => {
+                triggerFeedback('general');
+                onClose();
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors text-blue-600 font-medium"
+            >
+              <Mail size={18} /> Send Feedback
             </button>
-            <button className="w-full flex items-center gap-3 px-4 py-3 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors text-blue-600 font-medium">
-              <MessageCircle size={18} /> FAQ
+            <button 
+              onClick={() => {
+                openChat();
+                onClose();
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors text-blue-600 font-medium"
+            >
+              <MessageCircle size={18} /> Live Chat Support
             </button>
           </div>
         )}
