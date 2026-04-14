@@ -314,12 +314,21 @@ function SideDrawer({
           <div className="space-y-6">
             <div className="flex flex-col items-center py-4">
               <div className="w-20 h-20 rounded-full bg-linear-to-br from-[#d81b60] to-pink-400 flex items-center justify-center text-xl font-bold text-white shadow-lg">
-                {initials}
+                {initials || "U"}
               </div>
               <h3 className="font-semibold mt-4 text-lg text-gray-900">
-                {userName}
+                {userName || "Your Name"}
               </h3>
-              <p className="text-sm text-gray-500 mt-1">{userEmail}</p>
+              <p className="text-sm text-gray-500 mt-1">{userEmail || "email@example.com"}</p>
+            </div>
+
+            <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
+              <p className="text-sm text-gray-700">
+                <strong>Account Status:</strong> Active
+              </p>
+              <p className="text-sm text-gray-700 mt-1">
+                <strong>Member Since:</strong> 2024
+              </p>
             </div>
 
             <div className="space-y-3">
@@ -327,8 +336,7 @@ function SideDrawer({
                 onClick={onOpenUsernameModal}
                 className="w-full flex items-center gap-3 px-4 py-3 bg-linear-to-r from-[#d81b60]/10 to-pink-400/10 hover:from-[#d81b60]/20 hover:to-pink-400/20 rounded-lg transition-colors text-gray-700 font-medium border border-[#d81b60]/20"
               >
-                <Mail size={18} className="text-[#d81b60]" /> Set/Update
-                Username
+                <Mail size={18} className="text-[#d81b60]" /> Set/Update Username
               </button>
               <button className="w-full flex items-center gap-3 px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors text-gray-700 font-medium">
                 <Key size={18} className="text-[#d81b60]" /> Change Password
@@ -378,12 +386,30 @@ function SideDrawer({
         )}
 
         {view === "notifications" && (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-              <Bell size={24} className="text-gray-400" />
+          <div className="space-y-4">
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                <Bell size={24} className="text-blue-600" />
+              </div>
+              <p className="text-gray-600 font-medium">All caught up!</p>
+              <p className="text-sm text-gray-500 mt-2">You have no new notifications right now.</p>
             </div>
-            <p className="text-gray-600 font-medium">No new notifications</p>
-            <p className="text-sm text-gray-500 mt-1">You're all caught up!</p>
+            
+            <div className="border-t pt-4 mt-6">
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">Notification Settings</h3>
+              <label className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50">
+                <input type="checkbox" defaultChecked className="w-4 h-4" />
+                <span className="text-sm text-gray-700">Email notifications</span>
+              </label>
+              <label className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50">
+                <input type="checkbox" defaultChecked className="w-4 h-4" />
+                <span className="text-sm text-gray-700">Order updates</span>
+              </label>
+              <label className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50">
+                <input type="checkbox" defaultChecked className="w-4 h-4" />
+                <span className="text-sm text-gray-700">Promotional offers</span>
+              </label>
+            </div>
           </div>
         )}
       </div>
