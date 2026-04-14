@@ -1,7 +1,7 @@
 // src/components/common/Button.tsx
 import React from "react";
 
-type Variant = "primary" | "secondary" | "ghost" | "danger";
+type Variant = "primary" | "secondary" | "ghost" | "danger" | "outline";
 
 type BaseButtonAttrs = Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "onClick" | "children">;
 
@@ -19,6 +19,7 @@ const variantClasses: Record<Variant, string> = {
   secondary: "themed-btn themed-btn--secondary",
   ghost: "themed-btn themed-btn--ghost",
   danger: "themed-btn themed-btn--danger",
+  outline: "themed-btn themed-btn--outline",
 };
 
 const Button: React.FC<Props> = ({
