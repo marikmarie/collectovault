@@ -802,52 +802,60 @@ export default function StatementWithPoints() {
               );
             })
           ) : (
-            transactions.map((tx: any) => {
-              const statusColor =
-                tx.paymentStatus === "SUCCESS"
-                  ? "text-green-600"
-                  : tx.paymentStatus === "PENDING"
-                    ? "text-yellow-600"
-                    : "text-red-600";
-              const createdDate = new Date(tx.createdAt).toLocaleDateString(
-                "en-US",
-                { year: "numeric", month: "short", day: "numeric" },
-              );
+            transactions
+              .filter((tx: any) =>
+                !tx.status || ["success", "pending"].includes(tx.status.toLowerCase())
+              )
+              .map((tx: any) => {
+                const statusColor =
+                  tx.status === "SUCCESSFUL" || tx.status === "success"
+                    ? "text-green-600"
+                    : tx.status === "PENDING" || tx.status === "pending"
+                      ? "text-yellow-600"
+                      : "text-red-600";
+                const transactionDate = tx.cash_date || new Date(tx.createdAt || tx.updated_on).toLocaleDateString(
+                  "en-US",
+                  { year: "numeric", month: "short", day: "numeric" },
+                );
 
-              return (
-                <div
-                  key={tx.id}
-                  onClick={() => setSelectedTransaction(tx)}
-                  className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between cursor-pointer hover:shadow-md transition-transform active:scale-[0.99]"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full flex items-center justify-center bg-blue-50">
-                      <ArrowDownLeft className="w-6 h-6 text-blue-600" />
+                return (
+                  <div
+                    key={tx.id}
+                    onClick={() => setSelectedTransaction(tx)}
+                    className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between cursor-pointer hover:shadow-md transition-transform active:scale-[0.99]"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full flex items-center justify-center bg-blue-50">
+                        <ArrowDownLeft className="w-6 h-6 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-gray-800 text-base">
+                          {tx.cash_type || 'Transaction'}
+                        </p>
+                        <div className="flex items-center gap-1 text-[11px] uppercase font-extrabold tracking-wider">
+                          <span className="text-gray-500">{transactionDate}</span>
+                          <span className="text-gray-400">•</span>
+                          <span className="text-gray-600">{tx.user_type || 'CLIENT'}</span>
+                          <span className="text-gray-400">•</span>
+                          <span className={statusColor}>{tx.status || 'PENDING'}</span>
+                        </div>
+                        {tx.reference && (
+                          <div className="text-xs text-gray-500 mt-1">
+                            Ref: {tx.reference}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-bold text-gray-800 text-base">
-                        {tx.transactionId}
-                      </p>
-                      <div className="flex items-center gap-1 text-[11px] uppercase font-extrabold tracking-wider">
-                        <span className="text-gray-500">{createdDate}</span>
-                        <span className="text-gray-400">•</span>
-                        <span className={statusColor}>{tx.paymentStatus}</span>
+                    <div className="text-right flex items-center gap-4">
+                      <div>
+                        <p className="font-extrabold text-lg text-gray-900">
+                          UGX {Number(tx.amount || 0).toLocaleString()}
+                        </p>
                       </div>
                     </div>
                   </div>
-                  <div className="text-right flex items-center gap-4">
-                    <div>
-                      <p className="font-extrabold text-lg text-gray-900">
-                        UGX {Number(tx.amount || 0).toLocaleString()}
-                      </p>
-                      <p className="text-xs text-gray-500 font-semibold">
-                        {tx.points} points
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              );
-            })
+                );
+              })
           )}
         </div>
       </main>
