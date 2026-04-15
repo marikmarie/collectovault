@@ -275,6 +275,19 @@ export default function StatementWithPoints() {
     setLoadingType("transactions");
     try {
       const customerId = clientId || "";
+      
+      // Try to get transactions from loyaltySettings first
+      const customerRes = await customerService.getCustomerData(collectoId || "", customerId || "");
+      const loyaltySettings = customerRes.data?.data?.loyaltySettings ?? {};
+      const cashDetails = loyaltySettings?.client_cash_details ?? {};
+      const cashTransactions = Array.isArray(cashDetails?.transactions) ? cashDetails.transactions : [];
+      
+      if (cashTransactions.length > 0) {
+        setTransactions(cashTransactions);
+        return cashTransactions;
+      }
+      
+      // Fallback to transactionService if no cash transactions
       const res = await transactionService.getTransactions(customerId);
       const data = res.data?.data?.data ?? res.data?.transactions ?? [];
       setTransactions(Array.isArray(data) ? data : []);
@@ -287,7 +300,7 @@ export default function StatementWithPoints() {
       setLoading(false);
       setLoadingType(null);
     }
-  }, []);
+  }, [collectoId, clientId]);
 
   const fetchCustomerAndRelated = useCallback(async () => {
     if (!clientId) return;
@@ -305,8 +318,16 @@ export default function StatementWithPoints() {
       setTier('N/A');
       setTierProgress(0);
 
-      const txRes = await transactionService.getTransactions(clientId);
-      setTransactions(txRes.data?.transactions || []);
+      // Use transactions from cashDetails if available, otherwise fetch from transactionService
+      const cashDetails = loyaltySettings?.client_cash_details ?? {};
+      const cashTransactions = Array.isArray(cashDetails?.transactions) ? cashDetails.transactions : [];
+      
+      if (cashTransactions.length > 0) {
+        setTransactions(cashTransactions);
+      } else {
+        const txRes = await transactionService.getTransactions(clientId);
+        setTransactions(txRes.data?.transactions || []);
+      }
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
     } finally {

@@ -12,7 +12,9 @@ export default function Dashboard() {
   const [earnedPoints, setEarnedPoints] = useState<number>(0);
   const [boughtPoints, setBoughtPoints] = useState<number>(0);
   const [, setUgxPerPoint] = useState<number>(0);
-  const [walletAmount, setWalletAmount] = useState<number | null>(null);
+  const [, setWalletAmount] = useState<number | null>(null);
+  const [cashBalance, setCashBalance] = useState<number | null>(null);
+  const [, setRecentTransactions] = useState<any[]>([]);
   const [loyaltyName, setLoyaltyName] = useState<string>("");
   const [loyaltySettings, setLoyaltySettings] = useState<any>(null);
   const [showWalletAmount, setShowWalletAmount] = useState(true);
@@ -35,7 +37,7 @@ export default function Dashboard() {
     if (!clientId) return;
     setLoading(true);
     try {
-      // 1. Fetch Customer Profile (Points)
+      // 1. Fetch Customer Profile (Points & Cash Balance)
       const customerRes = await customerService.getCustomerData(collectoId, clientId);
       const loyaltySettings = customerRes.data?.data?.loyaltySettings ?? {};
 
@@ -47,10 +49,11 @@ export default function Dashboard() {
         loyaltySettings?.points ??
         (earned + bought);
 
-      const pointValue =
-        loyaltySettings?.point_value ?? loyaltySettings?.pointValue ?? null;
-      const perPoint =
-        typeof pointValue === 'number' && points > 0 ? pointValue / points : 0;
+      // Get cash balance from cashDetails instead of calculating from points
+      const cashDetails = loyaltySettings?.client_cash_details ?? {};
+      const balanceAmount = typeof cashDetails?.balance === 'number' 
+        ? cashDetails.balance 
+        : 0;
 
       setLoyaltyName(
         typeof loyaltySettings?.name === 'string' && loyaltySettings.name.trim()
@@ -59,9 +62,20 @@ export default function Dashboard() {
       );
       setEarnedPoints(earned);
       setBoughtPoints(bought);
-      setUgxPerPoint(perPoint);
-      setWalletAmount(perPoint > 0 ? Math.round(points * perPoint) : null);
+      setWalletAmount(balanceAmount);
+      setCashBalance(balanceAmount);
 
+      // Use transactions from cashDetails if available
+      const cashTransactions = Array.isArray(cashDetails?.transactions) ? cashDetails.transactions : [];
+      setRecentTransactions(cashTransactions.slice(0, 5)); // Show last 5 transactions
+
+      const pointValue =
+        loyaltySettings?.point_value ?? loyaltySettings?.pointValue ?? null;
+      const perPoint =
+        typeof pointValue === 'number' && points > 0 ? pointValue / points : 0;
+      setUgxPerPoint(perPoint);
+
+      // Fallback: also fetch from transactionService if needed
       const txRes = await transactionService.getTransactions(clientId, 10, 0);
       const txList = txRes.data?.transactions ?? txRes.data?.data?.data ?? [];
       setTransactions(Array.isArray(txList) ? txList : []);
@@ -105,7 +119,7 @@ export default function Dashboard() {
       </div>
       <div className="text-4xl font-black tracking-tight">
         {showWalletAmount
-          ? walletAmount !== null ? `UGX ${walletAmount.toLocaleString()}` : '—'
+          ? cashBalance !== null ? `UGX ${cashBalance.toLocaleString()}` : '—'
           : '••••••'}
       </div>
     </div>
