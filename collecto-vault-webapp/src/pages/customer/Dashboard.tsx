@@ -26,7 +26,6 @@ export default function Dashboard() {
   const [buyPointsOpen, setBuyPointsOpen] = useState(false);
   // Data States
   const [, setLoading] = useState(false);
-  const [, setTransactions] = useState<any[]>([]);
 
   const clientId = localStorage.getItem("clientId") || "";
   const collectoId = localStorage.getItem("collectoId") || "";
