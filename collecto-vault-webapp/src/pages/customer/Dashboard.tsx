@@ -4,17 +4,18 @@ import TopNav from "../../components/TopNav";
 import AddCashModal from "../../components/AddCashModal";
 import TransferCashModal from "../../components/TransferCashModal";
 import BuyPoints from "../customer/BuyPoints";
-import {   Eye, EyeOff, CreditCard, PlusCircle, Send, ShoppingCart } from "lucide-react";
+import { Eye, EyeOff, CreditCard, PlusCircle, Send, ShoppingCart, ArrowUpRight, ArrowDownLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { customerService } from "../../api/customer";
-import { transactionService } from "../../api/collecto";
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [earnedPoints, setEarnedPoints] = useState<number>(0);
   const [boughtPoints, setBoughtPoints] = useState<number>(0);
   const [, setUgxPerPoint] = useState<number>(0);
   const [, setWalletAmount] = useState<number | null>(null);
   const [cashBalance, setCashBalance] = useState<number | null>(null);
-  const [, setRecentTransactions] = useState<any[]>([]);
+  const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
   const [loyaltyName, setLoyaltyName] = useState<string>("");
   const [loyaltySettings, setLoyaltySettings] = useState<any>(null);
   const [showWalletAmount, setShowWalletAmount] = useState(true);
@@ -74,11 +75,6 @@ export default function Dashboard() {
       const perPoint =
         typeof pointValue === 'number' && points > 0 ? pointValue / points : 0;
       setUgxPerPoint(perPoint);
-
-      // Fallback: also fetch from transactionService if needed
-      const txRes = await transactionService.getTransactions(clientId, 10, 0);
-      const txList = txRes.data?.transactions ?? txRes.data?.data?.data ?? [];
-      setTransactions(Array.isArray(txList) ? txList : []);
 
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
