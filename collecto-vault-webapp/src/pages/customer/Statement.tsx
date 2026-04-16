@@ -9,7 +9,6 @@ import {
   AlertCircle,
   X,
 } from "lucide-react";
-import { transactionService, invoiceService } from "../../api/collecto";
 import api from "../../api";
 import InvoiceDetailModal from "./InvoiceDetailModal";
 import Button from "../../components/Button";
