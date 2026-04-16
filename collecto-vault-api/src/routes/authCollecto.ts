@@ -1,4 +1,4 @@
-import { Router, Request, Response, NextFunction } from "express";
+import e, { Router, Request, Response, NextFunction } from "express";
 import axios from "axios";
 import dotenv from "dotenv";
 import { CustomerService } from "../services/customer.service";
@@ -49,7 +49,7 @@ function collectoHeaders(userToken?: string) {
     } catch (err: any) {
       console.error("[Collecto /auth] ERROR", err?.response?.data || err.message);
       return res.status(err?.response?.status || 500).json({
-        message: "Auth failed",
+        message: err?.response?.data?.message ,
         error: err?.response?.data,
       });
     }
