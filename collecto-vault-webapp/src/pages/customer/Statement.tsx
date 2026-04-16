@@ -9,6 +9,7 @@ import {
   AlertCircle,
   X,
 } from "lucide-react";
+import { invoiceService } from "../../api/collecto";
 import api from "../../api";
 import InvoiceDetailModal from "./InvoiceDetailModal";
 import Button from "../../components/Button";
@@ -270,40 +271,29 @@ export default function StatementWithPoints() {
   );
 
   const fetchTransactions = useCallback(async () => {
-    setLoading(true);
     setLoadingType("transactions");
     try {
       const customerId = clientId || "";
       
-      // Try to get transactions from loyaltySettings first
+      // Get transactions from loyaltySettings
       const customerRes = await customerService.getCustomerData(collectoId || "", customerId || "");
       const loyaltySettings = customerRes.data?.data?.loyaltySettings ?? {};
       const cashDetails = loyaltySettings?.client_cash_details ?? {};
       const cashTransactions = Array.isArray(cashDetails?.transactions) ? cashDetails.transactions : [];
       
-      if (cashTransactions.length > 0) {
-        setTransactions(cashTransactions);
-        return cashTransactions;
-      }
-      
-      // Fallback to transactionService if no cash transactions
-      const res = await transactionService.getTransactions(customerId);
-      const data = res.data?.data?.data ?? res.data?.transactions ?? [];
-      setTransactions(Array.isArray(data) ? data : []);
-      return data;
+      setTransactions(cashTransactions);
+      return cashTransactions;
     } catch (err) {
       console.error("Fetch Transactions Error:", err);
       setTransactions([]);
       return [];
     } finally {
-      setLoading(false);
       setLoadingType(null);
     }
   }, [collectoId, clientId]);
 
   const fetchCustomerAndRelated = useCallback(async () => {
     if (!clientId) return;
-    setLoading(true);
     try {
       const customerRes = await customerService.getCustomerData(collectoId || "", clientId || "");
       const loyaltySettings = customerRes.data?.data?.loyaltySettings;
@@ -316,41 +306,35 @@ export default function StatementWithPoints() {
       setPointsBalance(points || 0);
       setTier('N/A');
       setTierProgress(0);
-
-      // Use transactions from cashDetails if available, otherwise fetch from transactionService
-      const cashDetails = loyaltySettings?.client_cash_details ?? {};
-      const cashTransactions = Array.isArray(cashDetails?.transactions) ? cashDetails.transactions : [];
-      
-      if (cashTransactions.length > 0) {
-        setTransactions(cashTransactions);
-      } else {
-        const txRes = await transactionService.getTransactions(clientId);
-        setTransactions(txRes.data?.transactions || []);
-      }
     } catch (err) {
-      console.error("Error fetching dashboard data:", err);
-    } finally {
-      setLoading(false);
+      console.error("Error fetching customer data:", err);
     }
-  }, []);
+  }, [collectoId, clientId]);
 
   useEffect(() => {
     (async () => {
-      await fetchActivePackages();
-      await fetchCustomerAndRelated();
-      
-      // Check if we're navigating from invoice creation with a specific invoiceId
-      const invoiceIdFromState = (location.state as any)?.invoiceId;
-      
-      if (invoiceIdFromState) {
-        // Fetch the specific invoice first
-        await fetchInvoices(invoiceIdFromState);
-      } else {
-        // Fetch all invoices as usual
-        await fetchInvoices();
+      setLoading(true);
+      try {
+        await fetchActivePackages();
+        await fetchCustomerAndRelated();
+        
+        // Check if we're navigating from invoice creation with a specific invoiceId
+        const invoiceIdFromState = (location.state as any)?.invoiceId;
+        
+        if (invoiceIdFromState) {
+          // Fetch the specific invoice first
+          await fetchInvoices(invoiceIdFromState);
+        } else {
+          // Fetch all invoices as usual
+          await fetchInvoices();
+        }
+        
+        await fetchTransactions();
+      } catch (err) {
+        console.error("Error in initial load:", err);
+      } finally {
+        setLoading(false);
       }
-      
-      await fetchTransactions();
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
