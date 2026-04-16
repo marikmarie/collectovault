@@ -160,6 +160,56 @@ export default function Dashboard() {
     </button>
   ))}
 </div>
+
+{/* Recent Activity Section */}
+{recentTransactions.length > 0 && (
+  <div className="mx-4 mb-6">
+    <div className="flex items-center justify-between mb-4">
+      <h3 className="text-lg font-bold text-gray-900">Recent Activity</h3>
+      {recentTransactions.length > 5 && (
+        <button
+          onClick={() => navigate('/statement')}
+          className="text-sm font-semibold text-[#d81b60] hover:underline"
+        >
+          View All
+        </button>
+      )}
+    </div>
+    
+    <div className="space-y-3">
+      {recentTransactions.slice(0, 5).map((tx: any) => {
+        const isAdded = tx.cash_type === 'ADDED';
+        const isConfirmed = ['success', 'SUCCESSFUL'].includes(tx.status?.toUpperCase());
+        const displayDate = tx.cash_date || new Date(tx.updated_on || '').toLocaleDateString();
+        const amount = Number(tx.amount || 0);
+        
+        return (
+          <div key={tx.id} className="flex items-center gap-3 bg-white p-3 rounded-lg border border-gray-100 hover:shadow-sm transition">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isAdded ? 'bg-blue-100' : 'bg-green-100'}`}>
+              {isAdded ? (
+                <ArrowUpRight size={20} className="text-blue-600" />
+              ) : (
+                <ArrowDownLeft size={20} className="text-green-600" />
+              )}
+            </div>
+            
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-sm text-gray-900">{tx.cash_type || 'Transaction'}</p>
+              <p className="text-xs text-gray-500">{displayDate}</p>
+            </div>
+            
+            <div className="text-right">
+              <p className="font-bold text-sm text-gray-900">UGX {amount.toLocaleString()}</p>
+              <span className={`text-xs font-semibold ${isConfirmed ? 'text-green-600' : 'text-yellow-600'}`}>
+                {tx.status}
+              </span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+)}
       </main>
 
       {/* --- MODALS --- */}

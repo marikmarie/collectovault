@@ -171,22 +171,21 @@ function collectoHeaders(userToken?: string) {
         });
       }
 
-      const customer = await customerService.getCustomerByUsername(username);
-
-      return res.status(200).json({
-        success: true,
-        data: {
-          clientId: customer.clientId,
-          collectoId: customer.collectoId,
-          username: customer.username,
-        },
-      });
+      // fetch username from collecto endpoint to verify it exists and get clientId
+      const collectoResponse = await axios.post(
+        `${BASE_URL}/getByUsername`,
+        { username },
+        {
+          headers: collectoHeaders(),
+        }
+      );
     } catch (err: any) {
-      console.error("[Collecto /get-by-username] ERROR", err?.message);
-      return res.status(404).json({
-        success: false,
-        message: err.message || "Username not found",
-      });
+      if (err?.response?.status === 404) {
+        return res.status(404).json({
+          success: false,
+          message: "Username not found",
+        });
+      }
     }
   });
 export default router;
