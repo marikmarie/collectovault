@@ -152,7 +152,7 @@ export default function TopNav() {
 
               {isWebDropdownOpen && (
                 <div className="absolute right-0 top-12 w-60 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 animate-in fade-in duration-150">
-                  <div className="px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white rounded-t-2xl">
+                  <div className="px-5 py-4 border-b border-gray-100 bg-li-to-r from-gray-50 to-white rounded-t-2xl">
                     <p className="text-sm font-semibold text-gray-900">
                       {userName}
                     </p>
@@ -195,7 +195,7 @@ export default function TopNav() {
         </div>
       </header>
 
-      <header className="lg:hidden h-16 px-4 flex items-center justify-between bg-gradient-to-r from-white via-white to-gray-50 sticky top-0 z-40 shadow-sm">
+      <header className="lg:hidden h-16 px-4 flex items-center justify-between bg-linear-to-r from-white via-white to-gray-50 sticky top-0 z-40 shadow-sm">
         <img src={theme.logoUrl ?? "/logo.png"} className="h-10" />
         <div className="flex gap-4 items-center">
           <button
@@ -207,7 +207,7 @@ export default function TopNav() {
           </button>
           <button
             onClick={() => openDrawer("profile")}
-            className="w-9 h-9 rounded-full bg-gradient-to-br from-[#d81b60] to-pink-400 text-white font-bold text-sm shadow-sm hover:shadow-md transition-shadow"
+            className="w-9 h-9 rounded-full bg-linear-to-br from-[#d81b60] to-pink-400 text-white font-bold text-sm shadow-sm hover:shadow-md transition-shadow"
           >
             {initials}
           </button>
