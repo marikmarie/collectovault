@@ -161,14 +161,14 @@ export default function SetUsernameModal({
               type="button"
               onClick={onClose}
               disabled={isLoading}
-              className="flex-1 px-4 py-3 text-gray-700 font-semibold bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors disabled:opacity-50"
+              className="flex-1 px-4 py-3 text-gray-700 font-semibold bg-white border border-gray-200 hover:bg-gray-50 rounded-xl transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="flex-1 px-4 py-3 text-black font-semibold bg-gray-200 hover:bg-gray-400 rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              className="flex-1 px-4 py-3 text-white font-semibold bg-[#d81b60] hover:bg-[#c41555] rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {isLoading ? (
                 <>

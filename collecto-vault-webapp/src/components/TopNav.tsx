@@ -142,7 +142,7 @@ export default function TopNav() {
         className="w-8 h-8 rounded-full bg-[#fce4ec] border border-[#d81b60] flex items-center justify-center text-[#d81b60] text-xs font-bold cursor-pointer"
     
        >
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#d81b60] to-pink-400 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                <div className="w-8 h-8 rounded-full bg-linear-to-br from-[#d81b60] to-pink-400 flex items-center justify-center text-white text-xs font-bold shadow-sm">
                   {initials}
                 </div>
                 <span className="text-sm font-medium text-gray-700">
@@ -293,13 +293,13 @@ function SideDrawer({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
+    <div className="fixed inset-0 z-50 flex justify-end pointer-events-none">
       <div
-        className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/30 pointer-events-auto cursor-pointer"
         onClick={onClose}
       />
 
-      <div className="w-full max-w-md bg-white h-full p-6 overflow-y-auto animate-in slide-in-from-right duration-300">
+      <div className="w-full max-w-md bg-slate-50 h-full p-6 overflow-y-auto pointer-events-auto">
         <div className="flex justify-between items-center mb-6">
           <h2 className="font-bold text-lg capitalize text-gray-900">{view}</h2>
           <button
@@ -313,7 +313,7 @@ function SideDrawer({
         {view === "profile" && (
           <div className="space-y-6">
             <div className="flex flex-col items-center py-4">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#d81b60] to-pink-400 flex items-center justify-center text-xl font-bold text-white shadow-lg">
+              <div className="w-20 h-20 rounded-full bg-linear-to-br from-[#d81b60] to-pink-400 flex items-center justify-center text-xl font-bold text-white shadow-lg">
                 {initials || "U"}
               </div>
               <h3 className="font-semibold mt-4 text-lg text-gray-900">
@@ -322,7 +322,7 @@ function SideDrawer({
               <p className="text-sm text-gray-500 mt-1">{userEmail || "email@example.com"}</p>
             </div>
 
-            <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
+            <div className="bg-linear-to-r from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
               <p className="text-sm text-gray-700">
                 <strong>Account Status:</strong> Active
               </p>
@@ -334,7 +334,7 @@ function SideDrawer({
             <div className="space-y-3">
               <button
                 onClick={onOpenUsernameModal}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-[#d81b60]/10 to-pink-400/10 hover:from-[#d81b60]/20 hover:to-pink-400/20 rounded-lg transition-colors text-gray-700 font-medium border border-[#d81b60]/20"
+                className="w-full flex items-center gap-3 px-4 py-3 bg-linear-to-r from-[#d81b60]/10 to-pink-400/10 hover:from-[#d81b60]/20 hover:to-pink-400/20 rounded-lg transition-colors text-gray-700 font-medium border border-[#d81b60]/20"
               >
                 <Mail size={18} className="text-[#d81b60]" /> Set/Update Username
               </button>
@@ -356,7 +356,7 @@ function SideDrawer({
 
         {view === "help" && (
           <div className="space-y-4">
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl border border-blue-200">
+            <div className="bg-linear-to-br from-blue-50 to-blue-100 p-6 rounded-xl border border-blue-200">
               <h3 className="font-semibold text-gray-900 mb-2">
                 24/7 Support Available
               </h3>
