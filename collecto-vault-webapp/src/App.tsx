@@ -7,6 +7,7 @@ import Statement from './pages/customer/Statement'
 import Login from './pages/Login';
 import Services from './pages/customer/Services';
 import ProtectedRoute from './components/ProtectedRoute';
+import FeedbackModals from './components/FeedbackModals';
 
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { hasVaultOtpToken } from './api';
@@ -14,6 +15,7 @@ import { hasVaultOtpToken } from './api';
 
 export default function App() {
   const navigate = useNavigate();
+  const clientId = Number(localStorage.getItem('clientId')) || 0;
 
   // Periodically check token validity and force logout when expired
   useEffect(() => {
@@ -26,15 +28,20 @@ export default function App() {
   }, [navigate]);
 
   return (
-    <Routes>
-      <Route path="/" element={<Navigate to="/login" replace />} />
+    <>
+      <Routes>
+        <Route path="/" element={<Navigate to="/login" replace />} />
 
-      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      <Route path="/statement" element={<ProtectedRoute><Statement /></ProtectedRoute>} />
-      <Route path="/services" element={<ProtectedRoute><Services /></ProtectedRoute>} />
-      {/* <Route path="/admin/*" element={<Layout />} /> */}
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/statement" element={<ProtectedRoute><Statement /></ProtectedRoute>} />
+        <Route path="/services" element={<ProtectedRoute><Services /></ProtectedRoute>} />
+        {/* <Route path="/admin/*" element={<Layout />} /> */}
 
-      <Route path="/login" element={<Login />} />
-    </Routes>
+        <Route path="/login" element={<Login />} />
+      </Routes>
+      
+      {/* Global Feedback Modals */}
+      {clientId > 0 && <FeedbackModals customerId={clientId} />}
+    </>
   );
 }

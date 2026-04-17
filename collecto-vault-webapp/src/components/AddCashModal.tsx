@@ -489,7 +489,7 @@ export default function AddCashModal({ open, onClose,  clientAddCash }: Props) {
                 {paymentResult.status === "pending" && (
                   <button
                     onClick={() => queryTxStatus(paymentResult.transactionId)}
-                    className="flex-1 py-2 rounded-lg bg-blue-600 text-white font-bold hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="flex-1 py-2 rounded-lg bg-[#d81b60] text-white font-bold hover:bg-[#b30f4d] disabled:opacity-50 flex items-center justify-center gap-2"
                     disabled={queryLoading}
                   >
                     {queryLoading ? (

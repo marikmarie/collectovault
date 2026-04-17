@@ -311,25 +311,29 @@ export default function StatementWithPoints() {
     }
   }, [collectoId, clientId]);
 
+  // Load packages separately to avoid blocking invoice/transaction fetching
+  useEffect(() => {
+    fetchActivePackages();
+  }, []);
+
+  // Load statement data (invoices, transactions, customer) in parallel
   useEffect(() => {
     (async () => {
       setLoading(true);
       try {
-        await fetchActivePackages();
-        await fetchCustomerAndRelated();
-        
         // Check if we're navigating from invoice creation with a specific invoiceId
         const invoiceIdFromState = (location.state as any)?.invoiceId;
         
-        if (invoiceIdFromState) {
-          // Fetch the specific invoice first
-          await fetchInvoices(invoiceIdFromState);
-        } else {
-          // Fetch all invoices as usual
-          await fetchInvoices();
-        }
-        
-        await fetchTransactions();
+        // Run customer data, invoices, and transactions in parallel
+        const invoicePromise = invoiceIdFromState 
+          ? fetchInvoices(invoiceIdFromState)
+          : fetchInvoices();
+
+        await Promise.all([
+          fetchCustomerAndRelated(),
+          invoicePromise,
+          fetchTransactions(),
+        ]);
       } catch (err) {
         console.error("Error in initial load:", err);
       } finally {
