@@ -249,13 +249,13 @@ export default function BuyPointsModal({
       return;
     }
 
-    // Start polling every 3 seconds
+    // Start polling every 10 seconds
     if (!pollIntervalRef.current) {
       console.log("BuyPoints: starting auto-poll for tx", queryId);
       pollIntervalRef.current = setInterval(async () => {
         console.log("BuyPoints: auto-poll tick for tx", queryId);
         await queryTxStatus(queryId);
-      }, 3000);
+      }, 10000);
     }
 
     return () => {
@@ -453,17 +453,20 @@ export default function BuyPointsModal({
       ) {
         setTxStatus("success");
         setStep("success");
+        setQueryError(null);
 
         if (selectedPackage) {
           onSuccess?.({ addedPoints: selectedPackage.points });
         }
       } else if (["pending", "processing", "in_progress"].includes(status)) {
         setTxStatus("pending");
+        setQueryError(null);
         // UI remains on the "confirm" step waiting for user to finish on phone
       } else if (status === "failed" || status === "false") {
         setTxStatus("failed");
         setStep("failure");
         setError(message || "Transaction was declined or failed.");
+        setQueryError(null);
       } else {
         console.warn("⚠️ BuyPoints Unknown status:", status);
         setQueryError(

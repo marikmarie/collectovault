@@ -99,7 +99,7 @@ export default function SetUsernameModal({
       <div className="relative bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 animate-in zoom-in-95 duration-200">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-[#d81b60] to-pink-400 rounded-full flex items-center justify-center text-white">
+            <div className="w-10 h-10 bg-linear-to-br from-[#d81b60] to-pink-400 rounded-full flex items-center justify-center text-white shadow-md">
               <AtSign size={20} />
             </div>
             <h2 className="text-xl font-bold text-gray-900">Create Username</h2>

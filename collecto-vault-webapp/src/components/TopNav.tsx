@@ -142,7 +142,7 @@ export default function TopNav() {
         className="w-8 h-8 rounded-full bg-[#fce4ec] border border-[#d81b60] flex items-center justify-center text-[#d81b60] text-xs font-bold cursor-pointer"
     
        >
-                <div className="w-8 h-8 rounded-full bg-linear-to-br from-[#d81b60] to-pink-400 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#d81b60] to-pink-400 flex items-center justify-center text-white text-xs font-bold shadow-sm">
                   {initials}
                 </div>
                 <span className="text-sm font-medium text-gray-700">
@@ -195,7 +195,7 @@ export default function TopNav() {
         </div>
       </header>
 
-      <header className="lg:hidden h-16 px-4 flex items-center justify-between bg-linear-to-r from-white via-white to-gray-50 sticky top-0 z-40 shadow-sm">
+      <header className="lg:hidden h-16 px-4 flex items-center justify-between bg-gradient-to-r from-white via-white to-gray-50 sticky top-0 z-40 shadow-sm">
         <img src={theme.logoUrl ?? "/logo.png"} className="h-10" />
         <div className="flex gap-4 items-center">
           <button
@@ -207,7 +207,7 @@ export default function TopNav() {
           </button>
           <button
             onClick={() => openDrawer("profile")}
-            className="w-9 h-9 rounded-full bg-linear-to-br from-[#d81b60] to-pink-400 text-white font-bold text-sm shadow-sm hover:shadow-md transition-shadow"
+            className="w-9 h-9 rounded-full bg-gradient-to-br from-[#d81b60] to-pink-400 text-white font-bold text-sm shadow-sm hover:shadow-md transition-shadow"
           >
             {initials}
           </button>
@@ -299,7 +299,7 @@ function SideDrawer({
         onClick={onClose}
       />
 
-      <div className="w-full max-w-md bg-slate-50 h-full p-6 overflow-y-auto pointer-events-auto">
+      <div className="w-full max-w-md bg-gradient-to-b from-white to-gray-50 h-full p-6 overflow-y-auto pointer-events-auto shadow-2xl">
         <div className="flex justify-between items-center mb-6">
           <h2 className="font-bold text-lg capitalize text-gray-900">{view}</h2>
           <button
@@ -313,7 +313,7 @@ function SideDrawer({
         {view === "profile" && (
           <div className="space-y-6">
             <div className="flex flex-col items-center py-4">
-              <div className="w-20 h-20 rounded-full bg-linear-to-br from-[#d81b60] to-pink-400 flex items-center justify-center text-xl font-bold text-white shadow-lg">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#d81b60] to-pink-400 flex items-center justify-center text-xl font-bold text-white shadow-lg">
                 {initials || "U"}
               </div>
               <h3 className="font-semibold mt-4 text-lg text-gray-900">
@@ -322,31 +322,28 @@ function SideDrawer({
               <p className="text-sm text-gray-500 mt-1">{userEmail || "email@example.com"}</p>
             </div>
 
-            <div className="bg-linear-to-r from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
-              <p className="text-sm text-gray-700">
-                <strong>Account Status:</strong> Active
+            <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200 shadow-sm">
+              <p className="text-sm text-gray-800 font-medium">
+                <span className="text-[#d81b60]">✓</span> <strong>Account Status:</strong> Active
               </p>
-              <p className="text-sm text-gray-700 mt-1">
+              <p className="text-sm text-gray-700 mt-2">
                 <strong>Member Since:</strong> 2024
               </p>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
               <button
                 onClick={onOpenUsernameModal}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-linear-to-r from-[#d81b60]/10 to-pink-400/10 hover:from-[#d81b60]/20 hover:to-pink-400/20 rounded-lg transition-colors text-gray-700 font-medium border border-[#d81b60]/20"
+                className="w-full flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-[#d81b60] to-pink-500 hover:from-[#c41555] hover:to-pink-600 rounded-lg transition-all text-white font-semibold shadow-md hover:shadow-lg transform hover:scale-105"
               >
-                <Mail size={18} className="text-[#d81b60]" /> Set/Update Username
-              </button>
-              <button className="w-full flex items-center gap-3 px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors text-gray-700 font-medium">
-                <Key size={18} className="text-[#d81b60]" /> Change Password
+                <Mail size={18} /> Set/Update Username
               </button>
             </div>
 
-            <div className="border-t pt-4">
+            <div className="border-t border-gray-200 pt-4 mt-4">
               <button
                 onClick={handleSignOut}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-red-50 hover:bg-red-100 rounded-lg transition-colors text-red-600 font-medium"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-500 hover:bg-red-600 rounded-lg transition-all text-white font-semibold shadow-md hover:shadow-lg"
               >
                 <LogOut size={18} /> Sign Out
               </button>
@@ -356,11 +353,11 @@ function SideDrawer({
 
         {view === "help" && (
           <div className="space-y-4">
-            <div className="bg-linear-to-br from-blue-50 to-blue-100 p-6 rounded-xl border border-blue-200">
-              <h3 className="font-semibold text-gray-900 mb-2">
-                24/7 Support Available
+            <div className="bg-gradient-to-br from-emerald-50 to-teal-100 p-6 rounded-xl border border-emerald-200 shadow-sm">
+              <h3 className="font-bold text-gray-900 mb-2 text-lg">
+                💬 24/7 Support Available
               </h3>
-              <p className="text-sm text-gray-700">
+              <p className="text-sm text-gray-700 leading-relaxed">
                 Have questions? Our support team is here to help you anytime.
               </p>
             </div>
@@ -369,7 +366,7 @@ function SideDrawer({
                 triggerFeedback('general');
                 onClose();
               }}
-              className="w-full flex items-center gap-3 px-4 py-3 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors text-blue-600 font-medium"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 rounded-lg transition-all text-white font-semibold shadow-md hover:shadow-lg"
             >
               <Mail size={18} /> Send Feedback
             </button>
@@ -378,7 +375,7 @@ function SideDrawer({
                 openChat();
                 onClose();
               }}
-              className="w-full flex items-center gap-3 px-4 py-3 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors text-blue-600 font-medium"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-lg transition-all text-white font-semibold shadow-md hover:shadow-lg"
             >
               <MessageCircle size={18} /> Live Chat Support
             </button>
