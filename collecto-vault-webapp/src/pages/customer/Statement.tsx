@@ -88,6 +88,7 @@ export default function StatementWithPoints() {
   const [pointsBalance, setPointsBalance] = useState<number>(0);
   const [tier, setTier] = useState<string | null>(null);
   const [tierProgress, setTierProgress] = useState<number>(0);
+  const [clientAddCash, setClientAddCash] = useState<any>(null);
 
   const [ugxPerPoint, setUgxPerPoint] = useState<number>(1);
 
@@ -279,6 +280,8 @@ export default function StatementWithPoints() {
       const customerRes = await customerService.getCustomerData(collectoId || "", customerId || "");
       const loyaltySettings = customerRes.data?.data?.loyaltySettings ?? {};
       const cashDetails = loyaltySettings?.client_cash_details ?? {};
+      const clientAddCashSettings = loyaltySettings?.client_add_cash;
+      setClientAddCash(clientAddCashSettings || null);
       const cashTransactions = Array.isArray(cashDetails?.transactions) ? cashDetails.transactions : [];
       
       setTransactions(cashTransactions);
@@ -507,7 +510,7 @@ export default function StatementWithPoints() {
   };
 
 
-  const queryTxStatus = async (txIdParam?: string | null, cashType?: string) => {
+  const queryTxStatus = async (txIdParam?: string | null) => {
     const finalTxId = txIdParam ?? paymentResult?.transactionId;
 
     if (!finalTxId) {
@@ -519,18 +522,19 @@ export default function StatementWithPoints() {
     setQueryError(null);
 
     try {
-      const payload: any = {
+      const requestBody: any = {
         vaultOTPToken,
         collectoId,
         clientId,
         transactionId: String(finalTxId),
       };
 
-      if (cashType === "ADDED") {
-        payload.cash_type = "ADDED";
+      // If transaction cash_type is ADDED, include clientAddCash
+      if (selectedTransaction?.cash_type === "ADDED" && clientAddCash) {
+        requestBody.clientAddCash = clientAddCash;
       }
 
-      const res = await api.post("/requestToPayStatus", payload);
+      const res = await api.post("/requestToPayStatus", requestBody);
 
       const data = res?.data ?? {};
 
@@ -1290,7 +1294,7 @@ export default function StatementWithPoints() {
             {/* Action Buttons - 50/50 */}
             <div className="px-4 py-3 border-t border-gray-100 flex items-center gap-2">
               <button
-                onClick={() => queryTxStatus(selectedTransaction.reference, selectedTransaction.cash_type)}
+                onClick={() => queryTxStatus(selectedTransaction.reference)}
                 disabled={queryLoading}
                 className="flex-1 bg-white border border-gray-200 text-gray-700 font-bold py-2 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 text-xs"
               >
