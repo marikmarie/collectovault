@@ -1212,6 +1212,16 @@ export default function StatementWithPoints() {
                 </p>
               </div>
 
+              {/* Amount */}
+              <div className="bg-linear-to-r from-pink-50 to-orange-50 rounded-lg p-3 border border-pink-100">
+                <p className="text-[10px] text-gray-600 font-bold uppercase mb-0.5 tracking-wider">
+                  Amount
+                </p>
+                <p className="text-base font-extrabold text-[#D81B60]">
+                  UGX {Number(selectedTransaction.amount || 0).toLocaleString()}
+                </p>
+              </div>
+
               {/* Status */}
               <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
                 <p className="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-wider">
@@ -1227,16 +1237,6 @@ export default function StatementWithPoints() {
                     {selectedTransaction.status || 'PENDING'}
                   </p>
                 </div>
-              </div>
-
-              {/* Amount */}
-              <div className="bg-gradient-to-r from-pink-50 to-orange-50 rounded-lg p-3 border border-pink-100">
-                <p className="text-[10px] text-gray-600 font-bold uppercase mb-0.5 tracking-wider">
-                  Amount
-                </p>
-                <p className="text-base font-extrabold text-[#D81B60]">
-                  UGX {Number(selectedTransaction.amount || 0).toLocaleString()}
-                </p>
               </div>
 
               {/* Reference with Query Button */}
