@@ -789,11 +789,7 @@ export default function StatementWithPoints() {
               );
             })
           ) : (
-            transactions
-              .filter((tx: any) =>
-                !tx.status || ["success", "pending"].includes(tx.status.toLowerCase())
-              )
-              .map((tx: any) => {
+            transactions.map((tx: any) => {
                 const statusColor =
                   tx.status === "SUCCESSFUL" || tx.status === "success"
                     ? "text-green-600"
@@ -836,7 +832,7 @@ export default function StatementWithPoints() {
                     <div className="text-right flex items-center gap-4">
                       <div>
                         <p className="font-extrabold text-lg text-gray-900">
-                          UGX {Number(tx.amount || 0).toLocaleString()}
+                          UGX {Number(String(tx.amount || 0).replace(/,/g, '')).toLocaleString()}
                         </p>
                       </div>
                     </div>
@@ -1211,7 +1207,7 @@ export default function StatementWithPoints() {
                       Amount
                     </td>
                     <td className="py-2.5 text-right font-bold text-[#D81B60] text-base">
-                      UGX {Number(selectedTransaction.amount || 0).toLocaleString()}
+                      UGX {Number(String(selectedTransaction.amount || 0).replace(/,/g, '')).toLocaleString()}
                     </td>
                   </tr>
                   <tr className="border-b border-gray-100">
