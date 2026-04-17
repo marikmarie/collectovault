@@ -507,7 +507,7 @@ export default function StatementWithPoints() {
   };
 
 
-  const queryTxStatus = async (txIdParam?: string | null) => {
+  const queryTxStatus = async (txIdParam?: string | null, cashType?: string) => {
     const finalTxId = txIdParam ?? paymentResult?.transactionId;
 
     if (!finalTxId) {
@@ -519,12 +519,18 @@ export default function StatementWithPoints() {
     setQueryError(null);
 
     try {
-      const res = await api.post("/requestToPayStatus", {
+      const payload: any = {
         vaultOTPToken,
         collectoId,
         clientId,
         transactionId: String(finalTxId),
-      });
+      };
+
+      if (cashType === "ADDED") {
+        payload.cash_type = "ADDED";
+      }
+
+      const res = await api.post("/requestToPayStatus", payload);
 
       const data = res?.data ?? {};
 
@@ -1284,7 +1290,7 @@ export default function StatementWithPoints() {
             {/* Action Buttons - 50/50 */}
             <div className="px-4 py-3 border-t border-gray-100 flex items-center gap-2">
               <button
-                onClick={() => queryTxStatus(selectedTransaction.reference)}
+                onClick={() => queryTxStatus(selectedTransaction.reference, selectedTransaction.cash_type)}
                 disabled={queryLoading}
                 className="flex-1 bg-white border border-gray-200 text-gray-700 font-bold py-2 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 text-xs"
               >
