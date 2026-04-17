@@ -744,7 +744,7 @@ export default function BuyPointsModal({
           </div>
         )}
 
-        <div className="mx-auto w-14 h-14 rounded-full bg-linear-to-br from-yellow-100 via-yellow-50 to-white flex items-center justify-center mb-2 shadow-sm text-2xl text-[#ffa727]">
+        <div className="mx-auto w-14 h-14 rounded-full bg-gradient-to-br from-yellow-100 via-yellow-50 to-white flex items-center justify-center mb-2 shadow-sm text-2xl text-[#ffa727]">
           ⚠️
         </div>
 

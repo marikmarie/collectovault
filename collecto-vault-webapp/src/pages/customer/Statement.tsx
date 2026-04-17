@@ -1227,7 +1227,7 @@ export default function StatementWithPoints() {
                 </div>
               </div>
 
-              <div className="bg-linear-to-r from-pink-50 to-orange-50 rounded-xl p-4 border border-pink-100">
+              <div className="bg-gradient-to-r from-pink-50 to-orange-50 rounded-xl p-4 border border-pink-100">
                 <p className="text-xs text-gray-600 font-bold uppercase mb-1 tracking-wider">
                   Amount
                 </p>

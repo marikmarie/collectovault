@@ -142,7 +142,7 @@ export default function TopNav() {
         className="w-8 h-8 rounded-full bg-[#fce4ec] border border-[#d81b60] flex items-center justify-center text-[#d81b60] text-xs font-bold cursor-pointer"
     
        >
-                <div className="w-8 h-8 rounded-full bg-linear-to-br from-[#d81b60] to-pink-400 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#d81b60] to-pink-400 flex items-center justify-center text-white text-xs font-bold shadow-sm">
                   {initials}
                 </div>
                 <span className="text-sm font-medium text-gray-700">
@@ -152,7 +152,7 @@ export default function TopNav() {
 
               {isWebDropdownOpen && (
                 <div className="absolute right-0 top-12 w-60 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 animate-in fade-in duration-150">
-                  <div className="px-5 py-4 border-b border-gray-100 bg-linear-to-r from-gray-50 to-white rounded-t-2xl">
+                  <div className="px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white rounded-t-2xl">
                     <p className="text-sm font-semibold text-gray-900">
                       {userName}
                     </p>
@@ -195,7 +195,7 @@ export default function TopNav() {
         </div>
       </header>
 
-      <header className="lg:hidden h-16 px-4 flex items-center justify-between bg-linear-to-r from-white via-white to-gray-50 sticky top-0 z-40 shadow-sm">
+      <header className="lg:hidden h-16 px-4 flex items-center justify-between bg-gradient-to-r from-white via-white to-gray-50 sticky top-0 z-40 shadow-sm">
         <img src={theme.logoUrl ?? "/logo.png"} className="h-10" />
         <div className="flex gap-4 items-center">
           <button
@@ -207,7 +207,7 @@ export default function TopNav() {
           </button>
           <button
             onClick={() => openDrawer("profile")}
-            className="w-9 h-9 rounded-full bg-linear-to-br from-[#d81b60] to-pink-400 text-white font-bold text-sm shadow-sm hover:shadow-md transition-shadow"
+            className="w-9 h-9 rounded-full bg-gradient-to-br from-[#d81b60] to-pink-400 text-white font-bold text-sm shadow-sm hover:shadow-md transition-shadow"
           >
             {initials}
           </button>
@@ -313,7 +313,7 @@ function SideDrawer({
         {view === "profile" && (
           <div className="space-y-6">
             <div className="flex flex-col items-center py-4">
-              <div className="w-20 h-20 rounded-full bg-linear-to-br from-[#d81b60] to-pink-400 flex items-center justify-center text-xl font-bold text-white shadow-lg">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#d81b60] to-pink-400 flex items-center justify-center text-xl font-bold text-white shadow-lg">
                 {initials || "U"}
               </div>
               <h3 className="font-semibold mt-4 text-lg text-gray-900">
@@ -334,7 +334,7 @@ function SideDrawer({
             <div className="space-y-3">
               <button
                 onClick={onOpenUsernameModal}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-linear-to-r from-[#d81b60]/10 to-pink-400/10 hover:from-[#d81b60]/20 hover:to-pink-400/20 rounded-lg transition-colors text-gray-700 font-medium border border-[#d81b60]/20"
+                className="w-full flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-[#d81b60]/10 to-pink-400/10 hover:from-[#d81b60]/20 hover:to-pink-400/20 rounded-lg transition-colors text-gray-700 font-medium border border-[#d81b60]/20"
               >
                 <Mail size={18} className="text-[#d81b60]" /> Set/Update Username
               </button>
@@ -356,7 +356,7 @@ function SideDrawer({
 
         {view === "help" && (
           <div className="space-y-4">
-            <div className="bg-linear-to-br from-blue-50 to-blue-100 p-6 rounded-xl border border-blue-200">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl border border-blue-200">
               <h3 className="font-semibold text-gray-900 mb-2">
                 24/7 Support Available
               </h3>
