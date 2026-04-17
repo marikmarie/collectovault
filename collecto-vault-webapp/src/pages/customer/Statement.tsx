@@ -1188,91 +1188,87 @@ export default function StatementWithPoints() {
       {/* Transaction Detail Modal */}
       {selectedTransaction && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 border border-gray-100 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h4 className="text-2xl font-extrabold text-gray-900">
-                Transaction Details
+          <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-5 border border-gray-100">
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-lg font-extrabold text-gray-900">
+                Transaction
               </h4>
               <button
                 onClick={() => setSelectedTransaction(null)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="text-gray-400 hover:text-gray-600 transition-colors p-1"
               >
-                <X className="w-6 h-6" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="space-y-5">
-              <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                <p className="text-xs text-gray-600 font-bold uppercase mb-1 tracking-wider">
-                  Transaction ID
+            <div className="space-y-3">
+              {/* Transaction ID */}
+              <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
+                <p className="text-[10px] text-gray-500 font-bold uppercase mb-0.5 tracking-wider">
+                  ID
                 </p>
-                <p className="text-lg font-extrabold text-gray-900">
-                  {selectedTransaction.transactionId}
+                <p className="text-sm font-bold text-gray-900">
+                  {selectedTransaction.transactionId || 'N/A'}
                 </p>
               </div>
 
-              <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                <p className="text-xs text-gray-600 font-bold uppercase mb-1 tracking-wider">
+              {/* Status */}
+              <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
+                <p className="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-wider">
                   Status
                 </p>
                 <div className="flex items-center gap-2">
                   <div
-                    className={`w-3 h-3 rounded-full ${selectedTransaction.paymentStatus === "SUCCESS" ? "bg-green-500" : selectedTransaction.paymentStatus === "PENDING" ? "bg-yellow-500" : "bg-red-500"}`}
+                    className={`w-2.5 h-2.5 rounded-full ${selectedTransaction.status === "SUCCESSFUL" || selectedTransaction.status === "success" ? "bg-green-500" : selectedTransaction.status === "PENDING" || selectedTransaction.status === "pending" ? "bg-yellow-500" : "bg-red-500"}`}
                   />
                   <p
-                    className={`font-bold text-base ${selectedTransaction.paymentStatus === "SUCCESS" ? "text-green-600" : selectedTransaction.paymentStatus === "PENDING" ? "text-yellow-600" : "text-red-600"}`}
+                    className={`text-sm font-bold ${selectedTransaction.status === "SUCCESSFUL" || selectedTransaction.status === "success" ? "text-green-600" : selectedTransaction.status === "PENDING" || selectedTransaction.status === "pending" ? "text-yellow-600" : "text-red-600"}`}
                   >
-                    {selectedTransaction.paymentStatus}
+                    {selectedTransaction.status || 'PENDING'}
                   </p>
                 </div>
               </div>
 
-              <div className="bg-gradient-to-r from-pink-50 to-orange-50 rounded-xl p-4 border border-pink-100">
-                <p className="text-xs text-gray-600 font-bold uppercase mb-1 tracking-wider">
+              {/* Amount */}
+              <div className="bg-gradient-to-r from-pink-50 to-orange-50 rounded-lg p-3 border border-pink-100">
+                <p className="text-[10px] text-gray-600 font-bold uppercase mb-0.5 tracking-wider">
                   Amount
                 </p>
-                <p className="text-2xl font-extrabold text-[#D81B60]">
-                  UGX {Number(selectedTransaction.amount).toLocaleString()}
+                <p className="text-base font-extrabold text-[#D81B60]">
+                  UGX {Number(selectedTransaction.amount || 0).toLocaleString()}
                 </p>
               </div>
 
-              <div className="bg-purple-50 rounded-xl p-4 border border-purple-100">
-                <p className="text-xs text-gray-600 font-bold uppercase mb-1 tracking-wider">
-                  Points Earned
-                </p>
-                <p className="text-2xl font-extrabold text-purple-600">
-                  {selectedTransaction.points} pts
-                </p>
+              {/* Reference with Query Button */}
+              <div className="flex gap-2 items-end">
+                <div className="flex-1 bg-gray-50 rounded-lg p-3 border border-gray-100">
+                  <p className="text-[10px] text-gray-500 font-bold uppercase mb-0.5 tracking-wider">
+                    Reference
+                  </p>
+                  <p className="text-sm font-bold text-gray-900">
+                    {selectedTransaction.reference || 'N/A'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => queryTxStatus(selectedTransaction.transactionId)}
+                  disabled={queryLoading}
+                  className="bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold py-2 px-3 rounded-lg transition-colors disabled:opacity-50 text-xs border border-blue-100 h-fit"
+                >
+                  {queryLoading ? "..." : "Query"}
+                </button>
               </div>
 
-              <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                <p className="text-xs text-gray-600 font-bold uppercase mb-1 tracking-wider">
-                  Payment Method
-                </p>
-                <p className="text-base font-bold text-gray-900">
-                  {selectedTransaction.paymentMethod}
-                </p>
-              </div>
-
-              <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                <p className="text-xs text-gray-600 font-bold uppercase mb-1 tracking-wider">
-                  Reference
-                </p>
-                <p className="text-base font-bold text-gray-900">
-                  {selectedTransaction.reference}
-                </p>
-              </div>
-
-              <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                <p className="text-xs text-gray-600 font-bold uppercase mb-1 tracking-wider">
+              {/* Date */}
+              <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
+                <p className="text-[10px] text-gray-500 font-bold uppercase mb-0.5 tracking-wider">
                   Date
                 </p>
-                <p className="text-base font-bold text-gray-900">
-                  {new Date(selectedTransaction.createdAt).toLocaleDateString(
+                <p className="text-sm font-bold text-gray-900">
+                  {new Date(selectedTransaction.createdAt || selectedTransaction.cash_date).toLocaleDateString(
                     "en-US",
                     {
                       year: "numeric",
-                      month: "long",
+                      month: "short",
                       day: "numeric",
                       hour: "2-digit",
                       minute: "2-digit",
@@ -1281,45 +1277,14 @@ export default function StatementWithPoints() {
                 </p>
               </div>
 
-              {selectedTransaction.confirmedAt && (
-                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                  <p className="text-xs text-gray-600 font-bold uppercase mb-1 tracking-wider">
-                    Confirmed
-                  </p>
-                  <p className="text-base font-bold text-gray-900">
-                    {new Date(
-                      selectedTransaction.confirmedAt,
-                    ).toLocaleDateString("en-US", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <div className="mt-8 pt-4 border-t border-gray-100 space-y-3">
-              <button
-                onClick={() => queryTxStatus(selectedTransaction.transactionId)}
-                className="w-full bg-white border text-gray-800 font-bold py-3 rounded-xl hover:bg-gray-50 transition-colors"
-              >
-                {queryLoading ? "Querying..." : "Query status"}
-              </button>
-
-              <button
-                onClick={() => setSelectedTransaction(null)}
-                className="w-full bg-[#D81B60] text-white font-bold py-3 rounded-xl hover:bg-[#c01a5e] transition-colors"
-              >
-                Close
-              </button>
+              {/* Error Message */}
               {queryError && (
-                <p className="text-xs text-red-600">{queryError}</p>
+                <p className="text-xs text-red-600 bg-red-50 p-2 rounded-lg border border-red-100">{queryError}</p>
               )}
+
+              {/* Last Query Status */}
               {lastQueriedStatus && (
-                <p className="text-xs">
+                <p className="text-xs bg-blue-50 p-2 rounded-lg border border-blue-100">
                   Last check:{" "}
                   <span
                     className={
@@ -1334,6 +1299,24 @@ export default function StatementWithPoints() {
                   </span>
                 </p>
               )}
+            </div>
+
+            {/* Action Buttons - 50/50 */}
+            <div className="mt-5 pt-4 border-t border-gray-100 flex items-center gap-2">
+              <button
+                onClick={() => queryTxStatus(selectedTransaction.transactionId)}
+                disabled={queryLoading}
+                className="flex-1 bg-white border border-gray-200 text-gray-700 font-bold py-2.5 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 text-sm"
+              >
+                {queryLoading ? "⏳ Checking..." : "🔄 Query"}
+              </button>
+
+              <button
+                onClick={() => setSelectedTransaction(null)}
+                className="flex-1 bg-[#D81B60] text-white font-bold py-2.5 rounded-lg hover:bg-[#c01a5e] transition-colors text-sm"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
