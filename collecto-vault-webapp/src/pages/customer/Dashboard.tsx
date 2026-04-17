@@ -180,7 +180,7 @@ export default function Dashboard() {
         const isAdded = tx.cash_type === 'ADDED';
         const isConfirmed = ['success', 'SUCCESSFUL'].includes(tx.status?.toUpperCase());
         const displayDate = tx.cash_date || new Date(tx.updated_on || '').toLocaleDateString();
-        const amount = Number(tx.amount || 0);
+        const amount = Number(String(tx.amount || 0).replace(/,/g, ''));
         
         return (
           <div key={tx.id} className="flex items-center gap-3 bg-white p-3 rounded-lg border border-gray-100 hover:shadow-sm transition">
