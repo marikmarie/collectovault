@@ -1188,136 +1188,132 @@ export default function StatementWithPoints() {
       {/* Transaction Detail Modal */}
       {selectedTransaction && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-5 border border-gray-100">
-            <div className="flex items-center justify-between mb-4">
-              <h4 className="text-lg font-extrabold text-gray-900">
-                Transaction
-              </h4>
+          <div className="bg-white w-full max-w-md rounded-lg shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="p-4 pb-2 flex justify-between items-start border-b border-gray-100">
+              <h2 className="text-2xl font-bold text-gray-800 tracking-tight">
+                {selectedTransaction.reference || 'Transaction'}
+              </h2>
               <button
                 onClick={() => setSelectedTransaction(null)}
-                className="text-gray-400 hover:text-gray-600 transition-colors p-1"
+                className="text-gray-400 hover:text-gray-600 transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X size={24} />
               </button>
             </div>
 
-            <div className="space-y-3">
-              {/* Transaction ID */}
-              <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
-                <p className="text-[10px] text-gray-500 font-bold uppercase mb-0.5 tracking-wider">
-                  ID
-                </p>
-                <p className="text-sm font-bold text-gray-900">
-                  {selectedTransaction.transactionId || 'N/A'}
-                </p>
-              </div>
-
-              {/* Amount */}
-              <div className="bg-linear-to-r from-pink-50 to-orange-50 rounded-lg p-3 border border-pink-100">
-                <p className="text-[10px] text-gray-600 font-bold uppercase mb-0.5 tracking-wider">
-                  Amount
-                </p>
-                <p className="text-base font-extrabold text-[#D81B60]">
-                  UGX {Number(selectedTransaction.amount || 0).toLocaleString()}
-                </p>
-              </div>
-
-              {/* Status */}
-              <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
-                <p className="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-wider">
-                  Status
-                </p>
-                <div className="flex items-center gap-2">
-                  <div
-                    className={`w-2.5 h-2.5 rounded-full ${selectedTransaction.status === "SUCCESSFUL" || selectedTransaction.status === "success" ? "bg-green-500" : selectedTransaction.status === "PENDING" || selectedTransaction.status === "pending" ? "bg-yellow-500" : "bg-red-500"}`}
-                  />
-                  <p
-                    className={`text-sm font-bold ${selectedTransaction.status === "SUCCESSFUL" || selectedTransaction.status === "success" ? "text-green-600" : selectedTransaction.status === "PENDING" || selectedTransaction.status === "pending" ? "text-yellow-600" : "text-red-600"}`}
-                  >
-                    {selectedTransaction.status || 'PENDING'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Reference with Query Button */}
-              <div className="flex gap-2 items-end">
-                <div className="flex-1 bg-gray-50 rounded-lg p-3 border border-gray-100">
-                  <p className="text-[10px] text-gray-500 font-bold uppercase mb-0.5 tracking-wider">
-                    Reference
-                  </p>
-                  <p className="text-sm font-bold text-gray-900">
-                    {selectedTransaction.reference || 'N/A'}
-                  </p>
-                </div>
-                <button
-                  onClick={() => queryTxStatus(selectedTransaction.transactionId)}
-                  disabled={queryLoading}
-                  className="bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold py-2 px-3 rounded-lg transition-colors disabled:opacity-50 text-xs border border-blue-100 h-fit"
-                >
-                  {queryLoading ? "..." : "Query"}
-                </button>
-              </div>
-
-              {/* Date */}
-              <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
-                <p className="text-[10px] text-gray-500 font-bold uppercase mb-0.5 tracking-wider">
-                  Date
-                </p>
-                <p className="text-sm font-bold text-gray-900">
-                  {new Date(selectedTransaction.createdAt || selectedTransaction.cash_date).toLocaleDateString(
-                    "en-US",
-                    {
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    },
+            {/* Content */}
+            <div className="p-4">
+              <table className="w-full">
+                <tbody className="text-gray-700 text-sm">
+                  <tr className="border-b border-gray-100">
+                    <td className="py-2.5 font-bold text-gray-800 w-2/5 text-xs tracking-wider">
+                      Amount
+                    </td>
+                    <td className="py-2.5 text-right font-bold text-[#D81B60] text-base">
+                      UGX {Number(selectedTransaction.amount || 0).toLocaleString()}
+                    </td>
+                  </tr>
+                  <tr className="border-b border-gray-100">
+                    <td className="py-2.5 font-bold text-gray-800 text-xs tracking-wider">
+                      Status
+                    </td>
+                    <td className="py-2.5 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <div
+                          className={`w-2 h-2 rounded-full ${
+                            selectedTransaction.status === "SUCCESSFUL" || selectedTransaction.status === "success"
+                              ? "bg-green-500"
+                              : selectedTransaction.status === "PENDING" || selectedTransaction.status === "pending"
+                                ? "bg-yellow-500"
+                                : "bg-red-500"
+                          }`}
+                        />
+                        <span
+                          className={`font-bold text-xs ${
+                            selectedTransaction.status === "SUCCESSFUL" || selectedTransaction.status === "success"
+                              ? "text-green-600"
+                              : selectedTransaction.status === "PENDING" || selectedTransaction.status === "pending"
+                                ? "text-yellow-600"
+                                : "text-red-600"
+                          }`}
+                        >
+                          {selectedTransaction.status || 'PENDING'}
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr className="border-b border-gray-100">
+                    <td className="py-2.5 font-bold text-gray-800 text-xs tracking-wider">
+                      Type
+                    </td>
+                    <td className="py-2.5 text-right text-xs">
+                      {selectedTransaction.cash_type || 'N/A'}
+                    </td>
+                  </tr>
+                  <tr className="border-b border-gray-100">
+                    <td className="py-2.5 font-bold text-gray-800 text-xs tracking-wider">
+                      Date
+                    </td>
+                    <td className="py-2.5 text-right text-xs">
+                      {selectedTransaction.cash_date || new Date(selectedTransaction.updated_on || selectedTransaction.createdAt).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </td>
+                  </tr>
+                  <tr className="border-b border-gray-100">
+                    <td className="py-2.5 font-bold text-gray-800 text-xs tracking-wider">
+                      User Type
+                    </td>
+                    <td className="py-2.5 text-right text-xs">
+                      {selectedTransaction.user_type || 'CLIENT'}
+                    </td>
+                  </tr>
+                  {selectedTransaction.shared_by_name && (
+                    <tr>
+                      <td className="py-2.5 font-bold text-gray-800 text-xs tracking-wider">
+                        Shared By
+                      </td>
+                      <td className="py-2.5 text-right text-xs">
+                        {selectedTransaction.shared_by_name}
+                      </td>
+                    </tr>
                   )}
-                </p>
-              </div>
-
-              {/* Error Message */}
-              {queryError && (
-                <p className="text-xs text-red-600 bg-red-50 p-2 rounded-lg border border-red-100">{queryError}</p>
-              )}
-
-              {/* Last Query Status */}
-              {lastQueriedStatus && (
-                <p className="text-xs bg-blue-50 p-2 rounded-lg border border-blue-100">
-                  Last check:{" "}
-                  <span
-                    className={
-                      lastQueriedStatus === "success"
-                        ? "text-green-600 font-bold"
-                        : lastQueriedStatus === "pending"
-                          ? "text-yellow-600 font-bold"
-                          : "text-red-600 font-bold"
-                    }
-                  >
-                    {lastQueriedStatus.toUpperCase()}
-                  </span>
-                </p>
-              )}
+                </tbody>
+              </table>
             </div>
 
             {/* Action Buttons - 50/50 */}
-            <div className="mt-5 pt-4 border-t border-gray-100 flex items-center gap-2">
+            <div className="px-4 py-3 border-t border-gray-100 flex items-center gap-2">
               <button
-                onClick={() => queryTxStatus(selectedTransaction.transactionId)}
+                onClick={() => queryTxStatus(selectedTransaction.reference)}
                 disabled={queryLoading}
-                className="flex-1 bg-white border border-gray-200 text-gray-700 font-bold py-2.5 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 text-sm"
+                className="flex-1 bg-white border border-gray-200 text-gray-700 font-bold py-2 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 text-xs"
               >
                 {queryLoading ? "⏳ Checking..." : "🔄 Query"}
               </button>
 
               <button
                 onClick={() => setSelectedTransaction(null)}
-                className="flex-1 bg-[#D81B60] text-white font-bold py-2.5 rounded-lg hover:bg-[#c01a5e] transition-colors text-sm"
+                className="flex-1 bg-[#D81B60] text-white font-bold py-2 rounded-lg hover:bg-[#c01a5e] transition-colors text-xs"
               >
                 Close
               </button>
             </div>
+
+            {/* Error/Status Messages */}
+            {queryError && (
+              <div className="px-4 py-2 bg-red-50 border-t border-red-200 text-xs text-red-600">
+                {queryError}
+              </div>
+            )}
+            {lastQueriedStatus && (
+              <div className="px-4 py-2 bg-blue-50 border-t border-blue-200 text-xs text-blue-700">
+                Last check: <span className="font-bold">{lastQueriedStatus.toUpperCase()}</span>
+              </div>
+            )}
           </div>
         </div>
       )}
