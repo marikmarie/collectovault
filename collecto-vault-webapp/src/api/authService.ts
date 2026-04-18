@@ -45,6 +45,7 @@ export const authService = {
     clientId: string;
     username: string;
     collectoId?: string;
+    action?: 'create' | 'update';
   }) => {
     try {
       const resp = await api.post("/setUsername", payload);

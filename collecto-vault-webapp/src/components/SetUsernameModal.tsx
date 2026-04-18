@@ -27,22 +27,24 @@ export default function SetUsernameModal({
     setError('');
     setSuccess('');
 
-    if (!username.trim()) {
+    const trimmedUsername = username.trim();
+
+    if (!trimmedUsername) {
       setError('Username cannot be empty');
       return;
     }
 
-    if (username.length < 3) {
+    if (trimmedUsername.length < 3) {
       setError('Username must be at least 3 characters');
       return;
     }
 
-    if (username.length > 100) {
+    if (trimmedUsername.length > 100) {
       setError('Username cannot exceed 100 characters');
       return;
     }
 
-    if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+    if (!/^[a-zA-Z0-9_-]+$/.test(trimmedUsername)) {
       setError('Username can only contain letters, numbers, underscores, and hyphens');
       return;
     }
@@ -59,32 +61,43 @@ export default function SetUsernameModal({
         return;
       }
 
-      try {
-        await authService.checkUsernameAvailability(username.trim());
-      } catch (availabilityErr: any) {
-        setError('Username already exists. Please try another one.');
-        setIsLoading(false);
-        return;
+      // Only check availability if username is different from existing one
+      if (!existingUsername || trimmedUsername !== existingUsername) {
+        try {
+          await authService.checkUsernameAvailability(trimmedUsername);
+        } catch (availabilityErr: any) {
+          console.error('[SetUsernameModal] Availability check failed:', availabilityErr);
+          setError('Username already exists. Please try another one.');
+          setIsLoading(false);
+          return;
+        }
       }
+
+      console.log('[SetUsernameModal] Submitting username:', { clientId, username: trimmedUsername, collectoId, action: existingUsername ? 'update' : 'create' });
 
       const result = await authService.setUsername({
         clientId,
-        username: username.trim(),
+        username: trimmedUsername,
         collectoId: collectoId || undefined,
+        action: existingUsername ? 'update' : 'create',
       });
 
+      console.log('[SetUsernameModal] API Response:', result);
+
       if (result.success) {
-        setSuccess('Username created successfully!');
-        localStorage.setItem('userName', username.trim());
+        const actionText = existingUsername ? 'Username updated' : 'Username created';
+        setSuccess(actionText + ' successfully!');
+        localStorage.setItem('userName', trimmedUsername);
         setTimeout(() => {
-          onSuccess(username.trim());
+          onSuccess(trimmedUsername);
           onClose();
         }, 1500);
       } else {
-        setError(result.message || 'Failed to create username');
+        setError(result.message || 'Failed to set username');
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to create username. Please try again.');
+      console.error('[SetUsernameModal] Error:', err);
+      setError(err.message || 'Failed to set username. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -93,16 +106,16 @@ export default function SetUsernameModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
 
       <div className="relative bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 animate-in zoom-in-95 duration-200">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-linear-to-br from-[#d81b60] to-pink-400 rounded-full flex items-center justify-center text-white shadow-md">
+            <div className="w-10 h-10 bg-gradient-to-br from-[#d81b60] to-pink-400 rounded-full flex items-center justify-center text-white shadow-md">
               <AtSign size={20} />
             </div>
-            <h2 className="text-xl font-bold text-gray-900">Create Username</h2>
+            <h2 className="text-xl font-bold text-gray-900">{existingUsername ? 'Update Username' : 'Create Username'}</h2>
           </div>
           <button
             onClick={onClose}
@@ -114,7 +127,7 @@ export default function SetUsernameModal({
         </div>
 
         <p className="text-sm text-gray-600 mb-6">
-          Create a unique username to make it easier to login next time
+          {existingUsername ? 'Change your current username' : 'Create a unique username to make it easier to login next time'}
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -173,12 +186,12 @@ export default function SetUsernameModal({
               {isLoading ? (
                 <>
                   <RotateCw size={18} className="animate-spin" />
-                  Creating...
+                  {existingUsername ? 'Updating...' : 'Creating...'}
                 </>
               ) : (
                 <>
                   <Check size={18} />
-                  Create Username
+                  {existingUsername ? 'Update Username' : 'Create Username'}
                 </>
               )}
             </button>

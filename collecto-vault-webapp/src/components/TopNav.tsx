@@ -13,7 +13,6 @@ import {
   LogOut,
   Bell,
   MessageCircle,
-  Key,
   Mail,
 } from "lucide-react";
 
@@ -24,6 +23,7 @@ export default function TopNav() {
   const [drawerView, setDrawerView] = useState<DrawerView>(null);
   const [isWebDropdownOpen, setIsWebDropdownOpen] = useState(false);
   const [showUsernameModal, setShowUsernameModal] = useState(false);
+  const [refreshCounter, setRefreshCounter] = useState(0);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -37,8 +37,8 @@ export default function TopNav() {
 
   // ---- USER DATA (from localStorage) ----
   const userName = localStorage.getItem("userName") || localStorage.getItem("name") || "User Account";
-  const userEmail = localStorage.getItem("userEmail") || localStorage.getItem("email") || "No email set";
   const storedUsername = localStorage.getItem("userName");
+  // refreshCounter triggers re-render after username update
 
   const initials = useMemo(() => {
     return userName
@@ -47,7 +47,7 @@ export default function TopNav() {
       .slice(0, 2)
       .join("")
       .toUpperCase();
-  }, [userName]);
+  }, [userName, refreshCounter]);
 
   // Close dropdown if clicking outside
   useEffect(() => {
@@ -152,11 +152,10 @@ export default function TopNav() {
 
               {isWebDropdownOpen && (
                 <div className="absolute right-0 top-12 w-60 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 animate-in fade-in duration-150">
-                  <div className="px-5 py-4 border-b border-gray-100 bg-li-to-r from-gray-50 to-white rounded-t-2xl">
+                  <div className="px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white rounded-t-2xl">
                     <p className="text-sm font-semibold text-gray-900">
                       {userName}
                     </p>
-                    <p className="text-xs text-gray-500 mt-0.5">{userEmail}</p>
                   </div>
 
                   <button
@@ -252,7 +251,6 @@ export default function TopNav() {
         view={drawerView}
         handleSignOut={handleSignOut}
         userName={userName}
-        userEmail={userEmail}
         initials={initials}
         onOpenUsernameModal={() => setShowUsernameModal(true)}
         triggerFeedback={triggerFeedback}
@@ -262,7 +260,10 @@ export default function TopNav() {
       <SetUsernameModal
         isOpen={showUsernameModal}
         onClose={() => setShowUsernameModal(false)}
-        onSuccess={() => setShowUsernameModal(false)}
+        onSuccess={() => {
+          setShowUsernameModal(false);
+          setRefreshCounter(c => c + 1);
+        }}
         existingUsername={storedUsername}
       />
     </>
@@ -284,7 +285,6 @@ function SideDrawer({
   view,
   handleSignOut,
   userName,
-  userEmail,
   initials,
   onOpenUsernameModal,
   triggerFeedback,
@@ -299,7 +299,7 @@ function SideDrawer({
         onClick={onClose}
       />
 
-      <div className="w-full max-w-md bg-gradient-to-b from-white to-gray-50 h-full p-6 overflow-y-auto pointer-events-auto shadow-2xl">
+      <div className="w-full max-w-md bg-white h-full p-6 overflow-y-auto pointer-events-auto shadow-2xl">
         <div className="flex justify-between items-center mb-6">
           <h2 className="font-bold text-lg capitalize text-gray-900">{view}</h2>
           <button
@@ -319,10 +319,9 @@ function SideDrawer({
               <h3 className="font-semibold mt-4 text-lg text-gray-900">
                 {userName || "Your Name"}
               </h3>
-              <p className="text-sm text-gray-500 mt-1">{userEmail || "email@example.com"}</p>
             </div>
 
-            <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200 shadow-sm">
+            <div className="p-4 rounded-lg">
               <p className="text-sm text-gray-800 font-medium">
                 <span className="text-[#d81b60]">✓</span> <strong>Account Status:</strong> Active
               </p>
@@ -333,7 +332,10 @@ function SideDrawer({
 
             <div className="space-y-2 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
               <button
-                onClick={onOpenUsernameModal}
+                onClick={() => {
+                  onOpenUsernameModal();
+                  onClose();
+                }}
                 className="w-full flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-[#d81b60] to-pink-500 hover:from-[#c41555] hover:to-pink-600 rounded-lg transition-all text-white font-semibold shadow-md hover:shadow-lg transform hover:scale-105"
               >
                 <Mail size={18} /> Set/Update Username
@@ -353,7 +355,7 @@ function SideDrawer({
 
         {view === "help" && (
           <div className="space-y-4">
-            <div className="bg-gradient-to-br from-emerald-50 to-teal-100 p-6 rounded-xl border border-emerald-200 shadow-sm">
+            <div className="p-6 rounded-xl">
               <h3 className="font-bold text-gray-900 mb-2 text-lg">
                 💬 24/7 Support Available
               </h3>
@@ -385,8 +387,8 @@ function SideDrawer({
         {view === "notifications" && (
           <div className="space-y-4">
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-                <Bell size={24} className="text-blue-600" />
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                <Bell size={24} className="text-gray-600" />
               </div>
               <p className="text-gray-600 font-medium">All caught up!</p>
               <p className="text-sm text-gray-500 mt-2">You have no new notifications right now.</p>
