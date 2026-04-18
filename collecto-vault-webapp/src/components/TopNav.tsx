@@ -142,7 +142,7 @@ export default function TopNav() {
         className="w-8 h-8 rounded-full bg-[#fce4ec] border border-[#d81b60] flex items-center justify-center text-[#d81b60] text-xs font-bold cursor-pointer"
     
        >
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#d81b60] to-pink-400 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                <div className="w-8 h-8 rounded-full bg-linear-to-br from-[#d81b60] to-pink-400 flex items-center justify-center text-white text-xs font-bold shadow-sm">
                   {initials}
                 </div>
                 <span className="text-sm font-medium text-gray-700">
@@ -206,7 +206,7 @@ export default function TopNav() {
           </button>
           <button
             onClick={() => openDrawer("profile")}
-            className="w-9 h-9 rounded-full bg-gradient-to-br from-[#d81b60] to-pink-400 text-white font-bold text-sm shadow-sm hover:shadow-md transition-shadow"
+            className="w-9 h-9 rounded-full bg-linear-to-br from-[#d81b60] to-pink-400 text-white font-bold text-sm shadow-sm hover:shadow-md transition-shadow"
           >
             {initials}
           </button>
@@ -332,7 +332,7 @@ function SideDrawer({
                   onOpenUsernameModal();
                   onClose();
                 }}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-[#d81b60] to-pink-500 hover:from-[#c41555] hover:to-pink-600 rounded-lg transition-all text-white font-semibold shadow-md hover:shadow-lg transform hover:scale-105"
+                className="w-full flex items-center gap-3 px-4 py-3 bg-linear-to-r from-[#d81b60] to-pink-500 hover:from-[#c41555] hover:to-pink-600 rounded-lg transition-all text-white font-semibold shadow-md hover:shadow-lg transform hover:scale-105"
               >
                 <Mail size={18} /> Set/Update Username
               </button>
@@ -364,7 +364,7 @@ function SideDrawer({
                 triggerFeedback('general');
                 onClose();
               }}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 rounded-lg transition-all text-white font-semibold shadow-md hover:shadow-lg"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 rounded-lg transition-all text-white font-semibold shadow-md hover:shadow-lg"
             >
               <Mail size={18} /> Send Feedback
             </button>
@@ -373,7 +373,7 @@ function SideDrawer({
                 openChat();
                 onClose();
               }}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-lg transition-all text-white font-semibold shadow-md hover:shadow-lg"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-linear-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-lg transition-all text-white font-semibold shadow-md hover:shadow-lg"
             >
               <MessageCircle size={18} /> Live Chat Support
             </button>
