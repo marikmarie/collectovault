@@ -66,6 +66,7 @@ export default function FeedbackModal({
       onClose={onClose}
       title="Send Feedback"
       size="md"
+      noOverlay={true}
     >
       {success ? (
         <div className="text-center py-8">

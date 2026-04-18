@@ -106,10 +106,11 @@ export default function LiveChatModal({
       onClose={onClose}
       title="Live Chat Support"
       size="md"
+      noOverlay={true}
     >
       <div className="flex flex-col h-96">
         {/* Messages Container */}
-        <div className="flex-1 overflow-y-auto bg-gray-50 p-4 space-y-3 rounded-lg">
+        <div className="flex-1 overflow-y-auto bg-white p-4 space-y-3 rounded-lg">
           {messages.length === 0 ? (
             <div className="text-center text-gray-500 py-8">
               <p className="text-sm">No messages yet. Start a conversation!</p>
@@ -126,7 +127,7 @@ export default function LiveChatModal({
                   className={`max-w-xs px-4 py-2 rounded-lg ${
                     msg.senderType === 'customer'
                       ? 'bg-blue-500 text-white'
-                      : 'bg-gray-300 text-gray-800'
+                      : 'bg-blue-100 text-gray-800'
                   }`}
                 >
                   <p className="text-sm">{msg.message}</p>
