@@ -111,6 +111,7 @@ export default function RatingModal({
       onClose={onClose}
       title="Rate Your Experience"
       size="md"
+      noOverlay={true}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <p className="text-sm text-gray-600 mb-4">
