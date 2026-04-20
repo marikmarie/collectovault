@@ -139,7 +139,7 @@ export default function TopNav() {
                 onClick={() => setIsWebDropdownOpen(!isWebDropdownOpen)}
                 className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-full hover:bg-gray-100 border border-transparent hover:border-gray-200 transition-all duration-200 cursor-pointer"
               >
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#d81b60] to-pink-400 flex items-center justify-center text-white text-xs font-bold shadow-sm flex-shrink-0">
+                <div className="w-8 h-8 rounded-full bg-linear-to-br from-[#d81b60] to-pink-400 flex items-center justify-center text-white text-xs font-bold shadow-sm shrink-0">
                   {initials}
                 </div>
                 <span className="text-sm font-medium text-gray-700">

@@ -50,8 +50,8 @@ export default function Modal({ open, onClose, title, children, footer, size = "
         style={{
           position: "absolute",
           inset: 0,
-          backgroundColor: "transparent",
-          backdropFilter: "none",
+          backgroundColor: noOverlay ? "transparent" : "rgba(0,0,0,0.55)",
+          backdropFilter: noOverlay ? "none" : "blur(4px)",
         }}
         aria-hidden
       />
