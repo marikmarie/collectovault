@@ -294,7 +294,7 @@ function SideDrawer({
   return (
     <div className="fixed inset-0 z-50 flex justify-end pointer-events-none">
       <div
-        className="absolute inset-0 bg-black/30 pointer-events-auto cursor-pointer"
+        className="absolute inset-0 bg-transparent pointer-events-auto cursor-pointer"
         onClick={onClose}
       />
 

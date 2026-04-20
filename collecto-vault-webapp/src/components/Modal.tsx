@@ -21,7 +21,7 @@ const sizeMap = {
   lg: "64rem",
 };
 
-export default function Modal({ open, onClose, title, children, footer, size = "md", closeOnOverlayClick = true, hideClose = false, noOverlay = false }: Props) {
+export default function Modal({ open, onClose, title, children, footer, size = "md", closeOnOverlayClick = true, hideClose = false, noOverlay = true }: Props) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -50,8 +50,8 @@ export default function Modal({ open, onClose, title, children, footer, size = "
         style={{
           position: "absolute",
           inset: 0,
-          backgroundColor: noOverlay ? "transparent" : "rgba(0,0,0,0.55)",
-          backdropFilter: noOverlay ? "none" : "blur(4px)",
+          backgroundColor: "transparent",
+          backdropFilter: "none",
         }}
         aria-hidden
       />
