@@ -106,7 +106,6 @@ export default function LiveChatModal({
       onClose={onClose}
       title="Live Chat Support"
       size="md"
-      noOverlay={true}
     >
       <div className="flex flex-col h-96">
         {/* Messages Container */}

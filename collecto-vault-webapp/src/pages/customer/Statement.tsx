@@ -664,7 +664,7 @@ export default function StatementWithPoints() {
 
   return (
     
- <div className="min-h-screen bg-[#f6f7fb] font-sans pb-20">
+ <div className="min-h-screen bg-white font-sans pb-20">
       <TopNav />
 
       {toast && (

@@ -167,7 +167,7 @@ export default function LoginPage() {
   const { theme } = useTheme();
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#F9FAFB]">
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-white">
       <div className="w-full max-w-[400px]">
         
         {/* Logo Section */}

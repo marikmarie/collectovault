@@ -91,7 +91,7 @@ export default function Dashboard() {
   
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans pb-20 lg:pb-0">
+    <div className="min-h-screen bg-white font-sans pb-20 lg:pb-0">
       <TopNav />
       <Header
         name={loyaltyName || userName}

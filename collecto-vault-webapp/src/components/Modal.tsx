@@ -27,7 +27,7 @@ export default function Modal({ open, onClose, title, children, footer, size = "
   const sizeCls = size === "xs" ? "max-w-sm" : size === "sm" ? "max-w-md" : size === "lg" ? "max-w-4xl" : "max-w-2xl";
 
   return (
-    <div className="fixed inset-0 z-9999 flex items-center justify-center">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center">
       <div
         className={`absolute inset-0 ${noOverlay ? "bg-black/0" : "bg-black/60 backdrop-blur-sm"}`}
         onClick={() => closeOnOverlayClick && onClose()}
