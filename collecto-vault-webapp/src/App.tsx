@@ -40,8 +40,8 @@ export default function App() {
         <Route path="/login" element={<Login />} />
       </Routes>
       
-      {/* Global Feedback Modals */}
-      {clientId > 0 && <FeedbackModals customerId={clientId} />}
+      {/* Global Feedback Modals — always mounted so context triggers always work */}
+      <FeedbackModals customerId={clientId} />
     </>
   );
 }
