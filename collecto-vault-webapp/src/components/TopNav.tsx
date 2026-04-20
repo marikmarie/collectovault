@@ -292,13 +292,13 @@ function SideDrawer({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end pointer-events-none">
+    <div className="fixed inset-0 z-50 flex justify-end">
       <div
-        className="absolute inset-0 bg-transparent pointer-events-auto cursor-pointer"
+        className="absolute inset-0 bg-transparent cursor-pointer"
         onClick={onClose}
       />
 
-      <div className="w-full max-w-md bg-white h-full p-6 overflow-y-auto pointer-events-auto shadow-2xl">
+      <div className="w-full max-w-md bg-white h-full p-6 overflow-y-auto shadow-2xl">
         <div className="flex justify-between items-center mb-6">
           <h2 className="font-bold text-lg capitalize text-gray-900">{view}</h2>
           <button

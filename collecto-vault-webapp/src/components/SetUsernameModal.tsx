@@ -106,8 +106,8 @@ export default function SetUsernameModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-9999 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-transparent" onClick={onClose} />
+    <div className="fixed inset-0 z-9999 flex items-center justify-center p-4 pointer-events-auto">
+      <div className="absolute inset-0 bg-transparent pointer-events-auto" onClick={onClose} />
 
       <div className="relative bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 animate-in zoom-in-95 duration-200">
         <div className="flex justify-between items-center mb-6">
