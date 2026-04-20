@@ -2,8 +2,8 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { useTheme } from "../theme/ThemeProvider";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { clearVaultOtpToken } from "../api";
-import SetUsernameModal from "./SetUsernameModal";
 import { useTriggerFeedback, useChatModal } from "../hooks/useFeedback";
+import SetUsernameModal from "./SetUsernameModal";
 import {
   X,
   Home,
@@ -329,7 +329,7 @@ function SideDrawer({
                   onOpenUsernameModal();
                   onClose();
                 }}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-linear-to-r from-[#d81b60] to-pink-500 hover:from-[#c41555] hover:to-pink-600 rounded-lg transition-all text-white font-semibold shadow-md hover:shadow-lg transform hover:scale-105"
+                className="w-full flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-[#d81b60] to-pink-500 hover:from-[#c41555] hover:to-pink-600 rounded-lg transition-all text-white font-semibold shadow-md hover:shadow-lg transform hover:scale-105"
               >
                 <Mail size={18} /> Set/Update Username
               </button>

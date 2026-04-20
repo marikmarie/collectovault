@@ -12,7 +12,6 @@ export type SliderProps = {
   className?: string;
 };
 
-
 export default function Slider({
   slides,
   initialIndex = 0,

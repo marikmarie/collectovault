@@ -7,15 +7,13 @@ import Statement from './pages/customer/Statement'
 import Login from './pages/Login';
 import Services from './pages/customer/Services';
 import ProtectedRoute from './components/ProtectedRoute';
-import FeedbackModals from './components/FeedbackModals';
-
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { hasVaultOtpToken } from './api';
 
 
 export default function App() {
   const navigate = useNavigate();
-  const clientId = Number(localStorage.getItem('clientId')) || 0;
+  //const clientId = Number(localStorage.getItem('clientId')) || 0;
 
   // Periodically check token validity and force logout when expired
   useEffect(() => {
@@ -41,7 +39,7 @@ export default function App() {
       </Routes>
       
       {/* Global Feedback Modals — always mounted so context triggers always work */}
-      <FeedbackModals customerId={clientId} />
+      {/* <FeedbackModals customerId={clientId} /> */}
     </>
   );
 }

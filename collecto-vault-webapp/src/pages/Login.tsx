@@ -5,7 +5,7 @@ import { authService } from '../api/authService';
 import { useTheme } from '../theme/ThemeProvider';
 import { setVaultOtpToken, getVaultOtpToken } from '../api';
 import { customerService } from '../api/customer';
-import SetUsernameModal from '../components/SetUsernameModal';
+// import SetUsernameModal from '../components/SetUsernameModal';
 
 type PendingPayload = {
   id: string; 
@@ -146,9 +146,9 @@ export default function LoginPage() {
     }
   };
 
-  const handleSetUsernameSuccess = () => {
-    navigate('/dashboard');
-  };
+  // const handleSetUsernameSuccess = () => {
+  //   navigate('/dashboard');
+  // };
 
   const handleResendOtp = async () => {
       if (!pendingPayload || isProcessing) return;
@@ -288,7 +288,7 @@ export default function LoginPage() {
             }
           </div>
         </div>
-        {/* SetUsernameModal - shown after successful login if username doesn't exist */}
+        {/* SetUsernameModal - shown after successful login if username doesn't exist
         {loginStep === 'username_setup' && (
           <SetUsernameModal 
             isOpen={true}
@@ -301,7 +301,7 @@ export default function LoginPage() {
             clientId={pendingPayload?.id}
           />
         )}
-        
+         */}
         <p className="text-center mt-10 text-[11px] font-medium text-gray-500 uppercase tracking-widest">
           ••• © 2026 CollectoVault ••• 
         </p>
