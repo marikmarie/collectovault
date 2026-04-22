@@ -4,6 +4,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { clearVaultOtpToken } from "../api";
 import { useTriggerFeedback, useChatModal } from "../hooks/useFeedback";
 import SetUsernameModal from "./SetUsernameModal";
+import { customerService } from "../api/customer";
 import {
   X,
   Home,
@@ -24,6 +25,8 @@ export default function TopNav() {
   const [isWebDropdownOpen, setIsWebDropdownOpen] = useState(false);
   const [showUsernameModal, setShowUsernameModal] = useState(false);
   const [refreshCounter, setRefreshCounter] = useState(0);
+  const [displayName, setDisplayName] = useState<string>("");
+  const [storedUsername, setStoredUsername] = useState<string>("");
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -35,19 +38,63 @@ export default function TopNav() {
 
   const { theme } = useTheme();
 
-  // ---- USER DATA (from localStorage) ----
-  const displayName = localStorage.getItem("name") || localStorage.getItem("userName") || "User Account";
-  const storedUsername = localStorage.getItem("userName");
+  // Fetch loyalty settings data
+  const fetchLoyaltySettings = async () => {
+    const clientId = localStorage.getItem("clientId");
+    const collectoId = localStorage.getItem("collectoId");
+
+    if (!clientId || !collectoId) return;
+
+    try {
+      const customerRes = await customerService.getCustomerData(collectoId, clientId);
+      const loyaltySettings = customerRes.data?.data?.loyaltySettings ?? {};
+
+      const loyaltyNameFromSettings =
+        typeof loyaltySettings?.name === "string" && loyaltySettings.name.trim()
+          ? loyaltySettings.name.trim()
+          : undefined;
+      setDisplayName(loyaltyNameFromSettings || "");
+
+      const usernameFromSettings =
+        typeof loyaltySettings?.username === "string" && loyaltySettings.username.trim()
+          ? loyaltySettings.username.trim()
+          : undefined;
+      setStoredUsername(usernameFromSettings || "");
+
+      // Store the data in localStorage for persistence
+      if (loyaltyNameFromSettings) {
+        localStorage.setItem("name", loyaltyNameFromSettings);
+      }
+      if (usernameFromSettings) {
+        localStorage.setItem("userName", usernameFromSettings);
+      }
+    } catch (err) {
+      console.error("Error fetching loyalty settings:", err);
+      // Fallback to localStorage if API fails
+      const storedName = localStorage.getItem("name");
+      const storedUsername = localStorage.getItem("userName");
+      setDisplayName(storedName || "");
+      setStoredUsername(storedUsername || "");
+    }
+  };
+
+  // ---- USER DATA (from localStorage initially, then updated from API) ----
+  const userDisplayName = displayName || localStorage.getItem("name") || localStorage.getItem("userName") || "User Account";
   // refreshCounter triggers re-render after username update
 
   const initials = useMemo(() => {
-    return displayName
+    return userDisplayName
       .split(" ")
       .map((n) => n[0])
       .slice(0, 2)
       .join("")
       .toUpperCase();
-  }, [displayName, refreshCounter]);
+  }, [userDisplayName, refreshCounter]);
+
+  // Fetch data on mount and when refreshCounter changes
+  useEffect(() => {
+    fetchLoyaltySettings();
+  }, [refreshCounter]);
 
   // Close dropdown if clicking outside
   useEffect(() => {
@@ -143,7 +190,7 @@ export default function TopNav() {
                   {initials}
                 </div>
                 <span className="text-sm font-medium text-gray-700">
-                  {displayName.split(" ")[0]}
+                  {userDisplayName.split(" ")[0]}
                 </span>
               </button>
 
@@ -151,7 +198,7 @@ export default function TopNav() {
                 <div className="absolute right-0 top-12 w-60 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 animate-in fade-in duration-150">
                   <div className="px-5 py-4 border-b border-gray-100 bg-white rounded-t-2xl">
                     <p className="text-sm font-semibold text-gray-900">
-                      {displayName}
+                      {userDisplayName}
                     </p>
                   </div>
 
@@ -247,7 +294,7 @@ export default function TopNav() {
         onClose={() => setDrawerView(null)}
         view={drawerView}
         handleSignOut={handleSignOut}
-        userName={userName}
+        userName={userDisplayName}
         storedUsername={storedUsername}
         initials={initials}
         onOpenUsernameModal={() => setShowUsernameModal(true)}
@@ -263,7 +310,7 @@ export default function TopNav() {
           setRefreshCounter(c => c + 1);
         }}
         existingUsername={storedUsername || undefined}
-        displayName={displayName}
+        displayName={displayName || undefined}
       />
     </>
   );

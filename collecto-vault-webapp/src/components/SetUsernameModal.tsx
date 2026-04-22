@@ -64,7 +64,7 @@ export default function SetUsernameModal({
         return;
       }
 
-      const resp = await authService.setUsername(clientId, collectoId, trimmed, {
+      const resp = await authService.setUsername({
         clientId,
         collectoId,
         username: trimmed,
