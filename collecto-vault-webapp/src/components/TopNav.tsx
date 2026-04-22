@@ -36,18 +36,18 @@ export default function TopNav() {
   const { theme } = useTheme();
 
   // ---- USER DATA (from localStorage) ----
-  const userName = localStorage.getItem("userName") || localStorage.getItem("name") || "User Account";
+  const displayName = localStorage.getItem("name") || localStorage.getItem("userName") || "User Account";
   const storedUsername = localStorage.getItem("userName");
   // refreshCounter triggers re-render after username update
 
   const initials = useMemo(() => {
-    return userName
+    return displayName
       .split(" ")
       .map((n) => n[0])
       .slice(0, 2)
       .join("")
       .toUpperCase();
-  }, [userName, refreshCounter]);
+  }, [displayName, refreshCounter]);
 
   // Close dropdown if clicking outside
   useEffect(() => {
@@ -143,7 +143,7 @@ export default function TopNav() {
                   {initials}
                 </div>
                 <span className="text-sm font-medium text-gray-700">
-                  {userName.split(" ")[0]}
+                  {displayName.split(" ")[0]}
                 </span>
               </button>
 
@@ -151,7 +151,7 @@ export default function TopNav() {
                 <div className="absolute right-0 top-12 w-60 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 animate-in fade-in duration-150">
                   <div className="px-5 py-4 border-b border-gray-100 bg-white rounded-t-2xl">
                     <p className="text-sm font-semibold text-gray-900">
-                      {userName}
+                      {displayName}
                     </p>
                   </div>
 
@@ -262,7 +262,8 @@ export default function TopNav() {
           setShowUsernameModal(false);
           setRefreshCounter(c => c + 1);
         }}
-        existingUsername={storedUsername}
+        existingUsername={storedUsername || undefined}
+        displayName={displayName}
       />
     </>
   );
