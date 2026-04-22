@@ -167,7 +167,7 @@ export default function SetUsernameModal({
           {/* Error Message */}
           {error && (
             <div className="flex gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <AlertCircle size={16} className="text-red-600 mt-0.5 flex-shrink-0" />
+              <AlertCircle size={16} className="text-red-600 mt-0.5 shrink-0" />
               <p className="text-sm text-red-700">{error}</p>
             </div>
           )}
@@ -175,7 +175,7 @@ export default function SetUsernameModal({
           {/* Success Message */}
           {success && (
             <div className="flex gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-              <CheckCircle size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
+              <CheckCircle size={16} className="text-green-600 mt-0.5 shrink-0" />
               <p className="text-sm text-green-700">{success}</p>
             </div>
           )}
