@@ -274,10 +274,10 @@ export default function StatementWithPoints() {
   const fetchTransactions = useCallback(async () => {
     setLoadingType("transactions");
     try {
-      const customerId = clientId || "";
+      const clientId = clientId || "";
       
       // Get transactions from loyaltySettings
-      const customerRes = await customerService.getCustomerData(collectoId || "", customerId || "");
+      const customerRes = await customerService.getCustomerData(collectoId || "", clientId || "");
       const loyaltySettings = customerRes.data?.data?.loyaltySettings ?? {};
       const cashDetails = loyaltySettings?.client_cash_details ?? {};
       const clientAddCashSettings = loyaltySettings?.client_add_cash;

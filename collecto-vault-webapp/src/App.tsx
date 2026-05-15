@@ -39,7 +39,7 @@ export default function App() {
       </Routes>
       
       {/* Global Feedback Modals — always mounted so context triggers always work */}
-      {/* <FeedbackModals customerId={clientId} /> */}
+      {/* <FeedbackModals clientId={clientId} /> */}
     </>
   );
 }

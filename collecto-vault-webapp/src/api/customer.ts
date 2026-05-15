@@ -24,13 +24,13 @@ export const customerService = {
   getTierInfo: (vendorId?: string) =>
     api.get(`/tier/collecto/${vendorId || localStorage.getItem('collectoId') || null}`),
 
-  getRedeemableOffers: (customerId?: string) =>
-    api.post(`/customers/${customerId ?? "me"}/offers/redeemable`),
+  getRedeemableOffers: (clientId?: string) =>
+    api.post(`/customers/${clientId ?? "me"}/offers/redeemable`),
 
 
-  getTierBenefits: (customerId?: string, tier?: string) =>
+  getTierBenefits: (clientId?: string, tier?: string) =>
     api.post(
-      `/customers/${customerId}/tier-benefits${
+      `/customers/${clientId}/tier-benefits${
         tier ? `?tier=${encodeURIComponent(tier)}` : ""
       }`
     ),

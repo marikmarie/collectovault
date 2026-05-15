@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { getBusinessWhatsAppUrl, getUserWhatsAppUrl } from "../api/feedback";
 
 interface WhatsAppButtonProps {
-  customerId?: number;
+  clientId?: number;
   type?: 'business' | 'user'; // business = whatsapp us, user = your personal number
   label?: string;
   className?: string;
@@ -10,7 +10,7 @@ interface WhatsAppButtonProps {
 }
 
 export default function WhatsAppButton({
-  customerId,
+  clientId,
   type = 'business',
   label = 'WhatsApp Us',
   className = '',
@@ -25,8 +25,8 @@ export default function WhatsAppButton({
         if (type === 'business') {
           const url = await getBusinessWhatsAppUrl();
           setWhatsappUrl(url);
-        } else if (type === 'user' && customerId) {
-          const url = await getUserWhatsAppUrl(customerId);
+        } else if (type === 'user' && clientId) {
+          const url = await getUserWhatsAppUrl(clientId);
           setWhatsappUrl(url);
         }
       } catch (error) {
@@ -37,7 +37,7 @@ export default function WhatsAppButton({
     };
 
     fetchWhatsappUrl();
-  }, [type, customerId]);
+  }, [type, clientId]);
 
   if (loading) {
     return <span className={className}>Loading...</span>;
