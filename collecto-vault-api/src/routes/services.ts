@@ -10,7 +10,6 @@ const BASE_URL = process.env.COLLECTO_BASE_URL;
 const API_KEY = process.env.COLLECTO_API_KEY;
 
 
-
 const pendingPayments: Map<
   string,
   { payment: any; status: "pending" | "confirmed" | "failed"; createdAt: Date }
@@ -30,65 +29,10 @@ function collectoHeaders(userToken?: string) {
   return headers;
 }
 
-router.post("/services", async (req: Request, res: Response) => {
-  try {
-    const { vaultOTPToken, collectoId, page } = req.body;
-    const token = req.headers.authorization as string | undefined;
-    const pageNumber = typeof page === "number" ? page : parseInt(page) || 1;
-    
-    console.log(req.body);
-    
-    if (!collectoId && !vaultOTPToken) {
-      return res
-        .status(400)
-        .json({ message: "collectoId is required in the request body" });
-    }
-
-    const response = await axios.post(
-      `${BASE_URL}/servicesAndProducts`,
-      { vaultOTPToken, collectoId, page: pageNumber },
-      {
-        headers: collectoHeaders(token),
-      },
-    );
-    return res.json(response.data);
-  } catch (err: any) {
-    console.error("Fetch Error:", err?.response?.data || err.message);
-    return res.status(err?.response?.status || 500).json({
-      message: "Failed to fetch services",
-      error: err?.response?.data || err.message,
-    });
-  }
-});
-
-router.post("/invoiceDetails", async (req: Request, res: Response) => {
-  try {
-    // const token = req.headers.authorization;
-    const token = req.headers.authorization as string | undefined;
-   
-    const response = await axios.post(`${BASE_URL}/invoiceDetails`, req.body, {
-      headers: collectoHeaders(token),
-    });
-   
-    return res.json(response.data);
-  } catch (error: any) {
-    console.error(
-      "Failed to fetch invoice details",
-      error?.response?.data || error.message,
-    );
-    return res.status(error?.response?.status || 500).json({
-      message: "Failed to fetch invoices",
-      error: error?.response?.data || error.message,
-    });
-  }
-});
-
 router.post("/requestToPay", async (req: Request, res: Response) => {
   try {
     const userToken = req.headers.authorization;
     const payload = { ...req.body }; 
-
-
 
     if (!payload.paymentOption)
       return res.status(400).send("Missing payment method");
@@ -112,8 +56,7 @@ router.post("/requestToPay", async (req: Request, res: Response) => {
       const collectoData = response.data;
       const innerData = collectoData?.data || {};
 
-      const transactionId =
-        innerData.transactionId || innerData.id || null;
+      const transactionId = innerData.transactionId || innerData.id || null;
 
 
       return res.json({
@@ -255,6 +198,60 @@ router.post("/verifyPhoneNumber", async (req: Request, res: Response) => {
     return res.status(err?.response?.status || 500).json({
       message: "Phone verification failed",
       error: err?.response?.data || err.message,
+    });
+  }
+});
+
+
+router.post("/services", async (req: Request, res: Response) => {
+  try {
+    const { vaultOTPToken, collectoId, page } = req.body;
+    const token = req.headers.authorization as string | undefined;
+    const pageNumber = typeof page === "number" ? page : parseInt(page) || 1;
+    
+    console.log(req.body);
+    
+    if (!collectoId && !vaultOTPToken) {
+      return res
+        .status(400)
+        .json({ message: "collectoId is required in the request body" });
+    }
+
+    const response = await axios.post(
+      `${BASE_URL}/servicesAndProducts`,
+      { vaultOTPToken, collectoId, page: pageNumber },
+      {
+        headers: collectoHeaders(token),
+      },
+    );
+    return res.json(response.data);
+  } catch (err: any) {
+    console.error("Fetch Error:", err?.response?.data || err.message);
+    return res.status(err?.response?.status || 500).json({
+      message: "Failed to fetch services",
+      error: err?.response?.data || err.message,
+    });
+  }
+});
+
+router.post("/invoiceDetails", async (req: Request, res: Response) => {
+  try {
+    // const token = req.headers.authorization;
+    const token = req.headers.authorization as string | undefined;
+   
+    const response = await axios.post(`${BASE_URL}/invoiceDetails`, req.body, {
+      headers: collectoHeaders(token),
+    });
+   
+    return res.json(response.data);
+  } catch (error: any) {
+    console.error(
+      "Failed to fetch invoice details",
+      error?.response?.data || error.message,
+    );
+    return res.status(error?.response?.status || 500).json({
+      message: "Failed to fetch invoices",
+      error: error?.response?.data || error.message,
     });
   }
 });

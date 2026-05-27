@@ -204,7 +204,17 @@ if (isCLIMode) {
         });
         break;
 
-     
+      // --- Chat Routes ---
+      case "chat":
+        mockReq.method = "POST";
+        mockReq.url = "/chat";
+        mockReq.body = parseInputData(params);
+        ChatRoutes()(mockReq, mockRes, () => {
+          if (!responsesSent)
+            mockRes.status(404).json({ error: "Chat route not found" });
+        });
+        break;
+
       default:
         mockRes.status(404).json({ error: "Unknown path", path });
     }
