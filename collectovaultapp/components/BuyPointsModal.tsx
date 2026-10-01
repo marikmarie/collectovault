@@ -1,7 +1,9 @@
 import api from "@/src/api";
+import { cardPaymentService } from "@/src/api/collecto";
 import { useAuth } from "@/src/context/AuthContext";
 import storage from "@/src/utils/storage";
 import { Feather } from "@expo/vector-icons";
+import * as WebBrowser from "expo-web-browser";
 import React, { useEffect, useRef, useState } from "react";
 import {
     ActivityIndicator,
@@ -43,7 +45,7 @@ export default function BuyPointsModal({
   const [loadingPackages, setLoadingPackages] = useState(false);
   const [selectedId, setSelectedId] = useState<string | number | null>(null);
   const [step, setStep] = useState<ModalStep>("select");
-  const [paymentMode, setPaymentMode] = useState<"mobilemoney" | "bank">(
+  const [paymentMode, setPaymentMode] = useState<"mobilemoney" | "card">(
     "mobilemoney",
   );
   const [phone, setPhone] = useState("");
@@ -57,6 +59,12 @@ export default function BuyPointsModal({
   const [txStatus, setTxStatus] = useState<
     "idle" | "pending" | "success" | "failed"
   >("idle");
+  const [cardCheckout, setCardCheckout] = useState<null | {
+    id: string;
+    checkoutUrl: string;
+    payload: Record<string, unknown>;
+  }>(null);
+  const [checkingCard, setCheckingCard] = useState(false);
 
   const [fetchedClientAddCash, setFetchedClientAddCash] = useState<any>(null);
   const [chargeAmount, setChargeAmount] = useState(0);
@@ -112,6 +120,9 @@ export default function BuyPointsModal({
     setPhoneError(null);
     setChargeAmount(0);
     setTotalAmount(0);
+    setPaymentMode("mobilemoney");
+    setCardCheckout(null);
+    setCheckingCard(false);
 
     fetchPackages();
   }, [visible]);
@@ -227,12 +238,46 @@ export default function BuyPointsModal({
             : 0;
       }
 
+      if (paymentMode === "card") {
+        const cardAmount = totalAmount || selectedPackage.price;
+        const cardPayload = {
+          vaultOTPToken,
+          collectoId,
+          clientId,
+          paymentOption: "card",
+          amount: selectedPackage.price,
+          cardAmount,
+          points: { points_used: selectedPackage.points },
+          purchaseTiers: {
+            cost: selectedPackage.price,
+            name: selectedPackage.label,
+            points: selectedPackage.points,
+          },
+          clientAddCash: effectiveClientAddCash || { charge: 0, charge_client: 0 },
+          reference: `BUYPOINTS-${Date.now()}`,
+        };
+        const cardResponse = await cardPaymentService.start({
+          vaultOTPToken: vaultOTPToken || undefined,
+          collectoId: String(collectoId || ""),
+          clientId: String(clientId || ""),
+          amount: cardAmount,
+          description: `Collecto Vault points: ${selectedPackage.label || selectedPackage.points + " points"}`,
+        });
+        const collection = cardResponse.data?.data;
+        if (!collection?.id || !collection.checkout_url) throw new Error("Unable to prepare secure card checkout.");
+        setCardCheckout({ id: collection.id, checkoutUrl: collection.checkout_url, payload: cardPayload });
+        setTxId(collection.id);
+        setTxStatus("pending");
+        setStep("confirm");
+        return;
+      }
+
       const res = await api.post("/requestToPay", {
         vaultOTPToken,
         collectoId,
         clientId,
         phone: formattedPhone,
-        paymentOption: paymentMode,
+        paymentOption: "mobilemoney",
         amount: selectedPackage.price,
         points: { points_used: selectedPackage.points },
         purchaseTiers: {
@@ -274,8 +319,45 @@ export default function BuyPointsModal({
     }
   };
 
+  const openCardCheckout = async () => {
+    if (cardCheckout) await WebBrowser.openBrowserAsync(cardCheckout.checkoutUrl);
+  };
+
+  const checkCardPayment = async () => {
+    if (!cardCheckout) return;
+    setCheckingCard(true);
+    setError(null);
+    try {
+      const statusResponse = await cardPaymentService.status(cardCheckout.id, true);
+      const collection = statusResponse.data?.data;
+      const status = String(collection?.status || "PENDING").toUpperCase();
+      if (status === "SUCCESS") {
+        await cardPaymentService.complete(cardCheckout.id, cardCheckout.payload);
+        setTxStatus("success");
+        setStep("success");
+        setCardCheckout(null);
+        onSuccess?.(selectedPackage?.points || 0);
+      } else if (status === "FAILED") {
+        setTxStatus("failed");
+        setStep("failure");
+        setError(collection?.reason || "Your card payment was not completed.");
+        setCardCheckout(null);
+      } else {
+        setError("Your card payment is still pending. Finish checkout, then check again.");
+      }
+    } catch (err: any) {
+      setError(err?.message ?? "Unable to check the card payment.");
+    } finally {
+      setCheckingCard(false);
+    }
+  };
+
   // Query transaction status
   const queryTxStatus = async (txId: string | number) => {
+    if (cardCheckout) {
+      await checkCardPayment();
+      return;
+    }
     try {
       const vaultOTPToken = await storage.getItem("vaultOtpToken");
       const collectoId = await storage.getItem("collectoId");
@@ -359,6 +441,8 @@ export default function BuyPointsModal({
     setPhoneError(null);
     setTxId(null);
     setTxStatus("idle");
+    setCardCheckout(null);
+    setCheckingCard(false);
     if (pollIntervalRef.current) {
       clearInterval(pollIntervalRef.current);
     }
@@ -472,14 +556,19 @@ export default function BuyPointsModal({
                     {txStatus === "pending" && (
                       <View style={styles.pendingActions}>
                         <Text style={styles.statusSubtext}>
-                          Checking status automatically...
+                          {cardCheckout ? "Complete checkout on PegPay, then confirm it here." : "Checking status automatically..."}
                         </Text>
+                        {cardCheckout && (
+                          <TouchableOpacity style={styles.cardCheckoutButton} onPress={openCardCheckout}>
+                            <Text style={styles.cardCheckoutButtonText}>Open PegPay</Text>
+                          </TouchableOpacity>
+                        )}
                         <TouchableOpacity
                           style={styles.checkButton}
-                          onPress={() => txId && queryTxStatus(txId)}
-                          disabled={false}
+                          onPress={() => cardCheckout ? checkCardPayment() : txId && queryTxStatus(txId)}
+                          disabled={checkingCard}
                         >
-                          <Text style={styles.checkButtonText}>Check</Text>
+                          <Text style={styles.checkButtonText}>{checkingCard ? "Checking…" : "Check"}</Text>
                         </TouchableOpacity>
                       </View>
                     )}
@@ -504,6 +593,33 @@ export default function BuyPointsModal({
                     </Text>
                   </View>
                 </View>
+
+                <Text style={styles.sectionTitle}>Payment Method</Text>
+                <View style={styles.methodSwitcher}>
+                  <TouchableOpacity
+                    style={[styles.methodButton, paymentMode === "mobilemoney" && styles.methodButtonActive]}
+                    onPress={() => setPaymentMode("mobilemoney")}
+                    disabled={Boolean(cardCheckout)}
+                  >
+                    <Feather name="smartphone" size={16} color={paymentMode === "mobilemoney" ? "#d81b60" : "#666"} />
+                    <Text style={[styles.methodButtonText, paymentMode === "mobilemoney" && styles.methodButtonTextActive]}>Mobile money</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.methodButton, paymentMode === "card" && styles.methodButtonActive]}
+                    onPress={() => setPaymentMode("card")}
+                    disabled={Boolean(cardCheckout)}
+                  >
+                    <Feather name="credit-card" size={16} color={paymentMode === "card" ? "#d81b60" : "#666"} />
+                    <Text style={[styles.methodButtonText, paymentMode === "card" && styles.methodButtonTextActive]}>Card</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {paymentMode === "card" && !cardCheckout && (
+                  <View style={styles.cardNote}>
+                    <Feather name="shield" size={18} color="#d81b60" />
+                    <Text style={styles.cardNoteCopy}>Your card details are entered securely on PegPay and are never stored by Collecto Vault.</Text>
+                  </View>
+                )}
 
                 {/* Phone Verification */}
                 {paymentMode === "mobilemoney" && (
@@ -597,15 +713,17 @@ export default function BuyPointsModal({
                     (processing || txStatus === "pending") &&
                       styles.proceedBtnDisabled,
                   ]}
-                  onPress={handleConfirmPayment}
-                  disabled={!verified || processing || txStatus === "pending"}
+                  onPress={cardCheckout ? openCardCheckout : handleConfirmPayment}
+                  disabled={(paymentMode === "mobilemoney" && !verified) || processing || (txStatus === "pending" && !cardCheckout)}
                 >
                   <Text style={styles.proceedBtnText}>
                     {processing
                       ? "Processing..."
-                      : txStatus === "pending"
+                      : cardCheckout
+                        ? "Open secure checkout"
+                        : txStatus === "pending"
                         ? "Payment Sent"
-                        : "Confirm Payment"}
+                        : paymentMode === "card" ? "Continue to card checkout" : "Confirm Payment"}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -674,6 +792,50 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#1a1a1a",
     marginBottom: 12,
+  },
+  methodSwitcher: {
+    flexDirection: "row",
+    gap: 8,
+    padding: 4,
+    borderRadius: 12,
+    backgroundColor: "#f7f7f8",
+    marginBottom: 16,
+  },
+  methodButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 9,
+  },
+  methodButtonActive: {
+    backgroundColor: "#fff",
+  },
+  methodButtonText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#666",
+  },
+  methodButtonTextActive: {
+    color: "#d81b60",
+  },
+  cardNote: {
+    flexDirection: "row",
+    gap: 10,
+    padding: 12,
+    borderRadius: 10,
+    backgroundColor: "#fff5f8",
+    borderWidth: 1,
+    borderColor: "#ffe0eb",
+    marginBottom: 16,
+  },
+  cardNoteCopy: {
+    flex: 1,
+    color: "#666",
+    fontSize: 12,
+    lineHeight: 17,
   },
   packagesGrid: {
     flexDirection: "row",
@@ -975,5 +1137,16 @@ const styles = StyleSheet.create({
     color: "#2196f3",
     fontSize: 12,
     fontWeight: "600",
+  },
+  cardCheckoutButton: {
+    backgroundColor: "#d81b60",
+    borderRadius: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+  },
+  cardCheckoutButtonText: {
+    color: "#fff",
+    fontSize: 11,
+    fontWeight: "700",
   },
 });

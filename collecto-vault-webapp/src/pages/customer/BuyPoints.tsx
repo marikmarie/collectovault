@@ -4,6 +4,7 @@ import Modal from "../../components/Modal";
 import Card from "../../components/Card";
 import Button from "../../components/Button";
 import api from "../../api";
+import { cardPaymentService } from "../../api/collecto";
 import {
   Zap,
   Heart,
@@ -49,7 +50,7 @@ export default function BuyPointsModal({
 
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [paymentMode, setPaymentMode] = useState<"mobilemoney" | "bank">(
+  const [paymentMode, setPaymentMode] = useState<"mobilemoney" | "card">(
     "mobilemoney",
   );
   const [phone, setPhone] = useState<string>("");
@@ -68,6 +69,12 @@ export default function BuyPointsModal({
   >("idle");
   const [queryLoading, setQueryLoading] = useState(false);
   const [queryError, setQueryError] = useState<string | null>(null);
+  const [cardCheckout, setCardCheckout] = useState<null | {
+    id: string;
+    checkoutUrl: string;
+    payload: Record<string, unknown>;
+  }>(null);
+  const [checkingCard, setCheckingCard] = useState(false);
 
   // Charge calculation states
   const [fetchedClientAddCash, setFetchedClientAddCash] = useState<any>(null);
@@ -164,6 +171,8 @@ export default function BuyPointsModal({
     setTxStatus("idle");
     setQueryLoading(false);
     setQueryError(null);
+    setCardCheckout(null);
+    setCheckingCard(false);
     setProcessing(false);
     setChargeAmount(0);
     setTotalAmount(0);
@@ -230,6 +239,7 @@ export default function BuyPointsModal({
     setPaymentMode("mobilemoney");
     setPhone("");
     setStep("select");
+    setCardCheckout(null);
     fetchActivePackages();
 
     requestAnimationFrame(() => scrollerRef.current?.scrollTo({ left: 0 }));
@@ -336,12 +346,44 @@ export default function BuyPointsModal({
         effectiveClientAddCash.charge = effectiveClientAddCash.charge_client === 1 ? effectiveClientAddCash.charge : 0;
       }
 
+      if (paymentMode === "card") {
+        const cardAmount = totalAmount || selectedPackage.price;
+        const cardPayload = {
+          vaultOTPToken,
+          collectoId,
+          clientId,
+          paymentOption: "card",
+          amount: selectedPackage.price,
+          cardAmount,
+          points: { points_used: selectedPackage.points },
+          purchaseTier: {
+            cost: selectedPackage.price,
+            name: selectedPackage.label,
+            points: selectedPackage.points,
+          },
+          clientAddCash: effectiveClientAddCash || { charge: 0, charge_client: 0 },
+          reference: `BUYPOINTS-${Date.now()}`,
+        };
+        const cardResponse = await cardPaymentService.start({
+          vaultOTPToken,
+          collectoId: String(collectoId || ""),
+          clientId: String(clientId || ""),
+          amount: cardAmount,
+          description: `Collecto Vault points: ${selectedPackage.label || selectedPackage.points + " points"}`,
+          customerName: localStorage.getItem("userName") || undefined,
+        });
+        const collection = cardResponse.data?.data;
+        if (!collection?.id || !collection.checkout_url) throw new Error("Unable to prepare secure card checkout.");
+        setCardCheckout({ id: collection.id, checkoutUrl: collection.checkout_url, payload: cardPayload });
+        return;
+      }
+
       const res = await api.post("/requestToPay", {
         vaultOTPToken,
         collectoId,
         clientId,
         phone: formattedPhone,
-        paymentOption: paymentMode,
+        paymentOption: "mobilemoney",
         amount: selectedPackage.price,
         points: { points_used: selectedPackage.points },
         purchaseTier: {
@@ -398,6 +440,37 @@ export default function BuyPointsModal({
       setStep("failure");
     } finally {
       setProcessing(false);
+    }
+  };
+
+  const checkCardPayment = async () => {
+    if (!cardCheckout) return;
+    setCheckingCard(true);
+    setQueryError(null);
+    try {
+      const statusResponse = await cardPaymentService.status(cardCheckout.id, true);
+      const collection = statusResponse.data?.data;
+      const status = String(collection?.status || "PENDING").toUpperCase();
+      if (status === "SUCCESS") {
+        const response = await cardPaymentService.complete(cardCheckout.id, cardCheckout.payload);
+        const data = response.data?.data ?? response.data ?? {};
+        setTxId(data.transactionId ?? cardCheckout.id);
+        setTxStatus("success");
+        setStep("success");
+        setCardCheckout(null);
+        onSuccess?.({ addedPoints: selectedPackage?.points });
+      } else if (status === "FAILED") {
+        setTxStatus("failed");
+        setStep("failure");
+        setError(collection?.reason || "Your card payment was not completed.");
+        setCardCheckout(null);
+      } else {
+        setQueryError("Your card payment is still pending. Finish checkout, then check again.");
+      }
+    } catch (err: any) {
+      setQueryError(err?.message ?? "Unable to check the card payment.");
+    } finally {
+      setCheckingCard(false);
     }
   };
   // --- Transaction Status Query ---
@@ -600,15 +673,25 @@ export default function BuyPointsModal({
                 <span>📱</span> Mobile Money
               </button>
               <button
-                disabled
-                className="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl border border-slate-100 bg-slate-50 text-slate-400 cursor-not-allowed opacity-60"
+                onClick={() => setPaymentMode("card")}
+                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl border text-sm font-semibold transition-all ${
+                  paymentMode === "card"
+                    ? `bg-[${PRIMARY}]/10 border-[${PRIMARY}] text-[${PRIMARY}] shadow-sm`
+                    : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                }`}
               >
-                <span>🏦</span> Bank (Soon)
+                <span>💳</span> Card
               </button>
             </div>
           </div>
 
-          <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+          {paymentMode === "card" && (
+            <div className="rounded-xl border border-pink-100 bg-pink-50/60 p-3 text-xs leading-5 text-slate-600">
+              <span className="mr-1">🔒</span> Card details are collected securely by PegPay. Collecto Vault never stores them.
+            </div>
+          )}
+
+          {paymentMode === "mobilemoney" && <div className="animate-in fade-in slide-in-from-top-1 duration-200">
             <label className="text-xs font-bold text-gray-500 uppercase block mb-2">
               Phone Number
             </label>
@@ -648,7 +731,7 @@ export default function BuyPointsModal({
                 <span className="text-xs font-medium">{phoneError}</span>
               </div>
             )}
-          </div>
+          </div>}
         </div>
 
         <div className="mt-3 flex justify-end gap-2 pt-2 border-t border-slate-100">
@@ -672,6 +755,22 @@ export default function BuyPointsModal({
           </Button>
         </div>
       </>
+    );
+  } else if (step === "confirm" && cardCheckout) {
+    content = (
+      <div className="py-5 text-center">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-pink-50 text-2xl">💳</div>
+        <h4 className="mt-3 text-lg font-bold text-slate-900">Your card checkout is ready</h4>
+        <p className="mx-auto mt-1 max-w-sm text-sm text-slate-600">Open PegPay to securely complete your payment, then come back here to confirm it.</p>
+        <div className="mx-auto mt-5 max-w-sm space-y-3">
+          <a href={cardCheckout.checkoutUrl} target="_blank" rel="noopener noreferrer" className="flex w-full items-center justify-center rounded-xl bg-[#d81b60] px-4 py-3 text-sm font-bold text-white hover:bg-[#b30f4d]">Open secure card checkout</a>
+          <button onClick={checkCardPayment} disabled={checkingCard} className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#d81b60] px-4 py-3 text-sm font-bold text-[#d81b60] disabled:opacity-50">
+            {checkingCard ? <><Loader2 className="h-4 w-4 animate-spin" /> Checking…</> : "I’ve paid — check status"}
+          </button>
+          {queryError && <p className="rounded-lg bg-red-50 p-3 text-xs text-red-700">{queryError}</p>}
+          <button onClick={() => { setCardCheckout(null); setStep("select"); }} className="text-sm font-semibold text-slate-500">Choose another payment method</button>
+        </div>
+      </div>
     );
   } else if (step === "confirm") {
     content = (
@@ -753,8 +852,9 @@ export default function BuyPointsModal({
 
         <h4 className="text-lg font-bold text-slate-900">Confirm payment</h4>
         <p className="text-slate-600 mt-1 max-w-sm mx-auto text-sm">
-          We've sent a payment request to your phone — approve it to complete
-          the top up.
+          {paymentMode === "card"
+            ? "Continue to PegPay’s secure checkout to complete your card payment."
+            : "We’ve sent a payment request to your phone — approve it to complete the top up."}
         </p>
 
         <div className="mt-3 mx-auto max-w-sm bg-white border border-slate-100 rounded-xl p-3 shadow-sm text-left">
@@ -792,9 +892,9 @@ export default function BuyPointsModal({
             </div>
           )}
 
-          <div className="mt-3 text-sm text-slate-500">
+          {paymentMode === "mobilemoney" && <div className="mt-3 text-sm text-slate-500">
             Mobile: <span className="text-slate-900 font-medium">{phone}</span>
-          </div>
+          </div>}
 
           <div className="mt-6">
             <div className="flex gap-3 items-center">
@@ -815,7 +915,7 @@ export default function BuyPointsModal({
                 {processing ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  "Confirm"
+                  paymentMode === "card" ? "Continue to card checkout" : "Confirm"
                 )}
               </Button>
             </div>

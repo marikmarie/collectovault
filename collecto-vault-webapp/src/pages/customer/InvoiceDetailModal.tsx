@@ -5,9 +5,10 @@ interface Props {
   invoice: any;
   onClose: () => void;
   onPaid?: () => Promise<void>;
+  onRequestPay?: (invoiceId: string) => void;
 }
 
-export default function InvoiceDetailModal({ invoice, onClose }: Props) {
+export default function InvoiceDetailModal({ invoice, onClose, onRequestPay }: Props) {
   const [tab, setTab] = useState<"details" | "payment">("details");
 
   const details = invoice?.details || {};
@@ -15,6 +16,7 @@ export default function InvoiceDetailModal({ invoice, onClose }: Props) {
   const payments = invoice?.payments || [];
   const amountLess = invoice?.amount_less ?? 0;
   const totalPaid = invoice?.total_amount_paid ?? 0;
+  const isPaid = Number(amountLess) <= 0;
 
   return (
     <div
@@ -188,6 +190,18 @@ export default function InvoiceDetailModal({ invoice, onClose }: Props) {
             </div>
           )}
         </div>
+
+        {!isPaid && details?.id && (
+          <div className="flex items-center justify-between border-t border-gray-100 bg-slate-50 px-6 py-4">
+            <span className="text-sm text-slate-600">Balance due: <strong className="text-slate-900">UGX {Number(amountLess).toLocaleString()}</strong></span>
+            <button
+              onClick={() => onRequestPay?.(String(details.id))}
+              className="rounded-lg bg-[#d81b60] px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-[#b30f4d]"
+            >
+              Pay invoice
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

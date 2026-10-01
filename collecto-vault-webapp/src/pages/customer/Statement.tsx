@@ -9,7 +9,7 @@ import {
   AlertCircle,
   X,
 } from "lucide-react";
-import { invoiceService } from "../../api/collecto";
+import { cardPaymentService, invoiceService } from "../../api/collecto";
 import api from "../../api";
 import InvoiceDetailModal from "./InvoiceDetailModal";
 import Button from "../../components/Button";
@@ -76,6 +76,7 @@ export default function StatementWithPoints() {
 
   // Payment controls
   const [payPhone, setPayPhone] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<"mobilemoney" | "card">("mobilemoney");
   const [pointsToUse, setPointsToUse] = useState<number>(0);
 
   // Phone verification
@@ -104,6 +105,11 @@ export default function StatementWithPoints() {
   const [lastQueriedStatus, setLastQueriedStatus] = useState<string | null>(
     null,
   );
+  const [cardCheckout, setCardCheckout] = useState<null | {
+    id: string;
+    checkoutUrl: string;
+    payload: Record<string, unknown>;
+  }>(null);
 
   const { toast, showToast } = useLocalToast();
 
@@ -274,10 +280,10 @@ export default function StatementWithPoints() {
   const fetchTransactions = useCallback(async () => {
     setLoadingType("transactions");
     try {
-      const clientId = clientId || "";
+      const vaultClientId = clientId || "";
       
       // Get transactions from loyaltySettings
-      const customerRes = await customerService.getCustomerData(collectoId || "", clientId || "");
+      const customerRes = await customerService.getCustomerData(collectoId || "", vaultClientId);
       const loyaltySettings = customerRes.data?.data?.loyaltySettings ?? {};
       const cashDetails = loyaltySettings?.client_cash_details ?? {};
       const clientAddCashSettings = loyaltySettings?.client_add_cash;
@@ -421,7 +427,7 @@ export default function StatementWithPoints() {
           ? mobileAmount
           : Math.max(0, balanceDue - pointsValueUGX);
 
-      if (!payPhone || !verified) {
+      if (paymentMethod === "mobilemoney" && (!payPhone || !verified)) {
         showToast(
           "Please verify a phone number for the mobile money portion.",
           "error",
@@ -445,8 +451,8 @@ export default function StatementWithPoints() {
         collectoId,
         clientId,
         reference: invoiceId,
-        paymentOption: "mobilemoney",
-        phone: formattedPhone,
+        paymentOption: paymentMethod,
+        ...(paymentMethod === "mobilemoney" ? { phone: formattedPhone } : {}),
         staffId: staffId || "",
         amount: mobilePayment,
       };
@@ -456,6 +462,23 @@ export default function StatementWithPoints() {
           points_used: pointsUse,
           discount_amount: pointsValueUGX,
         };
+      }
+
+      if (paymentMethod === "card") {
+        const cardResponse = await cardPaymentService.start({
+          vaultOTPToken,
+          collectoId: String(collectoId || ""),
+          clientId: String(clientId || ""),
+          amount: mobilePayment,
+          description: `Collecto Vault invoice ${invoiceId}`,
+          customerName: localStorage.getItem("userName") || undefined,
+        });
+        const collection = cardResponse.data?.data;
+        if (!collection?.id || !collection.checkout_url) throw new Error("Unable to prepare secure card checkout.");
+        setCardCheckout({ id: collection.id, checkoutUrl: collection.checkout_url, payload: { ...payload, cardAmount: mobilePayment } });
+        setPaymentResult({ transactionId: collection.id, message: "Your secure card checkout is ready. Complete payment on PegPay, then confirm it here.", status: "pending" });
+        setLastQueriedStatus("pending");
+        return;
       }
 
       const response = await invoiceService.payInvoice(payload);
@@ -511,6 +534,35 @@ export default function StatementWithPoints() {
 
 
   const queryTxStatus = async (txIdParam?: string | null) => {
+    if (cardCheckout) {
+      setQueryLoading(true);
+      setQueryError(null);
+      try {
+        const statusResponse = await cardPaymentService.status(cardCheckout.id, true);
+        const collection = statusResponse.data?.data;
+        const status = String(collection?.status || "PENDING").toUpperCase();
+        if (status === "SUCCESS") {
+          const response = await cardPaymentService.complete(cardCheckout.id, cardCheckout.payload);
+          const data = response.data?.data ?? response.data ?? {};
+          setPaymentResult({ transactionId: data.transactionId ?? cardCheckout.id, message: data.message ?? "Your card payment has been confirmed.", status: "success" });
+          setLastQueriedStatus("success");
+          setCardCheckout(null);
+          await Promise.allSettled([fetchInvoices(), fetchTransactions(), fetchCustomerAndRelated()]);
+        } else if (status === "FAILED") {
+          setPaymentResult((current) => current ? { ...current, status: "failed", message: collection?.reason || "Your card payment was not completed." } : current);
+          setLastQueriedStatus("failed");
+          setCardCheckout(null);
+        } else {
+          setLastQueriedStatus("pending");
+          setQueryError("Your card payment is still pending. Finish checkout, then check again.");
+        }
+      } catch (err: any) {
+        setQueryError(err?.message ?? "Unable to check the card payment.");
+      } finally {
+        setQueryLoading(false);
+      }
+      return;
+    }
     const finalTxId = txIdParam ?? paymentResult?.transactionId;
 
     if (!finalTxId) {
@@ -597,7 +649,9 @@ export default function StatementWithPoints() {
       setAccountName(null);
       setVerified(false);
       setPhoneError(null);
+      setPaymentMethod("mobilemoney");
       setPaymentResult(null);
+      setCardCheckout(null);
       setQueryError(null);
       setLastQueriedStatus(null);
       return;
@@ -613,6 +667,7 @@ export default function StatementWithPoints() {
     setPointsToUse(0);
     setMobileAmount(amount);
     setPaymentResult(null);
+    setCardCheckout(null);
     setQueryError(null);
     setLastQueriedStatus(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -933,13 +988,16 @@ export default function StatementWithPoints() {
 
                   {/* Query button in status box */}
                   {lastQueriedStatus === "pending" && (
-                    <button
-                      onClick={() => queryTxStatus(paymentResult.transactionId)}
-                      disabled={queryLoading}
-                      className="mt-3 w-full bg-blue-600 text-white font-semibold py-2 px-3 rounded-md text-sm hover:bg-blue-700 disabled:opacity-50 transition-colors"
-                    >
-                      {queryLoading ? "⏳ Checking..." : "🔄 Check Status Now"}
-                    </button>
+                    <div className="mt-3 space-y-2">
+                      {cardCheckout && <a href={cardCheckout.checkoutUrl} target="_blank" rel="noopener noreferrer" className="flex w-full items-center justify-center rounded-md bg-[#d81b60] px-3 py-2 text-sm font-semibold text-white hover:bg-[#b30f4d]">Open secure card checkout</a>}
+                      <button
+                        onClick={() => queryTxStatus(paymentResult.transactionId)}
+                        disabled={queryLoading}
+                        className="w-full bg-blue-600 text-white font-semibold py-2 px-3 rounded-md text-sm hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                      >
+                        {queryLoading ? "⏳ Checking..." : cardCheckout ? "I’ve paid — check status" : "🔄 Check Status Now"}
+                      </button>
+                    </div>
                   )}
                 </div>
                 <hr className="mb-4 border-gray-200" />
@@ -1055,7 +1113,7 @@ export default function StatementWithPoints() {
 
                   <div className="flex-1" style={{ flexBasis: "60%" }}>
                     <label className="text-xs font-bold text-gray-500 uppercase block mb-1">
-                      Amount (mobile money)
+                      Amount ({paymentMethod === "card" ? "card" : "mobile money"})
                     </label>
                     <input
                       type="number"
@@ -1083,7 +1141,7 @@ export default function StatementWithPoints() {
                   if ((pointsToUse ?? 0) > 0 && remaining <= 0) {
                     return (
                       <p className="text-xs mt-2 text-red-600">
-                        Reduce points so that there is a mobile-money portion.
+                        Reduce points so that there is a payment portion.
                       </p>
                     );
                   }
@@ -1092,8 +1150,17 @@ export default function StatementWithPoints() {
               </div>
             </div>
 
+            <div className="mb-4">
+              <label className="mb-2 block text-xs font-bold uppercase text-gray-500">Payment method</label>
+              <div className="grid grid-cols-2 gap-2 rounded-xl bg-slate-50 p-1">
+                <button type="button" onClick={() => setPaymentMethod("mobilemoney")} className={`rounded-lg px-3 py-2 text-sm font-semibold ${paymentMethod === "mobilemoney" ? "bg-white text-[#d81b60] shadow-sm" : "text-slate-500"}`}>📱 Mobile money</button>
+                <button type="button" onClick={() => setPaymentMethod("card")} className={`rounded-lg px-3 py-2 text-sm font-semibold ${paymentMethod === "card" ? "bg-white text-[#d81b60] shadow-sm" : "text-slate-500"}`}>💳 Card</button>
+              </div>
+              {paymentMethod === "card" && <p className="mt-2 rounded-lg border border-pink-100 bg-pink-50 p-2 text-xs leading-5 text-slate-600">Your card details are entered securely on PegPay and are never stored by Collecto Vault.</p>}
+            </div>
+
             {/* Phone input for mobile money portion */}
-            <div className="mb-6">
+            {paymentMethod === "mobilemoney" && <div className="mb-6">
               <label className="text-xs font-bold text-gray-500 uppercase block mb-2">
                 Phone Number
               </label>
@@ -1141,7 +1208,7 @@ export default function StatementWithPoints() {
                   <span className="text-xs font-medium">{phoneError}</span>
                 </div>
               )}
-            </div>
+            </div>}
 
                 {/* Action buttons */}
                 <div className="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
@@ -1156,10 +1223,10 @@ export default function StatementWithPoints() {
 
                   <Button
                     onClick={() => handlePayInvoice(payingInvoice!)}
-                    disabled={loading || verifying || !verified}
+                    disabled={loading || verifying || (paymentMethod === "mobilemoney" && !verified)}
                     className="bg-[#e9e0e3] text-gray-900 font-bold py-1.5 px-5 rounded-md text-sm disabled:opacity-50"
                   >
-                    {loading ? "Processing..." : "Continue"}
+                    {loading ? "Processing..." : paymentMethod === "card" ? "Continue to card checkout" : "Continue"}
                   </Button>
                 </div>
               </>
@@ -1186,6 +1253,13 @@ export default function StatementWithPoints() {
         <InvoiceDetailModal
           invoice={selectedInvoice}
           onClose={() => setSelectedInvoice(null)}
+          onRequestPay={(invoiceId) => {
+            setSelectedInvoice(null);
+            setPaymentMethod("mobilemoney");
+            setCardCheckout(null);
+            setPaymentResult(null);
+            setPayingInvoice(invoiceId);
+          }}
           onPaid={async () => {
             await fetchInvoices();
             setSelectedInvoice(null);

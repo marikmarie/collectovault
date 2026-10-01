@@ -1,8 +1,10 @@
 import api from "@/src/api";
+import { cardPaymentService } from "@/src/api/collecto";
 import { customerService } from "@/src/api/customer";
 import { useAuth } from "@/src/context/AuthContext";
 import storage from "@/src/utils/storage";
 import { Feather } from "@expo/vector-icons";
+import * as WebBrowser from "expo-web-browser";
 import React, { useEffect, useState, useRef } from "react";
 import {
     ActivityIndicator,
@@ -36,6 +38,7 @@ export default function AddCashModal({
 }: AddCashModalProps) {
   const { user } = useAuth();
   const [amount, setAmount] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<"mobilemoney" | "card">("mobilemoney");
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [verifying, setVerifying] = useState(false);
@@ -55,11 +58,18 @@ export default function AddCashModal({
   const [queryLoading, setQueryLoading] = useState(false);
   const [queryError, setQueryError] = useState<string | null>(null);
   const [lastQueriedStatus, setLastQueriedStatus] = useState<string | null>(null);
+  const [cardCheckout, setCardCheckout] = useState<null | {
+    id: string;
+    checkoutUrl: string;
+    payload: Record<string, unknown>;
+  }>(null);
+  const [checkingCard, setCheckingCard] = useState(false);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (visible) {
       setAmount("");
+      setPaymentMethod("mobilemoney");
       setPhone("");
       setLoading(false);
       setVerifying(false);
@@ -69,6 +79,8 @@ export default function AddCashModal({
       setPaymentResult(null);
       setQueryError(null);
       setLastQueriedStatus(null);
+      setCardCheckout(null);
+      setCheckingCard(false);
 
       // Fetch clientAddCash if not provided
       if (!clientAddCash && user?.clientId) {
@@ -295,7 +307,7 @@ export default function AddCashModal({
   };
 
   const handleAddCash = async () => {
-    if (!verified) {
+    if (paymentMethod === "mobilemoney" && !verified) {
       Alert.alert(
         "Verify phone",
         "Please verify your phone number before proceeding.",
@@ -315,7 +327,7 @@ export default function AddCashModal({
     }
 
     const trimmedPhone = phone.trim();
-    if (!trimmedPhone) {
+    if (paymentMethod === "mobilemoney" && !trimmedPhone) {
       Alert.alert("Missing phone", "Please enter your mobile money number.");
       return;
     }
@@ -332,6 +344,31 @@ export default function AddCashModal({
           effectiveClientAddCash.charge_client === 1
             ? effectiveClientAddCash.charge
             : 0;
+      }
+
+      if (paymentMethod === "card") {
+        const cardAmount = totalAmount || numAmount;
+        const cardPayload = {
+          vaultOTPToken,
+          collectoId,
+          clientId: user?.clientId,
+          paymentOption: "card",
+          amount: numAmount,
+          cardAmount,
+          reference: `ADDCASH-${Date.now()}`,
+          clientAddCash: effectiveClientAddCash || { charge: 0, charge_client: 0 },
+        };
+        const cardResponse = await cardPaymentService.start({
+          vaultOTPToken: vaultOTPToken || undefined,
+          collectoId: String(collectoId || ""),
+          clientId: String(user?.clientId || ""),
+          amount: cardAmount,
+          description: "Collecto Vault cash top-up",
+        });
+        const collection = cardResponse.data?.data;
+        if (!collection?.id || !collection.checkout_url) throw new Error("Unable to prepare secure card checkout.");
+        setCardCheckout({ id: collection.id, checkoutUrl: collection.checkout_url, payload: cardPayload });
+        return;
       }
 
       const res = await api.post("/requestToPay", {
@@ -392,6 +429,44 @@ export default function AddCashModal({
     }
   };
 
+  const openCardCheckout = async () => {
+    if (!cardCheckout) return;
+    await WebBrowser.openBrowserAsync(cardCheckout.checkoutUrl);
+  };
+
+  const checkCardPayment = async () => {
+    if (!cardCheckout) return;
+    setCheckingCard(true);
+    setPhoneError(null);
+    try {
+      const statusResponse = await cardPaymentService.status(cardCheckout.id, true);
+      const collection = statusResponse.data?.data;
+      const status = String(collection?.status || "PENDING").toUpperCase();
+      if (status === "SUCCESS") {
+        const response = await cardPaymentService.complete(cardCheckout.id, cardCheckout.payload);
+        const data = response.data?.data ?? response.data ?? {};
+        setPaymentResult({
+          transactionId: data.transactionId ?? cardCheckout.id,
+          status: "success",
+          message: data.message ?? "Your card payment has been confirmed.",
+        });
+        setLastQueriedStatus("success");
+        setCardCheckout(null);
+        onSuccess?.();
+      } else if (status === "FAILED") {
+        setPaymentResult({ transactionId: cardCheckout.id, status: "failed", message: collection?.reason || "Your card payment was not completed." });
+        setLastQueriedStatus("failed");
+        setCardCheckout(null);
+      } else {
+        setPhoneError("Your card payment is still pending. Finish checkout, then check again.");
+      }
+    } catch (err: any) {
+      setPhoneError(err?.message ?? "Unable to check the card payment.");
+    } finally {
+      setCheckingCard(false);
+    }
+  };
+
   return (
     <Modal visible={visible} transparent animationType="slide">
       <KeyboardAvoidingView
@@ -411,11 +486,22 @@ export default function AddCashModal({
             keyboardShouldPersistTaps="handled"
             scrollEnabled={true}
           >
-            {!paymentResult ? (
+            {!paymentResult && !cardCheckout ? (
               <>
                 <Text style={styles.sectionTitle}>
-                  Add funds using mobile money
+                  Add funds to your wallet
                 </Text>
+
+                <View style={styles.methodSwitcher}>
+                  <TouchableOpacity style={[styles.methodButton, paymentMethod === "mobilemoney" && styles.methodButtonActive]} onPress={() => setPaymentMethod("mobilemoney")}>
+                    <Feather name="smartphone" size={16} color={paymentMethod === "mobilemoney" ? "#d81b60" : "#666"} />
+                    <Text style={[styles.methodButtonText, paymentMethod === "mobilemoney" && styles.methodButtonTextActive]}>Mobile money</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.methodButton, paymentMethod === "card" && styles.methodButtonActive]} onPress={() => setPaymentMethod("card")}>
+                    <Feather name="credit-card" size={16} color={paymentMethod === "card" ? "#d81b60" : "#666"} />
+                    <Text style={[styles.methodButtonText, paymentMethod === "card" && styles.methodButtonTextActive]}>Card</Text>
+                  </TouchableOpacity>
+                </View>
 
                 <View style={styles.inputGroup}>
                   <Text style={styles.inputLabel}>Amount (UGX)</Text>
@@ -440,7 +526,17 @@ export default function AddCashModal({
                   )}
                 </View>
 
-                <View style={styles.inputGroup}>
+                {paymentMethod === "card" && (
+                  <View style={styles.cardNote}>
+                    <Feather name="shield" size={18} color="#d81b60" />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.cardNoteTitle}>Secure card checkout</Text>
+                      <Text style={styles.cardNoteCopy}>You will enter card details securely on PegPay. Collecto Vault never stores them.</Text>
+                    </View>
+                  </View>
+                )}
+
+                {paymentMethod === "mobilemoney" && <View style={styles.inputGroup}>
                   <Text style={styles.inputLabel}>Phone Number</Text>
                   <View style={styles.phoneInputGroup}>
                     <TextInput
@@ -475,14 +571,24 @@ export default function AddCashModal({
                       </View>
                     </View>
                   )}
-                </View>
+                </View>}
 
                 <Text style={styles.helpText}>
-                  After confirming the payment on your phone, your wallet and
-                  transaction history will update shortly.
+                  {paymentMethod === "card"
+                    ? "Your card is charged on PegPay’s secure page. Your wallet updates after the payment is confirmed."
+                    : "After confirming the payment on your phone, your wallet and transaction history will update shortly."}
                 </Text>
               </>
-            ) : (
+            ) : cardCheckout ? (
+              <View style={styles.statusContainer}>
+                <View style={[styles.statusIcon, { backgroundColor: "#fff0f6" }]}>
+                  <Feather name="credit-card" size={42} color="#d81b60" />
+                </View>
+                <Text style={styles.statusTitle}>Your card checkout is ready</Text>
+                <Text style={styles.statusMessage}>Complete the payment on PegPay, then return here to confirm it.</Text>
+                {phoneError && <View style={styles.errorBox}><Text style={styles.errorText}>{phoneError}</Text></View>}
+              </View>
+            ) : paymentResult ? (
               <View style={styles.statusContainer}>
                 {paymentResult.status === "pending" && (
                   <>
@@ -530,21 +636,21 @@ export default function AddCashModal({
                   </View>
                 )}
               </View>
-            )}
+            ) : null}
           </ScrollView>
 
           <View style={styles.footer}>
-            {!paymentResult ? (
+            {!paymentResult && !cardCheckout ? (
               <>
                 <TouchableOpacity
                   style={[styles.proceedBtn, loading && styles.proceedBtnDisabled]}
                   onPress={handleAddCash}
-                  disabled={loading || !verified || !amount}
+                  disabled={loading || !amount || (paymentMethod === "mobilemoney" && !verified)}
                 >
                   {loading ? (
                     <ActivityIndicator color="#fff" />
                   ) : (
-                    <Text style={styles.proceedBtnText}>Request Payment</Text>
+                    <Text style={styles.proceedBtnText}>{paymentMethod === "card" ? "Continue to card checkout" : "Request Payment"}</Text>
                   )}
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -555,7 +661,19 @@ export default function AddCashModal({
                   <Text style={styles.cancelBtnText}>Cancel</Text>
                 </TouchableOpacity>
               </>
-            ) : (
+            ) : cardCheckout ? (
+              <View style={styles.cardActions}>
+                <TouchableOpacity style={styles.proceedBtn} onPress={openCardCheckout}>
+                  <Text style={styles.proceedBtnText}>Open Secure Card Checkout</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.cancelBtn, checkingCard && styles.proceedBtnDisabled]} onPress={checkCardPayment} disabled={checkingCard}>
+                  {checkingCard ? <ActivityIndicator color="#d81b60" /> : <Text style={styles.cancelBtnText}>I’ve paid — Check Status</Text>}
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.textActionButton} onPress={() => setCardCheckout(null)}>
+                  <Text style={styles.textAction}>Choose another method</Text>
+                </TouchableOpacity>
+              </View>
+            ) : paymentResult ? (
               <>
                 {paymentResult.status === "pending" && (
                   <>
@@ -603,7 +721,7 @@ export default function AddCashModal({
                   </>
                 )}
               </>
-            )}
+            ) : null}
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -645,6 +763,60 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#555",
     marginBottom: 16,
+  },
+  methodSwitcher: {
+    flexDirection: "row",
+    gap: 8,
+    padding: 4,
+    borderRadius: 12,
+    backgroundColor: "#f7f7f8",
+    marginBottom: 16,
+  },
+  methodButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 9,
+  },
+  methodButtonActive: {
+    backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
+  },
+  methodButtonText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#666",
+  },
+  methodButtonTextActive: {
+    color: "#d81b60",
+  },
+  cardNote: {
+    flexDirection: "row",
+    gap: 10,
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: "#fff5f8",
+    borderWidth: 1,
+    borderColor: "#ffe0eb",
+    marginBottom: 16,
+  },
+  cardNoteTitle: {
+    color: "#333",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  cardNoteCopy: {
+    color: "#666",
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 3,
   },
   inputGroup: {
     marginBottom: 16,
@@ -781,6 +953,19 @@ const styles = StyleSheet.create({
     color: "#666",
     fontWeight: "600",
     fontSize: 14,
+  },
+  textActionButton: {
+    alignItems: "center",
+    paddingVertical: 6,
+  },
+  textAction: {
+    color: "#666",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  cardActions: {
+    flex: 1,
+    gap: 8,
   },
   chargeBreakdown: {
     marginTop: 8,

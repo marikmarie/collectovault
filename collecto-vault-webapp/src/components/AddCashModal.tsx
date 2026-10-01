@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { X, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
-import { invoiceService } from "../api/collecto";
+import { cardPaymentService, invoiceService } from "../api/collecto";
 import { customerService } from "../api/customer";
 import api from "../api";
 
@@ -14,8 +14,9 @@ type Props = {
   };
 };
 
-export default function AddCashModal({ open, onClose,  clientAddCash }: Props) {
+export default function AddCashModal({ open, onClose, onSuccess, clientAddCash }: Props) {
   const [amount, setAmount] = useState<string>("");
+  const [paymentMethod, setPaymentMethod] = useState<"mobilemoney" | "card">("mobilemoney");
   const [phone, setPhone] = useState<string>("");
   const [verified, setVerified] = useState<boolean>(false);
   const [verifying, setVerifying] = useState<boolean>(false);
@@ -35,6 +36,12 @@ export default function AddCashModal({ open, onClose,  clientAddCash }: Props) {
   const [queryLoading, setQueryLoading] = useState(false);
   const [queryError, setQueryError] = useState<string | null>(null);
   const [lastQueriedStatus, setLastQueriedStatus] = useState<string | null>(null);
+  const [cardCheckout, setCardCheckout] = useState<null | {
+    id: string;
+    checkoutUrl: string;
+    payload: Record<string, unknown>;
+  }>(null);
+  const [checkingCard, setCheckingCard] = useState(false);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -46,6 +53,7 @@ export default function AddCashModal({ open, onClose,  clientAddCash }: Props) {
       }
       
       setAmount("");
+      setPaymentMethod("mobilemoney");
       setPhone("");
       setVerified(false);
       setVerifying(false);
@@ -55,6 +63,8 @@ export default function AddCashModal({ open, onClose,  clientAddCash }: Props) {
       setPaymentResult(null);
       setQueryError(null);
       setLastQueriedStatus(null);
+      setCardCheckout(null);
+      setCheckingCard(false);
 
       // Fetch clientAddCash if not provided
       if (!clientAddCash) {
@@ -252,7 +262,7 @@ export default function AddCashModal({ open, onClose,  clientAddCash }: Props) {
   };
 
   const submit = async () => {
-    if (!verified) {
+    if (paymentMethod === "mobilemoney" && !verified) {
       setError("Please verify phone before adding cash.");
       return;
     }
@@ -289,6 +299,30 @@ export default function AddCashModal({ open, onClose,  clientAddCash }: Props) {
         },
       };
 
+      if (paymentMethod === "card") {
+        const cardAmount = totalAmount || parsed;
+        const cardPayload = {
+          ...requestPayload,
+          paymentOption: "card",
+          phone: undefined,
+          cardAmount,
+        };
+        const cardResponse = await cardPaymentService.start({
+          vaultOTPToken: sessionStorage.getItem("vaultOtpToken") || undefined,
+          collectoId,
+          clientId,
+          amount: cardAmount,
+          description: "Collecto Vault cash top-up",
+          customerName: localStorage.getItem("userName") || undefined,
+        });
+        const collection = cardResponse.data?.data;
+        if (!collection?.id || !collection.checkout_url) {
+          throw new Error("Unable to prepare secure card checkout.");
+        }
+        setCardCheckout({ id: collection.id, checkoutUrl: collection.checkout_url, payload: cardPayload });
+        return;
+      }
+
      
      // const response = await invoiceService.requestPayment(requestPayload);
       const response = await invoiceService.clientAddCash(requestPayload);
@@ -320,6 +354,39 @@ export default function AddCashModal({ open, onClose,  clientAddCash }: Props) {
     }
   };
 
+  const checkCardPayment = async () => {
+    if (!cardCheckout) return;
+    setCheckingCard(true);
+    setError("");
+    try {
+      const statusResponse = await cardPaymentService.status(cardCheckout.id, true);
+      const collection = statusResponse.data?.data;
+      const status = String(collection?.status || "PENDING").toUpperCase();
+      if (status === "SUCCESS") {
+        const response = await cardPaymentService.complete(cardCheckout.id, cardCheckout.payload);
+        const data = response.data?.data ?? response.data ?? {};
+        setPaymentResult({
+          transactionId: data.transactionId ?? cardCheckout.id,
+          status: "success",
+          message: data.message ?? "Your card payment has been confirmed.",
+        });
+        setLastQueriedStatus("success");
+        setCardCheckout(null);
+        onSuccess?.();
+      } else if (status === "FAILED") {
+        setPaymentResult({ transactionId: cardCheckout.id, status: "failed", message: collection?.reason || "Your card payment was not completed." });
+        setLastQueriedStatus("failed");
+        setCardCheckout(null);
+      } else {
+        setError("Your card payment is still pending. Finish checkout, then check again.");
+      }
+    } catch (err: any) {
+      setError(err?.message ?? "Unable to check the card payment.");
+    } finally {
+      setCheckingCard(false);
+    }
+  };
+
   const trimmedPhone = (value: string) => {
     const num = value.trim();
     if (num.startsWith("0")) {
@@ -347,10 +414,27 @@ export default function AddCashModal({ open, onClose,  clientAddCash }: Props) {
         </div>
 
         <div className="p-4 space-y-3">
-          {!paymentResult ? (
+          {!paymentResult && !cardCheckout ? (
             <>
               <div className="text-sm text-gray-600">
-                Add cash using your mobile money number (MTN/ Airtel).{" "}
+                Choose how you would like to add cash. Card details are entered securely with PegPay.
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 rounded-xl bg-slate-50 p-1" role="group" aria-label="Payment method">
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod("mobilemoney")}
+                  className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${paymentMethod === "mobilemoney" ? "bg-white text-[#d81b60] shadow-sm" : "text-slate-500"}`}
+                >
+                  <span aria-hidden>📱</span> Mobile money
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setPaymentMethod("card"); setError(""); }}
+                  className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${paymentMethod === "card" ? "bg-white text-[#d81b60] shadow-sm" : "text-slate-500"}`}
+                >
+                  <span aria-hidden>💳</span> Card
+                </button>
               </div>
 
               <div>
@@ -378,7 +462,14 @@ export default function AddCashModal({ open, onClose,  clientAddCash }: Props) {
                 )}
               </div>
 
-              <div>
+              {paymentMethod === "card" && (
+                <div className="rounded-xl border border-pink-100 bg-pink-50/60 p-3 text-sm text-slate-600">
+                  <p className="font-semibold text-slate-800">Secure card checkout</p>
+                  <p className="mt-1 text-xs leading-5">You will enter your card details on PegPay’s secure page. Collecto Vault never sees or stores your card details.</p>
+                </div>
+              )}
+
+              {paymentMethod === "mobilemoney" && <div>
                 <label className="text-xs font-semibold uppercase text-gray-500">
                   Phone number
                 </label>
@@ -413,7 +504,7 @@ export default function AddCashModal({ open, onClose,  clientAddCash }: Props) {
                     <CheckCircle2 size={16} /> {accountName}
                   </div>
                 )}
-              </div>
+              </div>}
 
               {error && (
                 <div className="p-2 bg-red-50 text-red-700 rounded-md flex items-center gap-2 text-sm">
@@ -425,9 +516,9 @@ export default function AddCashModal({ open, onClose,  clientAddCash }: Props) {
                 <button
                   onClick={submit}
                   className="flex-[0.7] py-2 rounded-lg bg-[#d81b60] text-white font-bold hover:bg-[#b30f4d] disabled:opacity-50"
-                  disabled={loading || !verified}
+                  disabled={loading || (paymentMethod === "mobilemoney" && !verified)}
                 >
-                  {loading ? "Processing..." : "Request Payment"}
+                  {loading ? "Processing..." : paymentMethod === "card" ? "Continue to card checkout" : "Request Payment"}
                 </button>
                 <button
                   onClick={onClose}
@@ -438,7 +529,23 @@ export default function AddCashModal({ open, onClose,  clientAddCash }: Props) {
                 </button>
               </div>
             </>
-          ) : (
+          ) : cardCheckout ? (
+            <div className="py-5 space-y-4">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-pink-50 text-2xl">💳</div>
+              <div className="text-center">
+                <h3 className="text-lg font-bold text-slate-900">Your card checkout is ready</h3>
+                <p className="mt-1 text-sm text-slate-600">Complete the payment on PegPay, then return here to confirm it.</p>
+              </div>
+              <a href={cardCheckout.checkoutUrl} target="_blank" rel="noopener noreferrer" className="flex w-full items-center justify-center rounded-lg bg-[#d81b60] px-4 py-2.5 font-bold text-white hover:bg-[#b30f4d]">
+                Open secure card checkout
+              </a>
+              <button onClick={checkCardPayment} disabled={checkingCard} className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#d81b60] px-4 py-2.5 font-bold text-[#d81b60] disabled:opacity-50">
+                {checkingCard ? <><Loader2 size={16} className="animate-spin" /> Checking…</> : "I’ve completed payment — check status"}
+              </button>
+              {error && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700"><AlertCircle className="mr-1 inline" size={14} />{error}</div>}
+              <button onClick={() => setCardCheckout(null)} className="w-full text-sm font-semibold text-slate-500">Choose another method</button>
+            </div>
+          ) : paymentResult ? (
             <>
               <div className="flex flex-col items-center justify-center py-8 space-y-4">
                 {paymentResult.status === "pending" && (
@@ -536,7 +643,7 @@ export default function AddCashModal({ open, onClose,  clientAddCash }: Props) {
                 )}
               </div>
             </>
-          )}
+          ) : null}
         </div>
       </div>
     </div>

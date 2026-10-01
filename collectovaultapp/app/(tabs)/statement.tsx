@@ -18,13 +18,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useAuth } from '@/src/context/AuthContext';
 import { useHelpFeedback } from '@/src/context/HelpFeedbackContext';
-import { invoiceService } from '@/src/api/collecto';
+import { cardPaymentService, invoiceService } from '@/src/api/collecto';
 import { customerService } from '@/src/api/customer';
 import storage from '@/src/utils/storage';
 import InvoiceDetailModal from '@/components/InvoiceDetailModal';
 import TransactionDetailModal from '@/components/TransactionDetailModal';
 import PostPaymentFeedback from '@/components/PostPaymentFeedback';
 import api from '@/src/api';
+import * as WebBrowser from 'expo-web-browser';
 
 interface TransactionItem {
   id: string;
@@ -75,6 +76,7 @@ export default function StatementScreen() {
   const [pointsToUse, setPointsToUse] = useState<number>(0);
   const [mobileAmount, setMobileAmount] = useState<number | undefined>(undefined);
   const [payPhone, setPayPhone] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'mobilemoney' | 'card'>('mobilemoney');
   const [staffId, setStaffId] = useState('');
   const [verifying, setVerifying] = useState(false);
   const [verified, setVerified] = useState(false);
@@ -89,6 +91,11 @@ export default function StatementScreen() {
   const [queryLoading, setQueryLoading] = useState(false);
   const [queryError, setQueryError] = useState<string | null>(null);
   const [lastQueriedStatus, setLastQueriedStatus] = useState<string | null>(null);
+  const [cardCheckout, setCardCheckout] = useState<null | {
+    id: string;
+    checkoutUrl: string;
+    payload: Record<string, unknown>;
+  }>(null);
 
   // Customer data for points
   const [pointsBalance, setPointsBalance] = useState<number>(0);
@@ -284,7 +291,7 @@ export default function StatementScreen() {
         ? mobileAmount
         : Math.max(0, balanceDue - pointsValueUGX);
 
-      if (!payPhone || !verified) {
+      if (paymentMethod === 'mobilemoney' && (!payPhone || !verified)) {
         Alert.alert('Error', 'Please verify a phone number for the mobile money portion.');
         setProcessing(false);
         return;
@@ -307,8 +314,8 @@ export default function StatementScreen() {
         collectoId,
         clientId,
         reference: invoiceId,
-        paymentOption: 'mobilemoney',
-        phone: formattedPhone,
+        paymentOption: paymentMethod,
+        ...(paymentMethod === 'mobilemoney' ? { phone: formattedPhone } : {}),
         staffId: staffId || '',
         amount: mobilePayment,
       };
@@ -318,6 +325,22 @@ export default function StatementScreen() {
           points_used: pointsUse,
           discount_amount: pointsValueUGX,
         };
+      }
+
+      if (paymentMethod === 'card') {
+        const cardResponse = await cardPaymentService.start({
+          vaultOTPToken: vaultOTPToken || undefined,
+          collectoId: String(collectoId || ''),
+          clientId: String(clientId || ''),
+          amount: mobilePayment,
+          description: `Collecto Vault invoice ${invoiceId}`,
+        });
+        const collection = cardResponse.data?.data;
+        if (!collection?.id || !collection.checkout_url) throw new Error('Unable to prepare secure card checkout.');
+        setCardCheckout({ id: collection.id, checkoutUrl: collection.checkout_url, payload: { ...payload, cardAmount: mobilePayment } });
+        setPaymentResult({ transactionId: collection.id, message: 'Your secure card checkout is ready. Complete payment on PegPay, then confirm it here.', status: 'pending' });
+        setLastQueriedStatus('pending');
+        return;
       }
 
       const response = await invoiceService.payInvoice(payload);
@@ -362,6 +385,35 @@ export default function StatementScreen() {
 
   // Query transaction status
   const queryTxStatus = async (txIdParam?: string | null) => {
+    if (cardCheckout) {
+      setQueryLoading(true);
+      setQueryError(null);
+      try {
+        const statusResponse = await cardPaymentService.status(cardCheckout.id, true);
+        const collection = statusResponse.data?.data;
+        const status = String(collection?.status || 'PENDING').toUpperCase();
+        if (status === 'SUCCESS') {
+          const response = await cardPaymentService.complete(cardCheckout.id, cardCheckout.payload);
+          const data = response.data?.data ?? response.data ?? {};
+          setPaymentResult({ transactionId: data.transactionId ?? cardCheckout.id, message: data.message ?? 'Your card payment has been confirmed.', status: 'success' });
+          setLastQueriedStatus('success');
+          setCardCheckout(null);
+          await Promise.allSettled([fetchInvoices(), fetchTransactions(), fetchCustomerData()]);
+        } else if (status === 'FAILED') {
+          setPaymentResult((current) => current ? { ...current, status: 'failed', message: collection?.reason || 'Your card payment was not completed.' } : current);
+          setLastQueriedStatus('failed');
+          setCardCheckout(null);
+        } else {
+          setLastQueriedStatus('pending');
+          setQueryError('Your card payment is still pending. Finish checkout, then check again.');
+        }
+      } catch (err: any) {
+        setQueryError(err?.message ?? 'Unable to check the card payment.');
+      } finally {
+        setQueryLoading(false);
+      }
+      return;
+    }
     const finalTxId = txIdParam ?? paymentResult?.transactionId;
 
     if (!finalTxId) {
@@ -603,6 +655,9 @@ export default function StatementScreen() {
                       style={styles.payNowButton}
                       onPress={() => {
                         setPayingInvoice(invId);
+                        setPaymentMethod('mobilemoney');
+                        setCardCheckout(null);
+                        setPaymentResult(null);
                         setPaymentModalVisible(true);
                       }}
                     >
@@ -717,6 +772,9 @@ export default function StatementScreen() {
           }}
           onRequestPay={(invoiceId) => {
             setPayingInvoice(invoiceId);
+            setPaymentMethod('mobilemoney');
+            setCardCheckout(null);
+            setPaymentResult(null);
             setPaymentModalVisible(true);
           }}
         />
@@ -764,15 +822,22 @@ export default function StatementScreen() {
                   <Text style={styles.resultMessage}>{paymentResult.message}</Text>
                   
                   {lastQueriedStatus === 'pending' && (
-                    <TouchableOpacity
-                      style={styles.checkStatusButton}
-                      onPress={() => queryTxStatus(paymentResult.transactionId)}
-                      disabled={queryLoading}
-                    >
-                      <Text style={styles.checkStatusText}>
-                        {queryLoading ? 'Checking...' : 'Check Status Now'}
-                      </Text>
-                    </TouchableOpacity>
+                    <>
+                      {cardCheckout && (
+                        <TouchableOpacity style={styles.openCardButton} onPress={() => WebBrowser.openBrowserAsync(cardCheckout.checkoutUrl)}>
+                          <Text style={styles.openCardButtonText}>Open Secure Card Checkout</Text>
+                        </TouchableOpacity>
+                      )}
+                      <TouchableOpacity
+                        style={styles.checkStatusButton}
+                        onPress={() => queryTxStatus(paymentResult.transactionId)}
+                        disabled={queryLoading}
+                      >
+                        <Text style={styles.checkStatusText}>
+                          {queryLoading ? 'Checking...' : cardCheckout ? 'I’ve paid — Check Status' : 'Check Status Now'}
+                        </Text>
+                      </TouchableOpacity>
+                    </>
                   )}
 
                   {queryError && (
@@ -829,7 +894,7 @@ export default function StatementScreen() {
                       <Text style={styles.pointHelpText}>Balance: {pointsBalance.toLocaleString()} pts</Text>
                     </View>
                     <View style={styles.halfColumn}>
-                      <Text style={styles.sectionTitle}>Mobile Money</Text>
+                      <Text style={styles.sectionTitle}>{paymentMethod === 'card' ? 'Card Amount' : 'Mobile Money'}</Text>
                       <TextInput
                         style={[styles.input, styles.halfInput]}
                         value={typeof mobileAmount === 'number' ? mobileAmount.toString() : ''}
@@ -855,9 +920,28 @@ export default function StatementScreen() {
                     </View>
                   </View>
 
+                  <Text style={styles.sectionTitle}>Payment Method</Text>
+                  <View style={styles.methodSwitcher}>
+                    <TouchableOpacity style={[styles.methodButton, paymentMethod === 'mobilemoney' && styles.methodButtonActive]} onPress={() => setPaymentMethod('mobilemoney')}>
+                      <Feather name="smartphone" size={16} color={paymentMethod === 'mobilemoney' ? '#d81b60' : '#666'} />
+                      <Text style={[styles.methodButtonText, paymentMethod === 'mobilemoney' && styles.methodButtonTextActive]}>Mobile money</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.methodButton, paymentMethod === 'card' && styles.methodButtonActive]} onPress={() => setPaymentMethod('card')}>
+                      <Feather name="credit-card" size={16} color={paymentMethod === 'card' ? '#d81b60' : '#666'} />
+                      <Text style={[styles.methodButtonText, paymentMethod === 'card' && styles.methodButtonTextActive]}>Card</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {paymentMethod === 'card' && (
+                    <View style={styles.cardNote}>
+                      <Feather name="shield" size={18} color="#d81b60" />
+                      <Text style={styles.cardNoteText}>Card details are entered securely on PegPay and are never stored by Collecto Vault.</Text>
+                    </View>
+                  )}
+
                   {/* Phone number and staff ID row */}
                   <View style={styles.row}> 
-                    <View style={styles.phoneColumn}>
+                    {paymentMethod === 'mobilemoney' && <View style={styles.phoneColumn}>
                       <Text style={styles.sectionTitle}>Phone Number</Text>
                       <TextInput
                         style={[styles.input, verified && styles.inputVerified, phoneError && styles.inputError]}
@@ -875,7 +959,7 @@ export default function StatementScreen() {
                         keyboardType="phone-pad"
                         maxLength={10}
                       />
-                    </View>
+                    </View>}
                     <View style={styles.staffColumn}>
                       <Text style={styles.sectionTitle}>Staff ID</Text>
                       <TextInput
@@ -916,12 +1000,12 @@ export default function StatementScreen() {
                       <Text style={styles.cancelButtonText}>Cancel</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      style={[styles.payButton, (!verified || processing) && styles.payButtonDisabled]}
+                      style={[styles.payButton, ((paymentMethod === 'mobilemoney' && !verified) || processing) && styles.payButtonDisabled]}
                       onPress={() => handlePayInvoice(payingInvoice!)}
-                      disabled={!verified || processing}
+                      disabled={(paymentMethod === 'mobilemoney' && !verified) || processing}
                     >
                       <Text style={styles.payButtonText}>
-                        {processing ? 'Processing...' : 'Continue'}
+                        {processing ? 'Processing...' : paymentMethod === 'card' ? 'Continue to Card Checkout' : 'Continue'}
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -1193,6 +1277,50 @@ const styles = StyleSheet.create({
   halfColumn: {
     flex: 1,
   },
+  methodSwitcher: {
+    flexDirection: 'row',
+    gap: 8,
+    padding: 4,
+    borderRadius: 12,
+    backgroundColor: '#f7f7f8',
+    marginBottom: 16,
+  },
+  methodButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 9,
+  },
+  methodButtonActive: {
+    backgroundColor: '#fff',
+  },
+  methodButtonText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#666',
+  },
+  methodButtonTextActive: {
+    color: '#d81b60',
+  },
+  cardNote: {
+    flexDirection: 'row',
+    gap: 10,
+    backgroundColor: '#fff5f8',
+    borderWidth: 1,
+    borderColor: '#ffe0eb',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 16,
+  },
+  cardNoteText: {
+    flex: 1,
+    color: '#666',
+    fontSize: 12,
+    lineHeight: 17,
+  },
   halfInput: {
     width: '100%',
   },
@@ -1240,6 +1368,18 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 6,
     marginBottom: 12,
+  },
+  openCardButton: {
+    backgroundColor: '#d81b60',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 6,
+    marginBottom: 8,
+  },
+  openCardButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
   },
   checkStatusText: {
     color: '#fff',
