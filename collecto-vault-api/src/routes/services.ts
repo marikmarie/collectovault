@@ -90,9 +90,8 @@ router.post("/requestToPay", async (req: Request, res: Response) => {
 router.post("/requestToPayStatus", async (req: Request, res: Response) => {
   try {
     const userToken = req.headers.authorization;
-    const { vaultOTPToken, collectoId, clientId, transactionId } = req.body;
-    console.log("RequestToPayStatus for transactionId:", transactionId);
-
+    const { transactionId } = req.body;
+ 
     if (!transactionId)
       return res.status(400).send("Missing transactionId in body");
 
@@ -163,6 +162,8 @@ router.post("/requestToPayStatus", async (req: Request, res: Response) => {
     });
   }
 });
+
+
 
 router.post("/verifyPhoneNumber", async (req: Request, res: Response) => {
   try {
