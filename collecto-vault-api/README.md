@@ -27,4 +27,6 @@ The API is separated by responsibility so individual features can be maintained 
 
 ## Pegasus card configuration
 
-`PEGASUS_CARD_API_BASE_URL` is the deployed CissyTech cardpayments URL. `PEGASUS_CARD_API_KEY` is an API key generated in that dashboard. Vault sends it server-to-server only. Hosted PegPay checkout details and card details never pass through Vault clients.
+`PEGASUS_CARD_API_BASE_URL` is `https://mariam.cissytech.com/cardpayments`. `PEGASUS_CARD_API_KEY` is an API key generated in that dashboard. Vault sends it server-to-server only. Hosted PegPay checkout details and card details never pass through Vault clients.
+
+To create the key, open the cardpayments dashboard, use the **API keys** panel on the Overview page, enter an integration name such as `Collecto Vault`, and select **Create key**. Copy the resulting `plk_test_...` value immediately: the dashboard only shows the secret once. Add it to the Vault API server's private `.env` file as `PEGASUS_CARD_API_KEY`; do not put it in the web or mobile app.
