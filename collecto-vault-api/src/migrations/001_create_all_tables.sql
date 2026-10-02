@@ -1,101 +1,107 @@
--- Migration: 001_create_all_tables.sql
--- Description: Creates all required tables for CollectoVault API
--- Date: 2026-05-14
+-- Collecto Vault plain-PHP database schema.
+-- Every application table deliberately uses the vault_ prefix.
+-- Import this file into the database named by VAULT_DB_NAME before serving index.php.
 
--- Enable foreign key checks
-SET FOREIGN_KEY_CHECKS = 0;
-
--- ===========================================
--- MIGRATIONS TABLE (for tracking migrations)
--- ===========================================
-CREATE TABLE IF NOT EXISTS migrations (
-  id INT AUTO_INCREMENT PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS vault_migrations (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(255) NOT NULL UNIQUE,
   run_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ===========================================
--- CHAT MESSAGES TABLE
--- ===========================================
-CREATE TABLE IF NOT EXISTS chat_messages (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  clientId INT NOT NULL,
-  senderType ENUM('customer', 'support') NOT NULL,
+CREATE TABLE IF NOT EXISTS vault_chat_messages (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  client_id BIGINT UNSIGNED NOT NULL,
+  sender_type ENUM('customer','support') NOT NULL,
   message TEXT NOT NULL,
-  attachments TEXT NULL COMMENT 'JSON array of attachment URLs',
-  isRead BOOLEAN DEFAULT FALSE,
-  readAt TIMESTAMP NULL,
-  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  INDEX idx_client_id (clientId),
-  INDEX idx_created_at (createdAt)
-) ENGINE=InnoDB;
+  attachments JSON NULL,
+  is_read TINYINT(1) NOT NULL DEFAULT 0,
+  read_at DATETIME NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX vault_chat_messages_client_created (client_id, created_at),
+  INDEX vault_chat_messages_client_unread (client_id, is_read)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ===========================================
--- WHATSAPP CONTACTS TABLE
--- ===========================================
-CREATE TABLE IF NOT EXISTS whatsapp_contacts (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  clientId INT NOT NULL,
-  whatsappNumber VARCHAR(20) NOT NULL,
-  isPreferred BOOLEAN DEFAULT FALSE,
-  verifiedAt TIMESTAMP NULL,
-  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  UNIQUE KEY unique_client_preferred (clientId, isPreferred),
-  INDEX idx_client_id (clientId)
-) ENGINE=InnoDB;
+CREATE TABLE IF NOT EXISTS vault_whatsapp_contacts (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  client_id BIGINT UNSIGNED NOT NULL UNIQUE,
+  whatsapp_number VARCHAR(20) NOT NULL,
+  is_preferred TINYINT(1) NOT NULL DEFAULT 1,
+  verified_at DATETIME NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ===========================================
--- BUSINESS CONTACTS TABLE
--- ===========================================
-CREATE TABLE IF NOT EXISTS business_contacts (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  contactType ENUM('whatsapp', 'email', 'phone') NOT NULL,
+CREATE TABLE IF NOT EXISTS vault_business_contacts (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  contact_type ENUM('whatsapp','email','phone') NOT NULL UNIQUE,
   value VARCHAR(255) NOT NULL,
-  isActive BOOLEAN DEFAULT TRUE,
-  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  UNIQUE KEY unique_contact_type (contactType, isActive)
-) ENGINE=InnoDB;
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ===========================================
--- FEEDBACK TABLE
--- ===========================================
-CREATE TABLE IF NOT EXISTS feedback (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  clientId INT NOT NULL,
-  feedbackType ENUM('order', 'service', 'app', 'general') NOT NULL,
+CREATE TABLE IF NOT EXISTS vault_feedback (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  client_id BIGINT UNSIGNED NOT NULL,
+  feedback_type ENUM('order','service','app','general') NOT NULL,
   title VARCHAR(255) NOT NULL,
   message TEXT NOT NULL,
-  attachments TEXT NULL COMMENT 'JSON array of attachment URLs',
-  status ENUM('open', 'in-progress', 'resolved', 'closed') DEFAULT 'open',
-  priority ENUM('low', 'medium', 'high', 'critical') DEFAULT 'medium',
-  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX idx_client_id (clientId),
-  INDEX idx_status (status),
-  INDEX idx_created_at (createdAt)
-) ENGINE=InnoDB;
+  attachments JSON NULL,
+  status ENUM('open','in-progress','resolved','closed') NOT NULL DEFAULT 'open',
+  priority ENUM('low','medium','high','critical') NOT NULL DEFAULT 'medium',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX vault_feedback_client_created (client_id, created_at),
+  INDEX vault_feedback_status_created (status, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ===========================================
--- RATINGS TABLE
--- ===========================================
-CREATE TABLE IF NOT EXISTS ratings (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  clientId INT NOT NULL,
-  transactionId INT NOT NULL,
-  orderRating TINYINT NOT NULL CHECK (orderRating BETWEEN 1 AND 5),
-  paymentRating TINYINT NOT NULL CHECK (paymentRating BETWEEN 1 AND 5),
-  serviceRating TINYINT NOT NULL CHECK (serviceRating BETWEEN 1 AND 5),
-  overallRating TINYINT NOT NULL CHECK (overallRating BETWEEN 1 AND 5),
+CREATE TABLE IF NOT EXISTS vault_ratings (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  client_id BIGINT UNSIGNED NOT NULL,
+  transaction_id BIGINT UNSIGNED NOT NULL,
+  order_rating TINYINT UNSIGNED NOT NULL,
+  payment_rating TINYINT UNSIGNED NOT NULL,
+  service_rating TINYINT UNSIGNED NOT NULL,
+  overall_rating TINYINT UNSIGNED NOT NULL,
   comment TEXT NULL,
-  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  UNIQUE KEY unique_transaction_rating (clientId, transactionId),
-  INDEX idx_client_id (clientId),
-  INDEX idx_transaction_id (transactionId),
-  INDEX idx_created_at (createdAt)
-) ENGINE=InnoDB;
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY vault_ratings_transaction (transaction_id),
+  INDEX vault_ratings_client_created (client_id, created_at),
+  CONSTRAINT vault_ratings_order_range CHECK (order_rating BETWEEN 1 AND 5),
+  CONSTRAINT vault_ratings_payment_range CHECK (payment_rating BETWEEN 1 AND 5),
+  CONSTRAINT vault_ratings_service_range CHECK (service_rating BETWEEN 1 AND 5),
+  CONSTRAINT vault_ratings_overall_range CHECK (overall_rating BETWEEN 1 AND 5)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Re-enable foreign key checks
-SET FOREIGN_KEY_CHECKS = 1;
+CREATE TABLE IF NOT EXISTS vault_payment_status_cache (
+  transaction_id VARCHAR(120) PRIMARY KEY,
+  status VARCHAR(32) NOT NULL,
+  payload_json JSON NOT NULL,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS vault_card_collections (
+  collection_id VARCHAR(60) PRIMARY KEY,
+  client_id VARCHAR(80) NOT NULL,
+  collecto_id VARCHAR(80) NOT NULL,
+  expected_amount DECIMAL(16,2) NOT NULL,
+  currency CHAR(3) NOT NULL DEFAULT 'UGX',
+  description VARCHAR(200) NOT NULL,
+  status VARCHAR(32) NOT NULL DEFAULT 'PENDING',
+  checkout_url VARCHAR(2048) NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX vault_card_collections_client (client_id, collecto_id),
+  INDEX vault_card_collections_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS vault_card_finalizations (
+  collection_id VARCHAR(60) PRIMARY KEY,
+  state ENUM('processing','completed','failed') NOT NULL,
+  response_json JSON NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT vault_card_finalizations_collection FOREIGN KEY (collection_id)
+    REFERENCES vault_card_collections(collection_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

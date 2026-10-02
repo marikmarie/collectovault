@@ -1,13 +1,6 @@
-# Node modules
+# Legacy local build artifacts. They are not part of the PHP deployment.
 /node_modules/
-
-# Build output
 /dist/
-/build/
-/out/
-
-# TypeScript cache
-*.tsbuildinfo
 
 # Environment variables
 .env
@@ -30,27 +23,10 @@ Thumbs.db
 *.sublime-workspace
 *.sublime-project
 
-# npm & yarn files
-package-lock.json
-yarn.lock
-.pnpm-store/
-
-# Coverage reports
-coverage/
-*.lcov
-
 # Temporary files
 tmp/
 temp/
 *.tmp
-
-# Test artifacts
-jest.config.ts
-*.snap
-
-# Docker
-docker-compose.override.yml
-*.dockerignore
 
 # Optional: Editor backups
 *.bak
