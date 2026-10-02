@@ -12,6 +12,19 @@ This is the API used by the Vault web app and Expo mobile app. It uses plain PHP
 
 The existing clients keep their same routes, including `/auth`, `/requestToPay`, support/feedback endpoints, and `/pegasus/card-collections`.
 
+## Code layout
+
+The API is separated by responsibility so individual features can be maintained without editing one oversized file:
+
+- `src/Controllers/` — HTTP request validation and API responses.
+- `src/Services/` — Collecto and Pegasus card-payment business logic.
+- `src/Repositories/` — all `vault_` database reads and writes.
+- `src/Infrastructure/` — database connection setup.
+- `src/Support/` — configuration, HTTP client, errors, and JSON responses.
+- `src/migrations/` — the SQL schema to import before deployment.
+
+`index.php` only starts the application and maps the existing API routes to those controllers.
+
 ## Pegasus card configuration
 
 `PEGASUS_CARD_API_BASE_URL` is the deployed CissyTech cardpayments URL. `PEGASUS_CARD_API_KEY` is an API key generated in that dashboard. Vault sends it server-to-server only. Hosted PegPay checkout details and card details never pass through Vault clients.

@@ -1,7 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Vault;
+namespace Vault\Services;
+
+use Vault\Support\Config;
+use Vault\Support\HttpClient;
 
 final class CollectoService
 {
@@ -16,11 +19,20 @@ final class CollectoService
         $this->apiKey = Config::required('COLLECTO_API_KEY');
     }
 
-    /** @param array<string,mixed> $payload @return array{status:int,data:array<string,mixed>} */
+    /** @param array<string, mixed> $payload @return array{status: int, data: array<string, mixed>} */
     public function post(string $path, array $payload, ?string $authorization = null): array
     {
         $headers = ['X-API-Key' => $this->apiKey];
-        if ($authorization !== null && trim($authorization) !== '') $headers['Authorization'] = $authorization;
-        return $this->http->request('POST', $this->baseUrl . '/' . ltrim($path, '/'), $payload, $headers);
+
+        if ($authorization !== null && trim($authorization) !== '') {
+            $headers['Authorization'] = $authorization;
+        }
+
+        return $this->http->request(
+            'POST',
+            $this->baseUrl . '/' . ltrim($path, '/'),
+            $payload,
+            $headers,
+        );
     }
 }
